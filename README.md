@@ -4,7 +4,7 @@ A modern MENN (MongoDB, Express, Next.js, Node.js) stack using a simple monorepo
 
 ## Prerequisites
 - [Node.js](https://nodejs.org/) installed
-- [MongoDB](https://www.mongodb.com/) running locally or a MongoDB Atlas URI
+- [MongoDB](https://www.mongodb.com/) running locally or a MongoDB Atlas URI ( just a template for now -- so could be changed later )
 
 ## 1. Installation
 Install the dependencies for the root, frontend, and backend. From the root directory, run:
@@ -24,7 +24,7 @@ PORT=5000
 
 ## 3. Quick Start
 ```bash
-npm run dev4
+npm run dev
 ```
 
 # CS732 project - Team Patrick Star
