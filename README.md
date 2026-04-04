@@ -1,3 +1,32 @@
+# Next.js + Express/MongoDB Boilerplate
+
+A modern MENN (MongoDB, Express, Next.js, Node.js) stack using a simple monorepo structure.
+
+## Prerequisites
+- [Node.js](https://nodejs.org/) installed
+- [MongoDB](https://www.mongodb.com/) running locally or a MongoDB Atlas URI
+
+## 1. Installation
+Install the dependencies for the root, frontend, and backend. From the root directory, run:
+
+```bash
+npm install
+cd frontend && npm install
+cd ../backend && npm install
+cd ..
+```
+## 2. Installation
+Install the dependencies for the root, frontend, and backend. From the root directory, run:
+```bash 
+MONGO_URI=mongodb://localhost:27017/your_database_name
+PORT=5000
+```
+
+## 3. Quick Start
+```bash
+npm run dev4
+```
+
 # CS732 project - Team Patrick Star
 
 Welcome to the CS732 project. We look forward to seeing the amazing things you create this semester! This is your team's repository.
