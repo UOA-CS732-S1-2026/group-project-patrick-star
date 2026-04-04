@@ -1,0 +1,26 @@
+{
+  "name": "group-project-patrick-star",
+  "version": "1.0.0",
+  "description": "Welcome to the CS732 project. We look forward to seeing the amazing things you create this semester! This is your team's repository.",
+  "main": "index.js",
+  "scripts": {
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/UOA-CS732-S1-2026/group-project-patrick-star.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/UOA-CS732-S1-2026/group-project-patrick-star/issues"
+  },
+  "homepage": "https://github.com/UOA-CS732-S1-2026/group-project-patrick-star#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
