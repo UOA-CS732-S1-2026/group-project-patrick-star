@@ -4,13 +4,13 @@ const {
   getItems,
   updateItem,
   deleteItem,
-} = require("./db/clothingService");
+} = require("../db/clothingService");
 const router = express.Router();
 
 router.post("/", async (req, res) => {
   try {
     const item = await addItem(req.body);
-    req.status(201).json(item);
+    res.status(201).json(item);
   } catch (error) {
     const messages = Object.values(error.errors).map((e) => e.message);
     return res.status(400).json({ errors: messages });
