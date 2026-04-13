@@ -1,27 +1,23 @@
-require('dotenv').config()
-const express = require('express')
-const mongoose = require('mongoose')
-const { addItem, getItems, updateItem, deleteItem } = require('./db/clothingService')
+require("dotenv").config();
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
 
-const app = express()
-app.use(express.json())
+const app = express();
+const ClothingItemsRoutes = require("./routes/clothingItems");
 
-mongoose.connect(process.env.MONGO_URI)
+app.use(cors());
+app.use(express.json());
+app.use("/api/clothingItems", ClothingItemsRoutes);
 
-app.post('/items', async (req, res) => {
-  res.json(await addItem(req.body))
-})
+// MongoDB Connection
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB successfully connected"))
+  .catch((err) => console.error("MongoDB connection error:", err));
 
-app.get('/items/:userId', async (req, res) => {
-  res.json(await getItems(req.params.userId))
-})
+app.get("/", (req, res) => {
+  res.send("API running");
+});
 
-app.put('/items/:id', async (req, res) => {
-  res.json(await updateItem(req.params.id, req.body))
-})
-
-app.delete('/items/:id', async (req, res) => {
-  res.json(await deleteItem(req.params.id))
-})
-
-app.listen(3000)
+module.exports = app;
