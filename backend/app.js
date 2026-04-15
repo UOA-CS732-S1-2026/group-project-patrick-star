@@ -5,10 +5,12 @@ const cors = require("cors");
 
 const app = express();
 const ClothingItemsRoutes = require("./routes/clothingItems");
+const UsersRoutes = require("./routes/users");
 
 app.use(cors());
 app.use(express.json());
 app.use("/api/clothingItems", ClothingItemsRoutes);
+app.use("/api/users", UsersRoutes);
 
 // MongoDB Connection
 mongoose

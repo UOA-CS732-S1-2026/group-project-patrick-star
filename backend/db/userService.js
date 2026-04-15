@@ -7,4 +7,4 @@ const updateUser = (id, data) =>
   User.findByIdAndUpdate(id, data, { new: true });
 const deleteUser = (id) => User.findByIdAndDelete(id);
 
-module.exports = { addUser, getUser, updateUser, deleteUser };
+module.exports = { addUser, getUser, getUserByEmail, updateUser, deleteUser };
