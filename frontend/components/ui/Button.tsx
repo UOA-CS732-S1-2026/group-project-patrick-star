@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { cn } from "./cn";
 
 type Variant = "primary" | "secondary" | "ghost";
 type Size = "sm" | "md" | "lg";
@@ -23,10 +24,6 @@ const sizeClasses: Record<Size, string> = {
   md: "h-10 px-4 text-sm",
   lg: "h-12 px-6 text-sm tracking-wide",
 };
-
-function cn(...parts: Array<string | false | undefined>) {
-  return parts.filter(Boolean).join(" ");
-}
 
 export function Button({
   variant = "primary",
