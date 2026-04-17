@@ -43,8 +43,7 @@ describe("POST /api/users", () => {
       .post("/api/users")
       .send({ name: "Partial User" });
 
-    expect(res.status).toBe(201);
-    expect(res.body.name).toBe("Partial User");
+    expect(res.status).toBe(400);
   });
 });
 

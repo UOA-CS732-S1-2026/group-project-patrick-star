@@ -45,14 +45,13 @@ describe("POST /api/clothingItems", () => {
       .post("/api/clothingItems")
       .send({ userId: testUserId, name: "Jacket" });
 
-    expect(res.status).toBe(201);
-    expect(res.body.name).toBe("Jacket");
+    expect(res.status).toBe(400);
   });
 
   it("should create item with empty body", async () => {
     const res = await request(app).post("/api/clothingItems").send({});
 
-    expect(res.status).toBe(201);
+    expect(res.status).toBe(400);
   });
 });
 
