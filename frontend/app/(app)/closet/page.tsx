@@ -7,7 +7,8 @@ import { Chip } from "@/components/ui/Chip";
 import { ItemCard, type ClothingItem } from "@/components/ui/ItemCard";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { UploadItemModal, type NewClothingItem } from "@/components/closet/UploadItemModal";
-import { ItemDetailModal } from "@/components/closet/ItemDetailModal";
+import { ItemDetailPanel } from "@/components/closet/ItemDetailPanel";
+import { EditItemPanel } from "@/components/closet/EditItemPanel";
 
 const CATEGORIES = [
   "All",
@@ -39,6 +40,7 @@ export default function ClosetPage() {
   const [query, setQuery] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ClothingItem | null>(null);
+  const [editing, setEditing] = useState(false);
 
   const filtered = useMemo(() => {
     return items.filter((item) => {
@@ -63,8 +65,21 @@ export default function ClosetPage() {
     ]);
   }
 
+  function handleSaveItem(updated: ClothingItem) {
+    setItems((prev) => prev.map((i) => i.id === updated.id ? updated : i));
+    setSelectedItem(updated);
+    setEditing(false);
+  }
+
   function handleRemoveItem(item: ClothingItem) {
     setItems((prev) => prev.filter((i) => i.id !== item.id));
+    setSelectedItem(null);
+    setEditing(false);
+  }
+
+  function handleSelectItem(item: ClothingItem) {
+    setSelectedItem(item);
+    setEditing(false);
   }
 
   return (
@@ -88,38 +103,55 @@ export default function ClosetPage() {
         }
       />
 
-      <div className="flex flex-1 flex-col gap-6 px-10 py-8">
-        <div className="flex flex-wrap gap-2">
-          {CATEGORIES.map((c) => (
-            <Chip
-              key={c}
-              variant="solid"
-              selected={c === category}
-              onClick={() => setCategory(c)}
-            >
-              {c}
-            </Chip>
-          ))}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Closet grid */}
+        <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-10 py-8">
+          <div className="flex flex-wrap gap-2">
+            {CATEGORIES.map((c) => (
+              <Chip
+                key={c}
+                variant="solid"
+                selected={c === category}
+                onClick={() => setCategory(c)}
+              >
+                {c}
+              </Chip>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8">
+            {filtered.map((item) => (
+              <ItemCard
+                key={item.id}
+                item={item}
+                onClick={() => handleSelectItem(item)}
+              />
+            ))}
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8">
-          {filtered.map((item) => (
-            <ItemCard key={item.id} item={item} onClick={() => setSelectedItem(item)} />
-          ))}
-        </div>
+        {/* Side panel */}
+        {selectedItem && !editing && (
+          <ItemDetailPanel
+            item={selectedItem}
+            onClose={() => setSelectedItem(null)}
+            onEdit={() => setEditing(true)}
+          />
+        )}
+        {selectedItem && editing && (
+          <EditItemPanel
+            item={selectedItem}
+            onCancel={() => setEditing(false)}
+            onSave={handleSaveItem}
+            onRemove={handleRemoveItem}
+          />
+        )}
       </div>
 
       <UploadItemModal
         open={uploadOpen}
         onClose={() => setUploadOpen(false)}
         onSubmit={handleAddItem}
-      />
-
-      <ItemDetailModal
-        item={selectedItem}
-        open={selectedItem !== null}
-        onClose={() => setSelectedItem(null)}
-        onRemove={handleRemoveItem}
       />
     </>
   );
