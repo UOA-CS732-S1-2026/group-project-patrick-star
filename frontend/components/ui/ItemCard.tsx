@@ -7,6 +7,14 @@ export interface ClothingItem {
   category: string;
   emoji?: string;
   imageUrl?: string;
+  // Extended item attributes
+  colour?: string;
+  size?: string;
+  fit?: string;
+  fabric?: string;
+  favourite?: boolean;
+  timesWorn?: number;
+  price?: number;
 }
 
 interface ItemCardProps {

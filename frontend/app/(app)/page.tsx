@@ -1,94 +1,166 @@
-import { PageHeader } from "@/components/layout/PageHeader";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { ItemCard, type ClothingItem } from "@/components/ui/ItemCard";
+"use client";
 
-const recentlyWorn: ClothingItem[] = [
-  { id: "1", name: "White linen shirt", category: "Tops", emoji: "👕" },
-  { id: "2", name: "Navy trousers", category: "Bottoms", emoji: "👖" },
-  { id: "3", name: "Tan trench", category: "Outerwear", emoji: "🧥" },
-  { id: "4", name: "White sneakers", category: "Shoes", emoji: "👟" },
+import { useMemo, useState } from "react";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Button } from "@/components/ui/Button";
+import { Chip } from "@/components/ui/Chip";
+import { ItemCard, type ClothingItem } from "@/components/ui/ItemCard";
+import { SearchInput } from "@/components/ui/SearchInput";
+import { UploadItemModal, type NewClothingItem } from "@/components/closet/UploadItemModal";
+import { ItemDetailPanel } from "@/components/closet/ItemDetailPanel";
+import { EditItemPanel } from "@/components/closet/EditItemPanel";
+
+const CATEGORIES = [
+  "All",
+  "Tops",
+  "Bottoms",
+  "Outerwear",
+  "Shoes",
+  "Accessories",
+  "Dresses",
+] as const;
+type Category = (typeof CATEGORIES)[number];
+
+const SEED_ITEMS: ClothingItem[] = [
+  { id: "1", name: "White linen shirt", category: "Tops", emoji: "👕", colour: "White", size: "M", fit: "Regular", fabric: "Linen" },
+  { id: "2", name: "Navy trousers", category: "Bottoms", emoji: "👖", colour: "Navy", size: "M", fit: "Slim", fabric: "Cotton" },
+  { id: "3", name: "Tan trench", category: "Outerwear", emoji: "🧥", colour: "Tan", size: "M", fit: "Regular", fabric: "Polyester" },
+  { id: "4", name: "White sneakers", category: "Shoes", emoji: "👟", colour: "White", size: "M" },
+  { id: "5", name: "Black turtleneck", category: "Tops", emoji: "🐢", colour: "Black", size: "S", fit: "Regular", fabric: "Wool" },
+  { id: "6", name: "Olive shorts", category: "Bottoms", emoji: "🩳", colour: "Olive", size: "M", fit: "Relaxed", fabric: "Cotton" },
+  { id: "7", name: "Brown boots", category: "Shoes", emoji: "🥾", colour: "Brown", size: "L" },
+  { id: "8", name: "Canvas tote", category: "Accessories", emoji: "👜", colour: "Beige" },
+  { id: "9", name: "Bucket hat", category: "Accessories", emoji: "🧢", colour: "Green" },
+  { id: "10", name: "Wool scarf", category: "Accessories", emoji: "🧣", colour: "Red", fabric: "Wool" },
+  { id: "11", name: "Sunglasses", category: "Accessories", emoji: "🕶️", colour: "Black" },
+  { id: "12", name: "Oxford shirt", category: "Tops", emoji: "👔", colour: "Blue", size: "M", fit: "Regular", fabric: "Cotton" },
+  { id: "13", name: "Striped scarf", category: "Accessories", emoji: "🧣", colour: "Red" },
+  { id: "14", name: "Leather bag", category: "Accessories", emoji: "👜", colour: "Brown" },
 ];
 
-export default function HomePage() {
+export default function ClosetPage() {
+  const [items, setItems] = useState<ClothingItem[]>(SEED_ITEMS);
+  const [category, setCategory] = useState<Category>("All");
+  const [query, setQuery] = useState("");
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<ClothingItem | null>(null);
+  const [editing, setEditing] = useState(false);
+
+  const filtered = useMemo(() => {
+    return items.filter((item) => {
+      const matchCategory = category === "All" || item.category === category;
+      const matchQuery = !query || item.name.toLowerCase().includes(query.toLowerCase());
+      return matchCategory && matchQuery;
+    });
+  }, [items, category, query]);
+
+  function handleAddItem(newItem: NewClothingItem) {
+    setItems((prev) => [
+      ...prev,
+      {
+        id: String(Date.now()),
+        name: newItem.name,
+        category: newItem.category,
+        colour: newItem.colour,
+        size: newItem.size,
+        fit: newItem.fit,
+        fabric: newItem.fabric,
+        emoji: "👕",
+        imageUrl: newItem.imageFile ? URL.createObjectURL(newItem.imageFile) : undefined,
+      },
+    ]);
+  }
+
+  function handleSaveItem(updated: ClothingItem) {
+    setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
+    setSelectedItem(updated);
+    setEditing(false);
+  }
+
+  function handleRemoveItem(item: ClothingItem) {
+    setItems((prev) => prev.filter((i) => i.id !== item.id));
+    setSelectedItem(null);
+    setEditing(false);
+  }
+
+  function handleSelectItem(item: ClothingItem) {
+    setSelectedItem(item);
+    setEditing(false);
+  }
+
   return (
     <>
       <PageHeader
-        title="Good morning, Alex"
-        subtitle="Saturday, 11 April 2026"
+        title="My Closet"
         right={
-          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-2 text-sm font-medium shadow-sm">
-            <span aria-hidden>⛅</span>
-            <span>18° Auckland</span>
-          </div>
+          <>
+            <div className="w-80">
+              <SearchInput
+                placeholder="Search your wardrobe..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </div>
+            <div className="text-sm text-muted-foreground whitespace-nowrap">
+              {items.length} items
+            </div>
+            <Button leftIcon={<span aria-hidden>+</span>} onClick={() => setUploadOpen(true)}>
+              Add item
+            </Button>
+          </>
         }
       />
 
-      <div className="grid flex-1 grid-cols-[minmax(0,380px)_minmax(0,1fr)] gap-8 px-10 py-8">
-        {/* Today's look */}
-        <section>
-          <h2 className="mb-3 text-lg font-semibold">Today&apos;s look</h2>
-          <Card className="flex flex-col overflow-hidden">
-            <div className="relative flex-1 bg-neutral-100 p-5">
-              <Badge tone="accent" icon={<span aria-hidden>✦</span>}>
-                AI styled
-              </Badge>
-              <div className="min-h-[360px]" />
-            </div>
-            <div className="border-t border-border p-5">
-              <div className="text-xs font-semibold uppercase tracking-wide text-accent">
-                AI recommendation
-              </div>
-              <p className="mt-1 text-sm text-foreground">
-                Smart casual for your 2pm meeting.
-              </p>
-              <div className="mt-4 flex gap-3">
-                <Button leftIcon={<span aria-hidden>↻</span>}>Regen</Button>
-                <Button
-                  variant="secondary"
-                  leftIcon={<span aria-hidden>♡</span>}
-                >
-                  Save
-                </Button>
-              </div>
-            </div>
-          </Card>
-        </section>
-
-        {/* Right column */}
-        <section className="flex flex-col gap-8">
-          <div>
-            <h2 className="mb-3 text-lg font-semibold">Wardrobe insights</h2>
-            <Card className="p-6">
-              <Badge tone="accent" icon={<span aria-hidden>✦</span>}>
-                Gap analysis
-              </Badge>
-              <h3 className="mt-3 text-xl font-bold">Add a tan blazer</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Unlocks 6 new outfit combos from your existing closet.
-              </p>
-              <div className="mt-4 flex gap-3">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-14 w-14 rounded-xl bg-neutral-100"
-                  />
-                ))}
-              </div>
-            </Card>
+      <div className="flex flex-1 overflow-hidden">
+        {/* Closet grid */}
+        <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-10 py-8">
+          <div className="flex flex-wrap gap-2">
+            {CATEGORIES.map((c) => (
+              <Chip
+                key={c}
+                variant="solid"
+                selected={c === category}
+                onClick={() => setCategory(c)}
+              >
+                {c}
+              </Chip>
+            ))}
           </div>
 
-          <div>
-            <h2 className="mb-3 text-lg font-semibold">Recently worn</h2>
-            <div className="grid grid-cols-4 gap-4">
-              {recentlyWorn.map((item) => (
-                <ItemCard key={item.id} item={item} />
-              ))}
-            </div>
+          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8">
+            {filtered.map((item) => (
+              <ItemCard
+                key={item.id}
+                item={item}
+                onClick={() => handleSelectItem(item)}
+              />
+            ))}
           </div>
-        </section>
+        </div>
+
+        {/* Side panels */}
+        {selectedItem && !editing && (
+          <ItemDetailPanel
+            item={selectedItem}
+            onClose={() => setSelectedItem(null)}
+            onEdit={() => setEditing(true)}
+          />
+        )}
+        {selectedItem && editing && (
+          <EditItemPanel
+            item={selectedItem}
+            onCancel={() => setEditing(false)}
+            onSave={handleSaveItem}
+            onRemove={handleRemoveItem}
+          />
+        )}
       </div>
+
+      <UploadItemModal
+        open={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+        onSubmit={handleAddItem}
+      />
     </>
   );
 }

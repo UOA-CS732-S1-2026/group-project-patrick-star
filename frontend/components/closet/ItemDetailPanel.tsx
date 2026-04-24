@@ -10,34 +10,21 @@ interface ItemDetailPanelProps {
   onAddToOutfit?: (item: ClothingItem) => void;
 }
 
-const DETAIL_FIELDS = [
+const DETAIL_FIELDS: { key: keyof ClothingItem; label: string }[] = [
   { key: "category", label: "CATEGORY" },
   { key: "size", label: "SIZE" },
   { key: "colour", label: "COLOUR" },
   { key: "fit", label: "FIT" },
   { key: "fabric", label: "FABRIC" },
-] as const;
+];
 
 export function ItemDetailPanel({ item, onClose, onEdit, onAddToOutfit }: ItemDetailPanelProps) {
   const tags = [
     item.category,
-    (item as any).style,
-    (item as any).colour,
-    (item as any).fit ? `${(item as any).fit} fit` : null,
+    item.colour,
+    item.fabric,
+    item.fit ? `${item.fit} fit` : null,
   ].filter(Boolean) as string[];
-
-  const detailValues: Record<string, string> = {
-    category: item.category,
-    size: (item as any).size ?? "—",
-    colour: (item as any).colour ?? "—",
-    fit: (item as any).fit ?? "—",
-    fabric: (item as any).fabric ?? "—",
-  };
-
-  const timesWorn: number = (item as any).timesWorn ?? 14;
-  const costPerWear = (item as any).price
-    ? `$${((item as any).price / timesWorn).toFixed(2)}/wear`
-    : "$2.80/wear";
 
   return (
     <div className="flex h-full w-[340px] shrink-0 flex-col border-l border-border bg-white">
@@ -50,7 +37,15 @@ export function ItemDetailPanel({ item, onClose, onEdit, onAddToOutfit }: ItemDe
           ✕ Close
         </button>
         <div className="flex items-center gap-2">
-          <button className="flex h-8 w-8 items-center justify-center rounded-lg bg-yellow-400 text-white hover:bg-yellow-500 transition-colors">
+          <button
+            onClick={() => {
+              // TODO: toggle favourite via PATCH /api/clothing/:id { favourite: !item.favourite }
+            }}
+            className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${item.favourite
+                ? "bg-yellow-400 text-white hover:bg-yellow-500"
+                : "bg-neutral-100 text-neutral-400 hover:bg-yellow-100 hover:text-yellow-500"
+              }`}
+          >
             ★
           </button>
           <button
@@ -66,6 +61,7 @@ export function ItemDetailPanel({ item, onClose, onEdit, onAddToOutfit }: ItemDe
       <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-6 py-5">
         <h2 className="text-2xl font-bold text-foreground">{item.name}</h2>
 
+        {/* Tags */}
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {tags.map((tag) => (
@@ -79,6 +75,21 @@ export function ItemDetailPanel({ item, onClose, onEdit, onAddToOutfit }: ItemDe
           </div>
         )}
 
+        {/* Item image / emoji */}
+        <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-2xl bg-neutral-100 text-8xl">
+          {item.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={item.imageUrl}
+              alt={item.name}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <span aria-hidden>{item.emoji ?? "👕"}</span>
+          )}
+        </div>
+
+        {/* Details table */}
         <div className="flex flex-col rounded-xl border border-border overflow-hidden">
           <div className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border">
             Details
@@ -92,19 +103,28 @@ export function ItemDetailPanel({ item, onClose, onEdit, onAddToOutfit }: ItemDe
                 {label}
               </span>
               <span className="text-sm font-medium text-foreground">
-                {detailValues[key]}
+                {(item[key] as string | undefined) ?? "—"}
               </span>
             </div>
           ))}
         </div>
 
-        <div className="flex items-center gap-2 rounded-xl border border-border bg-neutral-50 px-4 py-3">
-          <span>♻️</span>
-          <span className="text-sm text-muted-foreground">Worn</span>
-          <span className="text-sm font-bold text-foreground">{timesWorn} times</span>
-          <span className="text-muted-foreground">·</span>
-          <span className="text-sm text-muted-foreground">{costPerWear}</span>
-        </div>
+        {/* Wear stats */}
+        {(item.timesWorn !== undefined || item.price !== undefined) && (
+          <div className="flex items-center gap-2 rounded-xl border border-border bg-neutral-50 px-4 py-3">
+            <span>♻️</span>
+            <span className="text-sm text-muted-foreground">Worn</span>
+            <span className="text-sm font-bold text-foreground">{item.timesWorn ?? 0} times</span>
+            {item.price && item.timesWorn ? (
+              <>
+                <span className="text-muted-foreground">·</span>
+                <span className="text-sm text-muted-foreground">
+                  ${(item.price / item.timesWorn).toFixed(2)}/wear
+                </span>
+              </>
+            ) : null}
+          </div>
+        )}
       </div>
 
       {/* Footer */}
@@ -115,7 +135,7 @@ export function ItemDetailPanel({ item, onClose, onEdit, onAddToOutfit }: ItemDe
           className="w-full rounded-xl"
           onClick={() => { onAddToOutfit?.(item); onClose(); }}
         >
-          Add to Outfit
+          Add to Existing Outfit
         </Button>
       </div>
     </div>

@@ -11,6 +11,7 @@ export interface NewClothingItem {
   colour: string;
   size: string;
   fit: string;
+  fabric: string;
   imageFile?: File;
 }
 
@@ -20,7 +21,7 @@ interface UploadItemModalProps {
   onSubmit: (item: NewClothingItem) => void;
 }
 
-const SIZES = ["XS", "S", "M", "L", "XL", "XXL"] as const;
+const SIZES = ["XS", "S", "M", "L", "XL"] as const;
 const FITS = ["Relaxed", "Regular", "Slim"] as const;
 
 export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProps) {
@@ -29,8 +30,10 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
   const [isDragging, setIsDragging] = useState(false);
   const [aiProcessing, setAiProcessing] = useState(false);
 
+  const [name, setName] = useState("");
   const [category, setCategory] = useState("");
   const [colour, setColour] = useState("");
+  const [fabric, setFabric] = useState("");
   const [size, setSize] = useState("");
   const [fit, setFit] = useState("");
 
@@ -40,11 +43,12 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
     setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
 
-    // TODO: Replace this with AI processing to fill in item details based on the image
+    // TODO: Replace with real AI image analysis via the OpenAI API
     setAiProcessing(true);
     setTimeout(() => {
       setCategory("Tops");
       setColour("White");
+      setFabric("Cotton");
       setAiProcessing(false);
     }, 1800);
   }
@@ -62,15 +66,19 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
   }
 
   function handleSubmit() {
-    onSubmit({ category, colour, size, fit, imageFile: imageFile ?? undefined, name: `${colour} ${category}`.trim() });
+    // Fall back to "Colour Category" if the user left the name blank
+    const resolvedName = name.trim() || `${colour} ${category}`.trim();
+    onSubmit({ name: resolvedName, category, colour, fabric, size, fit, imageFile: imageFile ?? undefined });
     handleClose();
   }
 
   function handleClose() {
     setImageFile(null);
     setImagePreview(null);
+    setName("");
     setCategory("");
     setColour("");
+    setFabric("");
     setSize("");
     setFit("");
     setAiProcessing(false);
@@ -78,6 +86,15 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
   }
 
   const canSubmit = category && colour && size && fit;
+
+  const inputClass =
+    "w-full rounded-xl border-2 border-border bg-neutral-50 px-4 py-3 text-sm font-medium text-foreground outline-none transition focus:border-accent focus:bg-white placeholder:text-muted-foreground";
+
+  const aiTag = aiProcessing ? (
+    <span className="rounded bg-accent-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent">
+      AI ✦
+    </span>
+  ) : null;
 
   return (
     <Modal open={open} onClose={handleClose} className="max-w-3xl">
@@ -107,6 +124,7 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
           )}
         >
           {imagePreview ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={imagePreview}
               alt="Preview"
@@ -117,7 +135,7 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
               <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-200 text-neutral-500 text-xl">
                 ↑
               </div>
-              <p className="text-sm font-medium text-foreground">Click to upload or drag & drop</p>
+              <p className="text-sm font-medium text-foreground">Click to upload or drag &amp; drop</p>
               <p className="mt-1 text-xs text-muted-foreground">JPG, PNG or HEIC</p>
             </>
           )}
@@ -131,56 +149,62 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
         />
 
         {/* Right: Item details */}
-        <div className="flex flex-col gap-5">
-          <div>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold text-foreground">Item details</h3>
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              AI has detected the following. Review and confirm.
-            </p>
+            {/* AI status badge — only shown once a file is selected */}
+            {imageFile && (
+              <div className={cn(
+                "flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold transition-colors",
+                aiProcessing ? "bg-accent-soft text-accent" : "bg-neutral-100 text-muted-foreground"
+              )}>
+                <span>✦</span>
+                {aiProcessing ? (
+                  <>
+                    AI PROCESSING
+                    <span className="flex gap-1 ml-1">
+                      {[0, 1, 2].map((i) => (
+                        <span
+                          key={i}
+                          className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse"
+                          style={{ animationDelay: `${i * 150}ms` }}
+                        />
+                      ))}
+                    </span>
+                  </>
+                ) : "AI READY"}
+              </div>
+            )}
           </div>
 
-          {/* AI processing badge */}
-          <div className={cn(
-            "flex items-center justify-between rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors",
-            aiProcessing
-              ? "bg-accent-soft text-accent"
-              : "bg-neutral-100 text-muted-foreground"
-          )}>
-            <span className="flex items-center gap-2">
-              <span>✦</span>
-              {aiProcessing ? "AI PROCESSING" : "AI READY"}
-            </span>
-            {aiProcessing && (
-              <span className="flex gap-1">
-                {[0, 1, 2].map((i) => (
-                  <span
-                    key={i}
-                    className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse"
-                    style={{ animationDelay: `${i * 150}ms` }}
-                  />
-                ))}
-              </span>
-            )}
+          {/* Name */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Name
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. White linen shirt"
+              className={inputClass}
+            />
           </div>
 
           {/* Category */}
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-2">
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Category
+                Categories
               </label>
-              {aiProcessing && (
-                <span className="rounded bg-accent-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent">
-                  IA ✦
-                </span>
-              )}
+              {aiTag}
             </div>
             <input
               type="text"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               placeholder="e.g. Tops"
-              className="w-full rounded-xl border-2 border-border bg-neutral-50 px-4 py-3 text-sm font-medium text-foreground outline-none transition focus:border-accent focus:bg-white placeholder:text-muted-foreground"
+              className={inputClass}
             />
           </div>
 
@@ -190,18 +214,31 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Colour
               </label>
-              {aiProcessing && (
-                <span className="rounded bg-accent-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent">
-                  IA ✦
-                </span>
-              )}
+              {aiTag}
             </div>
             <input
               type="text"
               value={colour}
               onChange={(e) => setColour(e.target.value)}
               placeholder="e.g. White"
-              className="w-full rounded-xl border-2 border-border bg-neutral-50 px-4 py-3 text-sm font-medium text-foreground outline-none transition focus:border-accent focus:bg-white placeholder:text-muted-foreground"
+              className={inputClass}
+            />
+          </div>
+
+          {/* Fabric */}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Fabric
+              </label>
+              {aiTag}
+            </div>
+            <input
+              type="text"
+              value={fabric}
+              onChange={(e) => setFabric(e.target.value)}
+              placeholder="e.g. Linen"
+              className={inputClass}
             />
           </div>
 
