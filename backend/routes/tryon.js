@@ -8,6 +8,10 @@ const replicate = new Replicate({
 
 router.post("/", async (req, res) => {
   try {
+    if (!process.env.REPLICATE_API_TOKEN) {
+      return res.status(500).json({ error: "REPLICATE_API_TOKEN is not configured" });
+    }
+
     const { humanImageBase64, garmentImageBase64, category } = req.body;
 
     if (!humanImageBase64) {

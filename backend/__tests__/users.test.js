@@ -100,6 +100,36 @@ describe("PUT /api/users/:id", () => {
   });
 });
 
+// Upload profile photo
+describe("PUT /api/users/:id/photo", () => {
+  it("should upload a profile photo and return success", async () => {
+    const res = await request(app)
+      .put(`/api/users/${createdUserId}/photo`)
+      .send({ profilePhoto: "data:image/jpeg;base64,abc123" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.message).toBe("Profile photo updated successfully");
+    expect(res.body.profilePhoto).toBe("data:image/jpeg;base64,abc123");
+  });
+
+  it("should return 400 when profilePhoto is missing", async () => {
+    const res = await request(app)
+      .put(`/api/users/${createdUserId}/photo`)
+      .send({});
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("profilePhoto is required");
+  });
+
+  it("should return 404 for a non-existent user", async () => {
+    const res = await request(app)
+      .put("/api/users/000000000000000000000001/photo")
+      .send({ profilePhoto: "data:image/jpeg;base64,abc123" });
+
+    expect(res.status).toBe(404);
+  });
+});
+
 // Delete user
 describe("DELETE /api/users/:id", () => {
   it("should delete a user and return success message", async () => {
