@@ -6,11 +6,13 @@ const cors = require("cors");
 const app = express();
 const ClothingItemsRoutes = require("./routes/clothingItems");
 const UsersRoutes = require("./routes/users");
+const TryOnRoutes = require("./routes/tryon");
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "50mb" }));
 app.use("/api/clothingItems", ClothingItemsRoutes);
 app.use("/api/users", UsersRoutes);
+app.use("/api/tryon", TryOnRoutes);
 
 // MongoDB Connection
 mongoose
