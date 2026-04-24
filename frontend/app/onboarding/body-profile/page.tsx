@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { OnboardingShell } from "@/components/onboarding/OnboardingShell";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
@@ -9,12 +10,20 @@ const BODY_SHAPES = ["Slim", "Athletic", "Regular", "Curvy"] as const;
 const GENDERS = ["Men", "Women", "Non-binary"] as const;
 
 export default function BodyProfilePage() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
   const [height, setHeight] = useState("");
   const [weight, setWeight] = useState("");
   const [shape, setShape] = useState<(typeof BODY_SHAPES)[number]>("Athletic");
   const [gender, setGender] = useState<(typeof GENDERS)[number]>("Men");
+
+  const handleBack = () => {
+    router.push("/onboarding/body-profile");
+  };
+  const handleNext = () => {
+    router.push("/onboarding/about-yourself");
+  };
 
   return (
     <OnboardingShell
@@ -30,7 +39,10 @@ export default function BodyProfilePage() {
         </div>
       }
     >
-      <button className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-1.5 text-sm font-medium shadow-sm hover:bg-neutral-50">
+      <button
+        onClick={handleBack}
+        className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-1.5 text-sm font-medium shadow-sm hover:bg-neutral-50"
+      >
         ← Back
       </button>
 
@@ -39,10 +51,10 @@ export default function BodyProfilePage() {
         This helps us visualise clothes on your body.
       </p>
 
-      <div className="mt-8 w-full max-w-md space-y-6">
+      <div className="mt-8 w-full max-w-md space-y-5">
         <div>
           <div className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-            Name
+            Name & Age
           </div>
           <div className="grid grid-cols-2 gap-3">
             <input
@@ -120,7 +132,7 @@ export default function BodyProfilePage() {
 
         <p className="text-xs text-muted-foreground">All fields are optional</p>
 
-        <Button size="lg" className="w-full">
+        <Button onClick={handleNext} size="lg" className="w-full">
           Continue
         </Button>
       </div>

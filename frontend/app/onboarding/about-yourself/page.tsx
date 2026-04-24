@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { OnboardingShell } from "@/components/onboarding/OnboardingShell";
 import { Button } from "@/components/ui/Button";
@@ -14,7 +15,15 @@ const STYLES = [
 ] as const;
 
 export default function BodyProfilePage() {
+  const router = useRouter();
   const [shape, setShape] = useState<(typeof STYLES)[number]>("🧢 Street wear");
+
+  const handleBack = () => {
+    router.push("/onboarding/body-profile");
+  };
+  const handleNext = () => {
+    router.push("/onboarding/select-model");
+  };
 
   return (
     <OnboardingShell
@@ -30,7 +39,10 @@ export default function BodyProfilePage() {
         </div>
       }
     >
-      <button className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-1.5 text-sm font-medium shadow-sm hover:bg-neutral-50">
+      <button
+        onClick={handleBack}
+        className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-1.5 text-sm font-medium shadow-sm hover:bg-neutral-50"
+      >
         ← Back
       </button>
 
@@ -47,7 +59,7 @@ export default function BodyProfilePage() {
                 key={s}
                 selected={s === shape}
                 onClick={() => setShape(s)}
-                className="justify-start text-left w-full"
+                className="justify-start text-left w-full py-6 px-5 text-lg"
               >
                 {s}
               </Chip>
@@ -55,7 +67,7 @@ export default function BodyProfilePage() {
           </div>
         </div>
 
-        <Button size="lg" className="w-full">
+        <Button onClick={handleNext} size="lg" className="w-full">
           Continue
         </Button>
       </div>
