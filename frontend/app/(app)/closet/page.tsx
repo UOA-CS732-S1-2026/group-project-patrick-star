@@ -22,16 +22,20 @@ const CATEGORIES = [
 type Category = (typeof CATEGORIES)[number];
 
 const SEED_ITEMS: ClothingItem[] = [
-  { id: "1", name: "White linen shirt", category: "Tops", emoji: "👕" },
-  { id: "2", name: "Navy slim trousers", category: "Bottoms", emoji: "👖" },
-  { id: "3", name: "Tan trench coat", category: "Outerwear", emoji: "🧥" },
-  { id: "4", name: "White leather sneakers", category: "Shoes", emoji: "👟" },
-  { id: "5", name: "Black turtleneck", category: "Tops", emoji: "👗" },
-  { id: "6", name: "Olive cargo shorts", category: "Bottoms", emoji: "🩳" },
-  { id: "7", name: "Brown leather boots", category: "Shoes", emoji: "🥾" },
-  { id: "8", name: "Wool scarf", category: "Accessories", emoji: "🧣" },
-  { id: "9", name: "Bucket hat", category: "Accessories", emoji: "🧢" },
-  { id: "10", name: "Ribbed crew socks", category: "Accessories", emoji: "🧦" },
+  { id: "1", name: "White linen shirt", category: "Tops", emoji: "👕", colour: "White", size: "M", fit: "Regular", fabric: "Linen" },
+  { id: "2", name: "Navy trousers", category: "Bottoms", emoji: "👖", colour: "Navy", size: "M", fit: "Slim", fabric: "Cotton" },
+  { id: "3", name: "Tan trench", category: "Outerwear", emoji: "🧥", colour: "Tan", size: "M", fit: "Regular", fabric: "Polyester" },
+  { id: "4", name: "White sneakers", category: "Shoes", emoji: "👟", colour: "White", size: "M" },
+  { id: "5", name: "Black turtleneck", category: "Tops", emoji: "🐢", colour: "Black", size: "S", fit: "Regular", fabric: "Wool" },
+  { id: "6", name: "Olive shorts", category: "Bottoms", emoji: "🩳", colour: "Olive", size: "M", fit: "Relaxed", fabric: "Cotton" },
+  { id: "7", name: "Brown boots", category: "Shoes", emoji: "🥾", colour: "Brown", size: "L" },
+  { id: "8", name: "Canvas tote", category: "Accessories", emoji: "👜", colour: "Beige" },
+  { id: "9", name: "Bucket hat", category: "Accessories", emoji: "🧢", colour: "Green" },
+  { id: "10", name: "Wool scarf", category: "Accessories", emoji: "🧣", colour: "Red", fabric: "Wool" },
+  { id: "11", name: "Sunglasses", category: "Accessories", emoji: "🕶️", colour: "Black" },
+  { id: "12", name: "Oxford shirt", category: "Tops", emoji: "👔", colour: "Blue", size: "M", fit: "Regular", fabric: "Cotton" },
+  { id: "13", name: "Striped scarf", category: "Accessories", emoji: "🧣", colour: "Red" },
+  { id: "14", name: "Leather bag", category: "Accessories", emoji: "👜", colour: "Brown" },
 ];
 
 export default function ClosetPage() {
@@ -44,10 +48,8 @@ export default function ClosetPage() {
 
   const filtered = useMemo(() => {
     return items.filter((item) => {
-      const matchCategory =
-        category === "All" || item.category === category;
-      const matchQuery =
-        !query || item.name.toLowerCase().includes(query.toLowerCase());
+      const matchCategory = category === "All" || item.category === category;
+      const matchQuery = !query || item.name.toLowerCase().includes(query.toLowerCase());
       return matchCategory && matchQuery;
     });
   }, [items, category, query]);
@@ -59,6 +61,10 @@ export default function ClosetPage() {
         id: String(Date.now()),
         name: newItem.name,
         category: newItem.category,
+        colour: newItem.colour,
+        size: newItem.size,
+        fit: newItem.fit,
+        fabric: newItem.fabric,
         emoji: "👕",
         imageUrl: newItem.imageFile ? URL.createObjectURL(newItem.imageFile) : undefined,
       },
@@ -66,7 +72,7 @@ export default function ClosetPage() {
   }
 
   function handleSaveItem(updated: ClothingItem) {
-    setItems((prev) => prev.map((i) => i.id === updated.id ? updated : i));
+    setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
     setSelectedItem(updated);
     setEditing(false);
   }
@@ -95,10 +101,12 @@ export default function ClosetPage() {
                 onChange={(e) => setQuery(e.target.value)}
               />
             </div>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-sm text-muted-foreground whitespace-nowrap">
               {items.length} items
             </div>
-            <Button leftIcon={<span aria-hidden>+</span>} onClick={() => setUploadOpen(true)}>Add item</Button>
+            <Button leftIcon={<span aria-hidden>+</span>} onClick={() => setUploadOpen(true)}>
+              Add item
+            </Button>
           </>
         }
       />
@@ -130,7 +138,7 @@ export default function ClosetPage() {
           </div>
         </div>
 
-        {/* Side panel */}
+        {/* Side panels */}
         {selectedItem && !editing && (
           <ItemDetailPanel
             item={selectedItem}

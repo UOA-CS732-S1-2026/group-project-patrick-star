@@ -1,166 +1,99 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { PageHeader } from "@/components/layout/PageHeader";
-import { Button } from "@/components/ui/Button";
-import { Chip } from "@/components/ui/Chip";
-import { ItemCard, type ClothingItem } from "@/components/ui/ItemCard";
-import { SearchInput } from "@/components/ui/SearchInput";
-import { UploadItemModal, type NewClothingItem } from "@/components/closet/UploadItemModal";
-import { ItemDetailPanel } from "@/components/closet/ItemDetailPanel";
-import { EditItemPanel } from "@/components/closet/EditItemPanel";
+import { type ClothingItem } from "@/components/ui/ItemCard";
+import { cn } from "@/components/ui/cn";
 
-const CATEGORIES = [
-  "All",
-  "Tops",
-  "Bottoms",
-  "Outerwear",
-  "Shoes",
-  "Accessories",
-  "Dresses",
-] as const;
-type Category = (typeof CATEGORIES)[number];
+export interface Outfit {
+  id: string;
+  name: string;
+  style: string;
+  season?: string;
+  occasion?: string;
+  notes?: string;
+  items: ClothingItem[];
+  favourite?: boolean;
+}
 
-const SEED_ITEMS: ClothingItem[] = [
-  { id: "1", name: "White linen shirt", category: "Tops", emoji: "👕", colour: "White", size: "M", fit: "Regular", fabric: "Linen" },
-  { id: "2", name: "Navy trousers", category: "Bottoms", emoji: "👖", colour: "Navy", size: "M", fit: "Slim", fabric: "Cotton" },
-  { id: "3", name: "Tan trench", category: "Outerwear", emoji: "🧥", colour: "Tan", size: "M", fit: "Regular", fabric: "Polyester" },
-  { id: "4", name: "White sneakers", category: "Shoes", emoji: "👟", colour: "White", size: "M" },
-  { id: "5", name: "Black turtleneck", category: "Tops", emoji: "🐢", colour: "Black", size: "S", fit: "Regular", fabric: "Wool" },
-  { id: "6", name: "Olive shorts", category: "Bottoms", emoji: "🩳", colour: "Olive", size: "M", fit: "Relaxed", fabric: "Cotton" },
-  { id: "7", name: "Brown boots", category: "Shoes", emoji: "🥾", colour: "Brown", size: "L" },
-  { id: "8", name: "Canvas tote", category: "Accessories", emoji: "👜", colour: "Beige" },
-  { id: "9", name: "Bucket hat", category: "Accessories", emoji: "🧢", colour: "Green" },
-  { id: "10", name: "Wool scarf", category: "Accessories", emoji: "🧣", colour: "Red", fabric: "Wool" },
-  { id: "11", name: "Sunglasses", category: "Accessories", emoji: "🕶️", colour: "Black" },
-  { id: "12", name: "Oxford shirt", category: "Tops", emoji: "👔", colour: "Blue", size: "M", fit: "Regular", fabric: "Cotton" },
-  { id: "13", name: "Striped scarf", category: "Accessories", emoji: "🧣", colour: "Red" },
-  { id: "14", name: "Leather bag", category: "Accessories", emoji: "👜", colour: "Brown" },
-];
+interface OutfitCardProps {
+  outfit: Outfit;
+  onClick?: () => void;
+}
 
-export default function ClosetPage() {
-  const [items, setItems] = useState<ClothingItem[]>(SEED_ITEMS);
-  const [category, setCategory] = useState<Category>("All");
-  const [query, setQuery] = useState("");
-  const [uploadOpen, setUploadOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<ClothingItem | null>(null);
-  const [editing, setEditing] = useState(false);
-
-  const filtered = useMemo(() => {
-    return items.filter((item) => {
-      const matchCategory = category === "All" || item.category === category;
-      const matchQuery = !query || item.name.toLowerCase().includes(query.toLowerCase());
-      return matchCategory && matchQuery;
-    });
-  }, [items, category, query]);
-
-  function handleAddItem(newItem: NewClothingItem) {
-    setItems((prev) => [
-      ...prev,
-      {
-        id: String(Date.now()),
-        name: newItem.name,
-        category: newItem.category,
-        colour: newItem.colour,
-        size: newItem.size,
-        fit: newItem.fit,
-        fabric: newItem.fabric,
-        emoji: "👕",
-        imageUrl: newItem.imageFile ? URL.createObjectURL(newItem.imageFile) : undefined,
-      },
-    ]);
-  }
-
-  function handleSaveItem(updated: ClothingItem) {
-    setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
-    setSelectedItem(updated);
-    setEditing(false);
-  }
-
-  function handleRemoveItem(item: ClothingItem) {
-    setItems((prev) => prev.filter((i) => i.id !== item.id));
-    setSelectedItem(null);
-    setEditing(false);
-  }
-
-  function handleSelectItem(item: ClothingItem) {
-    setSelectedItem(item);
-    setEditing(false);
-  }
+/**
+ * Shows a 2×2 grid of item thumbnails, the style tag, outfit name,
+ * item count, and a favourite star — matching the "My Outfits" screen design.
+ */
+export function OutfitCard({ outfit, onClick }: OutfitCardProps) {
+  // Take first 4 items for the preview grid; pad with nulls so grid is always 2×2
+  const preview: (ClothingItem | null)[] = [
+    ...outfit.items.slice(0, 4),
+    ...Array(Math.max(0, 4 - outfit.items.length)).fill(null),
+  ];
 
   return (
-    <>
-      <PageHeader
-        title="My Closet"
-        right={
-          <>
-            <div className="w-80">
-              <SearchInput
-                placeholder="Search your wardrobe..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-            </div>
-            <div className="text-sm text-muted-foreground whitespace-nowrap">
-              {items.length} items
-            </div>
-            <Button leftIcon={<span aria-hidden>+</span>} onClick={() => setUploadOpen(true)}>
-              Add item
-            </Button>
-          </>
-        }
-      />
-
-      <div className="flex flex-1 overflow-hidden">
-        {/* Closet grid */}
-        <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-10 py-8">
-          <div className="flex flex-wrap gap-2">
-            {CATEGORIES.map((c) => (
-              <Chip
-                key={c}
-                variant="solid"
-                selected={c === category}
-                onClick={() => setCategory(c)}
-              >
-                {c}
-              </Chip>
-            ))}
+    <div
+      onClick={onClick}
+      className={cn(
+        "overflow-hidden rounded-2xl border border-border bg-white shadow-sm",
+        onClick && "cursor-pointer hover:shadow-md transition-shadow"
+      )}
+    >
+      {/* 2×2 item grid */}
+      <div className="grid grid-cols-2">
+        {preview.map((item, i) => (
+          <div
+            key={i}
+            className={cn(
+              "flex items-center justify-center bg-neutral-100 text-4xl",
+              "aspect-square",
+              // fine inner borders between cells
+              i % 2 === 0 ? "border-r border-border" : "",
+              i < 2 ? "border-b border-border" : ""
+            )}
+          >
+            {item ? (
+              item.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={item.imageUrl}
+                  alt={item.name}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span aria-hidden>{item.emoji ?? "👕"}</span>
+              )
+            ) : null}
           </div>
-
-          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8">
-            {filtered.map((item) => (
-              <ItemCard
-                key={item.id}
-                item={item}
-                onClick={() => handleSelectItem(item)}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Side panels */}
-        {selectedItem && !editing && (
-          <ItemDetailPanel
-            item={selectedItem}
-            onClose={() => setSelectedItem(null)}
-            onEdit={() => setEditing(true)}
-          />
-        )}
-        {selectedItem && editing && (
-          <EditItemPanel
-            item={selectedItem}
-            onCancel={() => setEditing(false)}
-            onSave={handleSaveItem}
-            onRemove={handleRemoveItem}
-          />
-        )}
+        ))}
       </div>
 
-      <UploadItemModal
-        open={uploadOpen}
-        onClose={() => setUploadOpen(false)}
-        onSubmit={handleAddItem}
-      />
-    </>
+      {/* Footer */}
+      <div className="border-t border-border px-4 py-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <span className="inline-block rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              {outfit.style}
+            </span>
+            <div className="mt-1 truncate text-sm font-semibold text-foreground">
+              {outfit.name}
+            </div>
+          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              // TODO: toggle favourite via PATCH /api/outfits/:id { favourite: !outfit.favourite }
+            }}
+            className={cn(
+              "mt-0.5 shrink-0 text-lg transition-colors",
+              outfit.favourite ? "text-yellow-400" : "text-neutral-300 hover:text-yellow-300"
+            )}
+            aria-label={outfit.favourite ? "Remove from favourites" : "Add to favourites"}
+          >
+            ★
+          </button>
+        </div>
+        <p className="mt-0.5 text-xs text-muted-foreground">{outfit.items.length} items</p>
+      </div>
+    </div>
   );
 }
