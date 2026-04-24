@@ -9,6 +9,8 @@ const BODY_SHAPES = ["Slim", "Athletic", "Regular", "Curvy"] as const;
 const GENDERS = ["Men", "Women", "Non-binary"] as const;
 
 export default function BodyProfilePage() {
+  const [name, setName] = useState("");
+  const [age, setAge] = useState("");
   const [height, setHeight] = useState("");
   const [weight, setWeight] = useState("");
   const [shape, setShape] = useState<(typeof BODY_SHAPES)[number]>("Athletic");
@@ -16,7 +18,7 @@ export default function BodyProfilePage() {
 
   return (
     <OnboardingShell
-      step={2}
+      step={1}
       totalSteps={3}
       stepLabel="Body profile"
       left={
@@ -38,6 +40,30 @@ export default function BodyProfilePage() {
       </p>
 
       <div className="mt-8 w-full max-w-md space-y-6">
+        <div>
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+            Name
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              type="text"
+              inputMode="text"
+              placeholder="Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="h-11 rounded-xl border border-border bg-white px-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30"
+            />
+            <input
+              type="number"
+              inputMode="numeric"
+              placeholder="Age"
+              value={age}
+              onChange={(e) => setAge(e.target.value)}
+              className="h-11 rounded-xl border border-border bg-white px-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30"
+            />
+          </div>
+        </div>
+
         <div>
           <div className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
             Measurements
@@ -68,11 +94,7 @@ export default function BodyProfilePage() {
           </div>
           <div className="flex flex-wrap gap-3">
             {BODY_SHAPES.map((s) => (
-              <Chip
-                key={s}
-                selected={s === shape}
-                onClick={() => setShape(s)}
-              >
+              <Chip key={s} selected={s === shape} onClick={() => setShape(s)}>
                 {s}
               </Chip>
             ))}
