@@ -27,16 +27,22 @@ router.post("/", async (req, res) => {
       });
     }
 
-    const output = await replicate.run("cuuupid/idm-vton:0513734a452173b8173e907e3a59d19a36266e55b48528559432bd21c7d7e985", {
+    const prediction = await replicate.predictions.create({
+      version: "0513734a452173b8173e907e3a59d19a36266e55b48528559432bd21c7d7e985",
       input: {
         human_img: humanImageBase64,
         garm_img: garmentImageBase64,
+        garment_des: category,
         category: category,
+        crop: false,
+        seed: 42,
         steps: 30,
+        force_dc: false
       },
     });
 
-    res.json({ success: true, imageUrl: output });
+    const result = await replicate.wait(prediction);
+    res.json({ success: true, imageUrl: result.output });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
