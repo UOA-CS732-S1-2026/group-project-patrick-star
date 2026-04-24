@@ -9,7 +9,8 @@ const UserSchema = new mongoose.Schema({
     weight: { type: Number, min: 0 },
     bodyType: String
   },
-  stylePreferences: [String]
+  stylePreferences: [String],
+  profilePhoto: { type: String }
 })
 
 module.exports = mongoose.model('User', UserSchema)
