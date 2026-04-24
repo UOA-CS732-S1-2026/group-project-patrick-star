@@ -14,7 +14,6 @@ const defaultNav: NavItem[] = [
   { label: "Home", href: "/", icon: "🏠" },
   { label: "Closet", href: "/closet", icon: "👔" },
   { label: "Outfits", href: "/outfits", icon: "✨" },
-  { label: "Calendar", href: "/calendar", icon: "📅" },
   { label: "Profile", href: "/profile", icon: "👤" },
 ];
 

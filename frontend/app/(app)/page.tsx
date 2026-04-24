@@ -1,99 +1,94 @@
-"use client";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { ItemCard, type ClothingItem } from "@/components/ui/ItemCard";
 
-import { type ClothingItem } from "@/components/ui/ItemCard";
-import { cn } from "@/components/ui/cn";
+const recentlyWorn: ClothingItem[] = [
+  { id: "1", name: "White linen shirt", category: "Tops", emoji: "👕" },
+  { id: "2", name: "Navy trousers", category: "Bottoms", emoji: "👖" },
+  { id: "3", name: "Tan trench", category: "Outerwear", emoji: "🧥" },
+  { id: "4", name: "White sneakers", category: "Shoes", emoji: "👟" },
+];
 
-export interface Outfit {
-  id: string;
-  name: string;
-  style: string;
-  season?: string;
-  occasion?: string;
-  notes?: string;
-  items: ClothingItem[];
-  favourite?: boolean;
-}
-
-interface OutfitCardProps {
-  outfit: Outfit;
-  onClick?: () => void;
-}
-
-/**
- * Shows a 2×2 grid of item thumbnails, the style tag, outfit name,
- * item count, and a favourite star — matching the "My Outfits" screen design.
- */
-export function OutfitCard({ outfit, onClick }: OutfitCardProps) {
-  // Take first 4 items for the preview grid; pad with nulls so grid is always 2×2
-  const preview: (ClothingItem | null)[] = [
-    ...outfit.items.slice(0, 4),
-    ...Array(Math.max(0, 4 - outfit.items.length)).fill(null),
-  ];
-
+export default function HomePage() {
   return (
-    <div
-      onClick={onClick}
-      className={cn(
-        "overflow-hidden rounded-2xl border border-border bg-white shadow-sm",
-        onClick && "cursor-pointer hover:shadow-md transition-shadow"
-      )}
-    >
-      {/* 2×2 item grid */}
-      <div className="grid grid-cols-2">
-        {preview.map((item, i) => (
-          <div
-            key={i}
-            className={cn(
-              "flex items-center justify-center bg-neutral-100 text-4xl",
-              "aspect-square",
-              // fine inner borders between cells
-              i % 2 === 0 ? "border-r border-border" : "",
-              i < 2 ? "border-b border-border" : ""
-            )}
-          >
-            {item ? (
-              item.imageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={item.imageUrl}
-                  alt={item.name}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <span aria-hidden>{item.emoji ?? "👕"}</span>
-              )
-            ) : null}
+    <>
+      <PageHeader
+        title="Good morning, Alex"
+        subtitle="Saturday, 11 April 2026"
+        right={
+          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-2 text-sm font-medium shadow-sm">
+            <span aria-hidden>⛅</span>
+            <span>18° Auckland</span>
           </div>
-        ))}
-      </div>
+        }
+      />
 
-      {/* Footer */}
-      <div className="border-t border-border px-4 py-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <span className="inline-block rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              {outfit.style}
-            </span>
-            <div className="mt-1 truncate text-sm font-semibold text-foreground">
-              {outfit.name}
+      <div className="grid flex-1 grid-cols-[minmax(0,380px)_minmax(0,1fr)] gap-8 px-10 py-8">
+        {/* Today's look */}
+        <section>
+          <h2 className="mb-3 text-lg font-semibold">Today&apos;s look</h2>
+          <Card className="flex flex-col overflow-hidden">
+            <div className="relative flex-1 bg-neutral-100 p-5">
+              <Badge tone="accent" icon={<span aria-hidden>✦</span>}>
+                AI styled
+              </Badge>
+              <div className="min-h-[360px]" />
+            </div>
+            <div className="border-t border-border p-5">
+              <div className="text-xs font-semibold uppercase tracking-wide text-accent">
+                AI recommendation
+              </div>
+              <p className="mt-1 text-sm text-foreground">
+                Smart casual for your 2pm meeting.
+              </p>
+              <div className="mt-4 flex gap-3">
+                <Button leftIcon={<span aria-hidden>↻</span>}>Regen</Button>
+                <Button
+                  variant="secondary"
+                  leftIcon={<span aria-hidden>♡</span>}
+                >
+                  Save
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </section>
+
+        {/* Right column */}
+        <section className="flex flex-col gap-8">
+          <div>
+            <h2 className="mb-3 text-lg font-semibold">Wardrobe insights</h2>
+            <Card className="p-6">
+              <Badge tone="accent" icon={<span aria-hidden>✦</span>}>
+                Gap analysis
+              </Badge>
+              <h3 className="mt-3 text-xl font-bold">Add a tan blazer</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Unlocks 6 new outfit combos from your existing closet.
+              </p>
+              <div className="mt-4 flex gap-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-14 w-14 rounded-xl bg-neutral-100"
+                  />
+                ))}
+              </div>
+            </Card>
+          </div>
+
+          <div>
+            <h2 className="mb-3 text-lg font-semibold">Recently worn</h2>
+            <div className="grid grid-cols-4 gap-4">
+              {recentlyWorn.map((item) => (
+                <ItemCard key={item.id} item={item} />
+              ))}
             </div>
           </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              // TODO: toggle favourite via PATCH /api/outfits/:id { favourite: !outfit.favourite }
-            }}
-            className={cn(
-              "mt-0.5 shrink-0 text-lg transition-colors",
-              outfit.favourite ? "text-yellow-400" : "text-neutral-300 hover:text-yellow-300"
-            )}
-            aria-label={outfit.favourite ? "Remove from favourites" : "Add to favourites"}
-          >
-            ★
-          </button>
-        </div>
-        <p className="mt-0.5 text-xs text-muted-foreground">{outfit.items.length} items</p>
+        </section>
       </div>
-    </div>
+    </>
   );
 }
