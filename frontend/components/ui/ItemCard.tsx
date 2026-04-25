@@ -7,19 +7,30 @@ export interface ClothingItem {
   category: string;
   emoji?: string;
   imageUrl?: string;
+  // Extended item attributes
+  colour?: string;
+  size?: string;
+  fit?: string;
+  fabric?: string;
+  favourite?: boolean;
+  timesWorn?: number;
+  price?: number;
 }
 
 interface ItemCardProps {
   item: ClothingItem;
   className?: string;
   footer?: ReactNode;
+  onClick?: () => void;
 }
 
-export function ItemCard({ item, className, footer }: ItemCardProps) {
+export function ItemCard({ item, className, footer, onClick }: ItemCardProps) {
   return (
     <div
+      onClick={onClick}
       className={cn(
         "group overflow-hidden rounded-2xl bg-white border border-border shadow-sm",
+        onClick && "cursor-pointer hover:shadow-md transition-shadow",
         className
       )}
     >
