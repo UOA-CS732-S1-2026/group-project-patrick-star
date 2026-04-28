@@ -80,13 +80,17 @@ router.get("/:id", requireAuth, async (req, res) => {
   }
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/me", requireAuth, async (req, res) => {
   try {
-    const user = await updateUser(req.params.id, req.body);
-    if (!user) {
+    const auth0UserId = req.auth.payload.sub;
+    const existingUser = await getUserByAuth0UserId(auth0UserId);
+
+    if (!existingUser) {
       return res.status(404).json({ error: "User not found" });
     }
-    res.json(user);
+
+    const updatedUser = await updateUser(existingUser._id, req.body);
+    res.json(updatedUser);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
