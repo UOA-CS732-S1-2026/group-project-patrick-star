@@ -1,8 +1,6 @@
 const express = require("express");
 const {
   addUser,
-  getUser,
-  getUserByEmail,
   getUserByAuth0UserId,
   updateUser,
   deleteUser,
@@ -30,47 +28,10 @@ router.post("/me/sync", requireAuth, async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
-  try {
-    const user = await addUser(req.body);
-    res.status(201).json(user);
-  } catch (error) {
-    if (error.errors) {
-      const messages = Object.values(error.errors).map((e) => e.message);
-      return res.status(400).json({ errors: messages });
-    }
-    res.status(500).json({ error: error.message });
-  }
-});
-
-router.get("/email/:email", async (req, res) => {
-  try {
-    const user = await getUserByEmail(req.params.email);
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-    res.json(user);
-  } catch (error) {
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
 router.get("/me", requireAuth, async (req, res) => {
   try {
     const auth0UserId = req.auth.payload.sub;
     const user = await getUserByAuth0UserId(auth0UserId);
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-    res.json(user);
-  } catch (error) {
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-router.get("/:id", requireAuth, async (req, res) => {
-  try {
-    const user = await getUser(req.params.id);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
