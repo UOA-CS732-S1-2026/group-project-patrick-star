@@ -7,6 +7,7 @@ const {
   deleteUser,
 } = require("../db/userService");
 const router = express.Router();
+const { requireAuth } = require("../middleware/auth");
 
 router.post("/", async (req, res) => {
   try {
@@ -33,7 +34,7 @@ router.get("/email/:email", async (req, res) => {
   }
 });
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", requireAuth, async (req, res) => {
   try {
     const user = await getUser(req.params.id);
     if (!user) {
@@ -67,7 +68,10 @@ router.put("/:id/photo", async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-    res.json({ message: "Profile photo updated successfully", profilePhoto: user.profilePhoto });
+    res.json({
+      message: "Profile photo updated successfully",
+      profilePhoto: user.profilePhoto,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
