@@ -122,12 +122,16 @@ router.put("/me/photo", requireAuth, async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/me", requireAuth, async (req, res) => {
   try {
-    const user = await deleteUser(req.params.id);
-    if (!user) {
+    const auth0UserId = req.auth.payload.sub;
+    const existingUser = await getUserByAuth0UserId(auth0UserId);
+
+    if (!existingUser) {
       return res.status(404).json({ error: "User not found" });
     }
+
+    await deleteUser(existingUser._id);
     res.json({ message: "User deleted successfully" });
   } catch (error) {
     res.status(500).json({ error: "Server error" });
