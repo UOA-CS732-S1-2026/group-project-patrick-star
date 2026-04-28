@@ -96,13 +96,20 @@ router.put("/me", requireAuth, async (req, res) => {
   }
 });
 
-router.put("/:id/photo", async (req, res) => {
+router.put("/me/photo", requireAuth, async (req, res) => {
   try {
+    const auth0UserId = req.auth.payload.sub;
+    const existingUser = await getUserByAuth0UserId(auth0UserId);
+
+    if (!existingUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
     const { profilePhoto } = req.body;
     if (!profilePhoto) {
       return res.status(400).json({ error: "profilePhoto is required" });
     }
-    const user = await updateUser(req.params.id, { profilePhoto });
+    const user = await updateUser(existingUser._id, { profilePhoto });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
