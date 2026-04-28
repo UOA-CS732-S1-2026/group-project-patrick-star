@@ -9,9 +9,13 @@ beforeAll(async () => {
   await mongoose.connect(process.env.MONGO_URI);
 });
 
-// !! Deletes collection when finished testing, use a new collection by changing env var is preferred
 afterAll(async () => {
-  //   await mongoose.connection.dropCollection("clothingitems");
+  const collections = mongoose.connection.collections;
+
+  for (const key in collections) {
+    await collections[key].deleteMany({});
+  }
+
   await mongoose.disconnect();
 });
 
@@ -56,9 +60,11 @@ describe("POST /api/clothingItems", () => {
 });
 
 // Return all items from user
-describe("GET /api/clothingItems/:userId", () => {
+describe("GET /api/clothingItems?userId=", () => {
   it("should return items for a valid userId", async () => {
-    const res = await request(app).get(`/api/clothingItems/${testUserId}`);
+    const res = await request(app)
+      .get("/api/clothingItems")
+      .query({ userId: testUserId });
 
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
@@ -66,9 +72,9 @@ describe("GET /api/clothingItems/:userId", () => {
   });
 
   it("should return empty array for unknown userId", async () => {
-    const res = await request(app).get(
-      "/api/clothingItems/999999999999999999999999",
-    );
+    const res = await request(app)
+      .get("/api/clothingItems")
+      .query({ userId: "999999999999999999999999" });
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual([]);

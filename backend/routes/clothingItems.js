@@ -17,9 +17,12 @@ router.post("/", async (req, res) => {
   }
 });
 
-router.get("/:userId", async (req, res) => {
+router.get("/", async (req, res) => {
   try {
-    const item = await getItems(req.params.userId);
+    const { userId, category, size, colour, fit } = req.query;
+
+    const item = await getItems({ userId, category, size, colour, fit });
+
     if (!item) {
       return res.status(404).json({ error: "User not found" });
     }
