@@ -3,6 +3,7 @@ const {
   addUser,
   getUser,
   getUserByEmail,
+  getUserByAuth0UserId,
   updateUser,
   deleteUser,
 } = require("../db/userService");
@@ -36,14 +37,12 @@ router.get("/email/:email", async (req, res) => {
 
 router.get("/me", requireAuth, async (req, res) => {
   try {
-    res.json({
-      message: "Authenticated user",
-      auth: {
-        sub: req.auth.payload.sub,
-        iss: req.auth.payload.iss,
-        aud: req.auth.payload.aud,
-      },
-    });
+    const auth0UserId = req.auth.payload.sub;
+    const user = await getUserByAuth0UserId(auth0UserId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.json(user);
   } catch (error) {
     res.status(500).json({ error: "Server error" });
   }
