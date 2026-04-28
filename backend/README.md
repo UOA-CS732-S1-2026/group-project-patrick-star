@@ -13,11 +13,11 @@ Open http://localhost:5001.
 
 ### Scripts
 
-| Command       | What it does                         |
-| ------------- | ------------------------------------ |
-| `npm run dev` | Start the dev server with nodemon    |
-| `npm start`   | Start the server with Node.js        |
-| `npm test`    | Run Jest tests with Supertest        |
+| Command       | What it does                      |
+| ------------- | --------------------------------- |
+| `npm run dev` | Start the dev server with nodemon |
+| `npm start`   | Start the server with Node.js     |
+| `npm test`    | Run Jest tests with Supertest     |
 
 ## Tech stack
 
@@ -39,30 +39,32 @@ Create a `.env` file in `backend/`:
 MONGO_URI=mongodb://127.0.0.1:27017/ai-wardrobe
 PORT=5001
 REPLICATE_API_TOKEN=r8_your_replicate_api_token
+AUTH0_DOMAIN=your-tenant.us.auth0.com
+AUTH0_AUDIENCE=https://your-api
 ```
 
-| Variable              | What it does                         |
-| --------------------- | ------------------------------------ |
-| `MONGO_URI`           | MongoDB connection string            |
-| `PORT`                | Server port, defaults to 5000        |
-| `REPLICATE_API_TOKEN` | API token used by the try-on route   |
+| Variable              | What it does                       |
+| --------------------- | ---------------------------------- |
+| `MONGO_URI`           | MongoDB connection string          |
+| `PORT`                | Server port, defaults to 5000      |
+| `REPLICATE_API_TOKEN` | API token used by the try-on route |
 
 ## Routes
 
-| Method   | URL                                | What it does                                      |
-| -------- | ---------------------------------- | ------------------------------------------------- |
-| `GET`    | `/`                                | Health check — returns `API running`              |
-| `POST`   | `/api/clothingItems`               | Create a clothing item                            |
-| `GET`    | `/api/clothingItems/:userId`       | List clothing items for a user                    |
-| `PUT`    | `/api/clothingItems/:id`           | Update a clothing item                            |
-| `DELETE` | `/api/clothingItems/:id`           | Delete a clothing item                            |
-| `POST`   | `/api/users`                       | Create a user                                     |
-| `GET`    | `/api/users/email/:email`          | Get a user by email address                       |
-| `GET`    | `/api/users/:id`                   | Get a user by ID                                  |
-| `PUT`    | `/api/users/:id`                   | Update a user                                     |
-| `PUT`    | `/api/users/:id/photo`             | Update a user's profile photo                     |
-| `DELETE` | `/api/users/:id`                   | Delete a user                                     |
-| `POST`   | `/api/tryon`                       | Generate a virtual try-on image with Replicate    |
+| Method   | URL                          | What it does                                   |
+| -------- | ---------------------------- | ---------------------------------------------- |
+| `GET`    | `/`                          | Health check — returns `API running`           |
+| `POST`   | `/api/clothingItems`         | Create a clothing item                         |
+| `GET`    | `/api/clothingItems/:userId` | List clothing items for a user                 |
+| `PUT`    | `/api/clothingItems/:id`     | Update a clothing item                         |
+| `DELETE` | `/api/clothingItems/:id`     | Delete a clothing item                         |
+| `POST`   | `/api/users`                 | Create a user                                  |
+| `GET`    | `/api/users/email/:email`    | Get a user by email address                    |
+| `GET`    | `/api/users/:id`             | Get a user by ID                               |
+| `PUT`    | `/api/users/:id`             | Update a user                                  |
+| `PUT`    | `/api/users/:id/photo`       | Update a user's profile photo                  |
+| `DELETE` | `/api/users/:id`             | Delete a user                                  |
+| `POST`   | `/api/tryon`                 | Generate a virtual try-on image with Replicate |
 
 ## Project structure
 
