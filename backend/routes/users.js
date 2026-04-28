@@ -34,6 +34,21 @@ router.get("/email/:email", async (req, res) => {
   }
 });
 
+router.get("/me", requireAuth, async (req, res) => {
+  try {
+    res.json({
+      message: "Authenticated user",
+      auth: {
+        sub: req.auth.payload.sub,
+        iss: req.auth.payload.iss,
+        aud: req.auth.payload.aud,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 router.get("/:id", requireAuth, async (req, res) => {
   try {
     const user = await getUser(req.params.id);
