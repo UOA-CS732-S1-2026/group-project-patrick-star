@@ -10,6 +10,26 @@ const {
 const router = express.Router();
 const { requireAuth } = require("../middleware/auth");
 
+router.post("/me/sync", requireAuth, async (req, res) => {
+  try {
+    const auth0UserId = req.auth.payload.sub;
+    const existingUser = await getUserByAuth0UserId(auth0UserId);
+
+    if (existingUser) {
+      return res.json(existingUser);
+    }
+
+    const newUser = await addUser({
+      auth0UserId,
+      name: req.auth.payload.name,
+      email: req.auth.payload.email,
+    });
+    res.status(201).json(newUser);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.post("/", async (req, res) => {
   try {
     const user = await addUser(req.body);
