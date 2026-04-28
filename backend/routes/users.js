@@ -19,8 +19,8 @@ router.post("/me/sync", requireAuth, async (req, res) => {
 
     const newUser = await addUser({
       auth0UserId,
-      name: req.auth.payload.name,
-      email: req.auth.payload.email,
+      name: req.body.name,
+      email: req.body.email,
     });
     res.status(201).json(newUser);
   } catch (error) {
