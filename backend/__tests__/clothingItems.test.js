@@ -23,7 +23,7 @@ describe("POST /api/clothingItems", () => {
       .send({
         userId: testUserId,
         name: "Tshirt",
-        category: "top",
+        category: "upper_body",
         size: "M",
         colour: "black",
         fit: "regular",
