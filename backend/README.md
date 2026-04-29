@@ -60,10 +60,10 @@ AUTH0_AUDIENCE=https://your-api
 | Method   | URL                          | What it does                                               |
 | -------- | ---------------------------- | ---------------------------------------------------------- |
 | `GET`    | `/`                          | Health check, returns `API running`                        |
-| `POST`   | `/api/clothingItems`         | Create a clothing item                                     |
-| `GET`    | `/api/clothingItems/:userId` | List clothing items for a user                             |
-| `PUT`    | `/api/clothingItems/:id`     | Update a clothing item                                     |
-| `DELETE` | `/api/clothingItems/:id`     | Delete a clothing item                                     |
+| `POST`   | `/api/clothingItems/me`      | Create a clothing item for the authenticated user          |
+| `GET`    | `/api/clothingItems/me`      | List clothing items for the authenticated user             |
+| `PUT`    | `/api/clothingItems/me/:id`  | Update an authenticated user's owned clothing item         |
+| `DELETE` | `/api/clothingItems/me/:id`  | Delete an authenticated user's owned clothing item         |
 | `POST`   | `/api/users/me/sync`         | Create the authenticated user's MongoDB profile if missing |
 | `GET`    | `/api/users/me`              | Get the authenticated user's profile                       |
 | `PUT`    | `/api/users/me`              | Update the authenticated user's profile                    |
@@ -103,7 +103,7 @@ backend/
 - Clothing item categories are `upper_body`, `lower_body`, or `dresses`.
 - The try-on route expects `humanImageBase64`, `garmentImageBase64`, and `category`.
 - MongoDB connects when `app.js` is loaded, so tests and local runs need a valid `MONGO_URI`.
-- `/api/users/me*` routes require `Authorization: Bearer <access_token>`.
+- `/api/users/me*` and `/api/clothingItems/me*` routes require `Authorization: Bearer <access_token>`.
 - The backend expects Auth0 access tokens issued for this API audience.
 
 ## Testing
@@ -120,9 +120,9 @@ Tests live in `__tests__/` and use Supertest to exercise the Express routes.
 
 The frontend lives in `../frontend/` (Next.js + Tailwind CSS). Point it at this API by setting `NEXT_PUBLIC_API_URL` in the frontend environment and fetching from routes under `/api/clothingItems`, `/api/users`, and `/api/tryon`.
 
-For authenticated user routes, the frontend should:
+For authenticated routes, the frontend should:
 
 1. Sign the user in with Auth0.
 2. Request an access token for the backend API audience.
-3. Send that token in the `Authorization` header when calling `/api/users/me*`.
-   in the frontend environment and fetching from routes under `/api/clothingItems`, `/api/users`, and `/api/tryon`.
+3. Call `POST /api/users/me/sync` once after login with the user's `name` and `email`.
+4. Send that token in the `Authorization` header when calling `/api/users/me*` and `/api/clothingItems/me*`.
