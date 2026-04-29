@@ -2,8 +2,8 @@ const express = require("express");
 const {
   addItem,
   getItems,
-  updateItem,
-  deleteItem,
+  updateItemForUser,
+  deleteItemForUser,
 } = require("../db/clothingService");
 const router = express.Router();
 const { requireAuth } = require("../middleware/auth");
@@ -45,24 +45,42 @@ router.get("/me", requireAuth, async (req, res) => {
   }
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/me/:id", requireAuth, async (req, res) => {
   try {
-    const item = await updateItem(req.params.id, req.body);
+    const auth0UserId = req.auth.payload.sub;
+    const user = await getUserByAuth0UserId(auth0UserId);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const item = await updateItemForUser(req.params.id, user._id, req.body);
+
     if (!item) {
       return res.status(404).json({ error: "Item not found" });
     }
+
     res.json(item);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/me/:id", requireAuth, async (req, res) => {
   try {
-    const item = await deleteItem(req.params.id);
+    const auth0UserId = req.auth.payload.sub;
+    const user = await getUserByAuth0UserId(auth0UserId);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const item = await deleteItemForUser(req.params.id, user._id);
+
     if (!item) {
       return res.status(404).json({ error: "Item not found" });
     }
+
     res.json({ message: "Item deleted successfully" });
   } catch (error) {
     res.status(500).json({ error: "Server error" });

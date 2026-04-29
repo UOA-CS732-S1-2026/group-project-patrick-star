@@ -1,8 +1,13 @@
-const ClothingItem = require('../models/ClothingItems')
+const ClothingItem = require("../models/ClothingItems");
 
-const addItem = (data) => ClothingItem.create(data)
-const getItems = (userId) => ClothingItem.find({ userId })
-const updateItem = (id, data) => ClothingItem.findByIdAndUpdate(id, data, { new: true })
-const deleteItem = (id) => ClothingItem.findByIdAndDelete(id)
+const addItem = (data) => ClothingItem.create(data);
+const getItems = (userId) => ClothingItem.find({ userId });
+const updateItemForUser = (id, userId, data) =>
+  ClothingItem.findOneAndUpdate({ _id: id, userId }, data, {
+    returnDocument: "after",
+  });
 
-module.exports = { addItem, getItems, updateItem, deleteItem }
+const deleteItemForUser = (id, userId) =>
+  ClothingItem.findOneAndDelete({ _id: id, userId });
+
+module.exports = { addItem, getItems, updateItemForUser, deleteItemForUser };
