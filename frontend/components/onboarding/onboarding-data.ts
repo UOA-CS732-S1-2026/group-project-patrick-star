@@ -24,10 +24,10 @@ export const STYLE_OPTIONS = [
 
 export const MODEL_OPTIONS = [
   // change image sources later on
-  { id: "model-1", label: "Model 1", imageSrc: "/models/lady.jpg" },
-  { id: "model-2", label: "Model 2", imageSrc: "/models/lady.jpg" },
-  { id: "model-3", label: "Model 3", imageSrc: "/models/eason.png" },
-  { id: "model-4", label: "Model 4", imageSrc: "/models/eason.png" },
+  { id: "model-1", label: "Model 1", imageSrc: "/models/Female-Model-1.jpg" },
+  { id: "model-2", label: "Model 2", imageSrc: "/models/Male-Model-1.jpg" },
+  { id: "model-3", label: "Model 3", imageSrc: "/models/Female-Model-2.jpg" },
+  { id: "model-4", label: "Model 4", imageSrc: "/models/Male-Model-2.jpg" },
 ] as const;
 
 export type BodyShape = (typeof BODY_SHAPES)[number];

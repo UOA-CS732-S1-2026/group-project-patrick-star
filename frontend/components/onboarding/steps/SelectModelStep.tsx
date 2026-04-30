@@ -56,8 +56,9 @@ export function SelectModelStep({ onBack }: SelectModelStepProps) {
             Upload an image of yourself
           </h1>
           <p className="mt-2 text-sm text-neutral-500">
-            Upload a full-body photo of yourself, or skip to start browsing. You
-            can select a model or upload your photo later in your profile.
+            Upload a <b> full-body </b> and <b> portrait </b> photo of yourself
+            or select our existing models. You can select a model or upload your
+            photo later in your profile.
           </p>
 
           <div className="mx-auto w-full max-w-md">
@@ -154,6 +155,7 @@ export function SelectModelStep({ onBack }: SelectModelStepProps) {
                         src={item.imageSrc}
                         alt={item.label}
                         fill
+                        sizes="100vw"
                         className="object-cover transition-transform duration-200 group-hover:scale-[1.02]"
                       />
                       <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2 py-1 text-[11px] font-bold uppercase tracking-widest text-neutral-900 shadow-sm">
