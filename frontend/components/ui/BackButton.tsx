@@ -3,7 +3,11 @@ import { cn } from "./cn";
 
 type BackButtonProps = ButtonHTMLAttributes<HTMLButtonElement>;
 
-export function BackButton({ className, children = "Back", ...props }: BackButtonProps) {
+export function BackButton({
+  className,
+  children = "← Back",
+  ...props
+}: BackButtonProps) {
   return (
     <button
       type="button"

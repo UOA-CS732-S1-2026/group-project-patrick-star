@@ -15,14 +15,15 @@ export const STEP_TITLES: Record<OnboardingStepKey, string> = {
 export const BODY_SHAPES = ["Slim", "Athletic", "Regular", "Curvy"] as const;
 export const GENDERS = ["Men", "Women", "Non-binary"] as const;
 export const STYLE_OPTIONS = [
-  "Minimal & Clean",
-  "Street wear",
-  "Smart casual",
-  "Formal & Tailored",
-  "Bohemian",
+  "🤍 Minimal & Clean",
+  "🧢 Street wear",
+  "👔 Smart casual",
+  "🪡 Formal & Tailored",
+  "🌿 Bohemian",
 ] as const;
 
 export const MODEL_OPTIONS = [
+  // change image sources later on
   { id: "model-1", label: "Model 1", imageSrc: "/models/lady.jpg" },
   { id: "model-2", label: "Model 2", imageSrc: "/models/lady.jpg" },
   { id: "model-3", label: "Model 3", imageSrc: "/models/eason.png" },

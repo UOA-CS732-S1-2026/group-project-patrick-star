@@ -18,7 +18,7 @@ export function AboutYourselfStep({ onNext, onBack }: AboutYourselfStepProps) {
   return (
     <>
       <BackButton onClick={onBack} className="mb-6">
-        Back
+        ← Back
       </BackButton>
 
       <h1 className="text-3xl font-bold">What&apos;s your style?</h1>

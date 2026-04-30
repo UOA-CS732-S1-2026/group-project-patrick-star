@@ -47,7 +47,7 @@ export function SelectModelStep({ onBack }: SelectModelStepProps) {
   return (
     <>
       <BackButton onClick={onBack} className="mb-6">
-        Back
+        ← Back
       </BackButton>
 
       {modelMode !== "select" ? (
