@@ -257,8 +257,11 @@ export function OnboardingFlow({ initialStepIndex = 0 }: OnboardingFlowProps) {
       if (isUploadFlow && uploadedPhoto) {
         formData.append("photo", uploadedPhoto);
       }
-
-      console.log(formData);
+      console.log({
+        payload,
+        photo: isUploadFlow && uploadedPhoto ? uploadedPhoto : null,
+      });
+      router.push("/");
     },
     async (errors) => {
       // right now just print out the errors to the console
