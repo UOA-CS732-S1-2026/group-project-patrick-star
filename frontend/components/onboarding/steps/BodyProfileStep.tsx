@@ -3,29 +3,19 @@
 import { Controller, useFormContext } from "react-hook-form";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
-import {
-  BODY_SHAPES,
-  GENDERS,
-  type OnboardingFormValues,
-} from "../onboarding-data";
+import { BODY_SHAPES, GENDERS } from "../onboarding-data";
+import { type OnboardingFormValues } from "../onboarding-schema";
 
 interface BodyProfileStepProps {
   onNext: () => void;
-  onBack: () => void;
 }
 
-export function BodyProfileStep({ onNext, onBack }: BodyProfileStepProps) {
+export function BodyProfileStep({ onNext }: BodyProfileStepProps) {
   const { register, control } = useFormContext<OnboardingFormValues>();
 
   return (
     <>
-      <button
-        type="button"
-        onClick={onBack}
-        className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-1.5 text-sm font-medium shadow-sm hover:bg-neutral-50"
-      >
-        Back
-      </button>
+      <div className="mb-6 h-11" aria-hidden />
 
       <h1 className="text-3xl font-bold">Tell us about yourself</h1>
       <p className="mt-1 text-sm text-muted-foreground">
@@ -35,16 +25,9 @@ export function BodyProfileStep({ onNext, onBack }: BodyProfileStepProps) {
       <div className="mt-8 w-full max-w-md space-y-5">
         <div>
           <div className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-            Name &amp; Age
+            Age
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <input
-              type="text"
-              inputMode="text"
-              placeholder="Name"
-              className="h-11 rounded-xl border border-border bg-white px-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30"
-              {...register("name")}
-            />
+          <div className="grid grid-cols-1 gap-3">
             <input
               type="number"
               inputMode="numeric"
@@ -125,7 +108,9 @@ export function BodyProfileStep({ onNext, onBack }: BodyProfileStepProps) {
           />
         </div>
 
-        <p className="text-xs text-muted-foreground">All fields are optional</p>
+        <p className="text-xs text-muted-foreground">
+          All details are optional.
+        </p>
 
         <Button onClick={onNext} size="lg" className="w-full" type="button">
           Continue

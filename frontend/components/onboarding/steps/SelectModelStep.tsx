@@ -3,19 +3,29 @@
 import type { ChangeEvent, DragEvent } from "react";
 import Image from "next/image";
 import { Controller, useFormContext } from "react-hook-form";
+import { BackButton } from "@/components/ui/BackButton";
 import { Button } from "@/components/ui/Button";
-import { MODEL_OPTIONS, type OnboardingFormValues } from "../onboarding-data";
+import { MODEL_OPTIONS } from "../onboarding-data";
+import { type OnboardingFormValues } from "../onboarding-schema";
 
 interface SelectModelStepProps {
   onBack: () => void;
 }
 
 export function SelectModelStep({ onBack }: SelectModelStepProps) {
-  const { register, watch, setValue, control } =
-    useFormContext<OnboardingFormValues>();
+  const {
+    register,
+    watch,
+    setValue,
+    control,
+    formState: { errors },
+  } = useFormContext<OnboardingFormValues>();
   const selectedFiles = watch("modelPhoto");
   const modelMode = watch("modelMode");
+  const selectedModelId = watch("selectedModelId");
   const fileRegistration = register("modelPhoto");
+  const hasPhoto = Boolean(selectedFiles?.[0]);
+  const hasModelSelection = Boolean(selectedModelId);
 
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -36,15 +46,11 @@ export function SelectModelStep({ onBack }: SelectModelStepProps) {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={onBack}
-        className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-1.5 text-sm font-medium shadow-sm hover:bg-neutral-50"
-      >
+      <BackButton onClick={onBack} className="mb-6">
         Back
-      </button>
+      </BackButton>
 
-      {modelMode === "upload" ? (
+      {modelMode !== "select" ? (
         <>
           <h1 className="text-3xl font-bold text-neutral-900">
             Upload an image of yourself
@@ -56,7 +62,9 @@ export function SelectModelStep({ onBack }: SelectModelStepProps) {
 
           <div className="mx-auto w-full max-w-md">
             <div
-              onClick={() => document.getElementById("onboarding-photo")?.click()}
+              onClick={() =>
+                document.getElementById("onboarding-photo")?.click()
+              }
               onDragOver={(event) => event.preventDefault()}
               onDrop={handleDrop}
               className="my-8 flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-neutral-200 bg-transparent py-16 transition-colors hover:bg-neutral-50"
@@ -74,7 +82,7 @@ export function SelectModelStep({ onBack }: SelectModelStepProps) {
                 alt="Upload icon"
                 width={64}
                 height={64}
-                className="mb-4 h-16 w-auto"
+                className="mb-4 h-auto w-auto"
               />
 
               <p className="text-sm font-medium text-neutral-900">
@@ -86,14 +94,20 @@ export function SelectModelStep({ onBack }: SelectModelStepProps) {
                   Selected: {selectedFiles[0].name}
                 </p>
               ) : null}
+              {errors.modelPhoto ? (
+                <p className="mt-3 text-xs text-red-600">
+                  {errors.modelPhoto.message}
+                </p>
+              ) : null}
             </div>
 
             <Button
               type="submit"
               size="lg"
               className="w-full rounded-xl bg-[#58CC02] py-6 text-sm font-bold uppercase tracking-wide text-white hover:bg-[#46A302]"
+              disabled={!hasPhoto}
             >
-              Upload my photo
+              Upload Photo
             </Button>
 
             <div className="mt-4 text-center">
@@ -125,15 +139,24 @@ export function SelectModelStep({ onBack }: SelectModelStepProps) {
                     <button
                       key={item.id}
                       type="button"
-                      onClick={() => field.onChange(item.id)}
+                      onClick={() => {
+                        field.onChange(item.id);
+                        setValue("modelMode", "select", { shouldDirty: true });
+                      }}
                       className={[
-                        "flex aspect-[3/4] items-center justify-center rounded-xl border-2 border-dashed bg-transparent p-4 text-center transition-colors hover:bg-neutral-50",
+                        "group relative flex aspect-[3/4] overflow-hidden rounded-xl border-2 border-dashed bg-transparent p-0 text-center transition-colors hover:bg-neutral-50",
                         field.value === item.id
                           ? "border-brand bg-brand/5"
                           : "border-neutral-200",
                       ].join(" ")}
                     >
-                      <span className="text-sm font-bold text-neutral-900">
+                      <Image
+                        src={item.imageSrc}
+                        alt={item.label}
+                        fill
+                        className="object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+                      />
+                      <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2 py-1 text-[11px] font-bold uppercase tracking-widest text-neutral-900 shadow-sm">
                         {item.label}
                       </span>
                     </button>
@@ -141,11 +164,17 @@ export function SelectModelStep({ onBack }: SelectModelStepProps) {
                 </div>
               )}
             />
+            {errors.selectedModelId ? (
+              <p className="mb-3 text-xs text-red-600">
+                {errors.selectedModelId.message}
+              </p>
+            ) : null}
 
             <Button
               type="submit"
               size="lg"
               className="w-full rounded-xl bg-[#58CC02] py-6 text-sm font-bold uppercase tracking-wide text-white hover:bg-[#46A302]"
+              disabled={modelMode === "select" ? !hasModelSelection : !hasPhoto}
             >
               Select Model
             </Button>

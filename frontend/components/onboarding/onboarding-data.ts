@@ -23,29 +23,15 @@ export const STYLE_OPTIONS = [
 ] as const;
 
 export const MODEL_OPTIONS = [
-  { id: "model-1", label: "Placeholder for default model" },
-  { id: "model-2", label: "Placeholder for default model" },
-  { id: "model-3", label: "Placeholder for default model" },
-  { id: "model-4", label: "Placeholder for default model" },
+  { id: "model-1", label: "Model 1", imageSrc: "/models/lady.jpg" },
+  { id: "model-2", label: "Model 2", imageSrc: "/models/lady.jpg" },
+  { id: "model-3", label: "Model 3", imageSrc: "/models/eason.png" },
+  { id: "model-4", label: "Model 4", imageSrc: "/models/eason.png" },
 ] as const;
 
 export type BodyShape = (typeof BODY_SHAPES)[number];
 export type Gender = (typeof GENDERS)[number];
 export type StyleOption = (typeof STYLE_OPTIONS)[number];
-export type ModelMode = "upload" | "select";
-
-export interface OnboardingFormValues {
-  name: string;
-  age: string;
-  height: string;
-  weight: string;
-  bodyShape: BodyShape;
-  gender: Gender;
-  stylePreference: StyleOption;
-  modelMode: ModelMode;
-  modelPhoto: FileList | null;
-  selectedModelId: string;
-}
 
 export const ONBOARDING_STEP_ORDER: OnboardingStepKey[] = [
   "body-profile",
