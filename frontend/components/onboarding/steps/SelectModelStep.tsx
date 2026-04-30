@@ -1,10 +1,12 @@
 "use client";
 
+import { useEffect } from "react";
 import type { ChangeEvent, DragEvent } from "react";
 import Image from "next/image";
-import { Controller, useFormContext } from "react-hook-form";
+import { useFormContext } from "react-hook-form";
 import { BackButton } from "@/components/ui/BackButton";
 import { Button } from "@/components/ui/Button";
+import { ModelScroller } from "../ModelScroller";
 import { MODEL_OPTIONS } from "../onboarding-data";
 import { type OnboardingFormValues } from "../onboarding-schema";
 
@@ -17,7 +19,6 @@ export function SelectModelStep({ onBack }: SelectModelStepProps) {
     register,
     watch,
     setValue,
-    control,
     formState: { errors },
   } = useFormContext<OnboardingFormValues>();
   const selectedFiles = watch("modelPhoto");
@@ -26,6 +27,12 @@ export function SelectModelStep({ onBack }: SelectModelStepProps) {
   const fileRegistration = register("modelPhoto");
   const hasPhoto = Boolean(selectedFiles?.[0]);
   const hasModelSelection = Boolean(selectedModelId);
+
+  useEffect(() => {
+    if (modelMode === "select" && !selectedModelId && MODEL_OPTIONS[0]) {
+      setValue("selectedModelId", MODEL_OPTIONS[0].id, { shouldDirty: true });
+    }
+  }, [modelMode, selectedModelId, setValue]);
 
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -126,46 +133,25 @@ export function SelectModelStep({ onBack }: SelectModelStepProps) {
         </>
       ) : (
         <>
-          <h1 className="mb-8 text-3xl font-bold text-neutral-900">
-            Select a model
+          <h1 className="mb-2 text-3xl font-bold text-neutral-900">
+            Choose a model
           </h1>
+          <p className="mb-4 text-sm text-neutral-500">
+            The center card is the active model. Tap either side preview to
+            switch.
+          </p>
 
-          <div className="mx-auto w-full max-w-md">
-            <Controller
-              control={control}
-              name="selectedModelId"
-              render={({ field }) => (
-                <div className="mb-8 grid grid-cols-2 gap-4">
-                  {MODEL_OPTIONS.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => {
-                        field.onChange(item.id);
-                        setValue("modelMode", "select", { shouldDirty: true });
-                      }}
-                      className={[
-                        "group relative flex aspect-[3/4] overflow-hidden rounded-xl border-2 border-dashed bg-transparent p-0 text-center transition-colors hover:bg-neutral-50",
-                        field.value === item.id
-                          ? "border-brand bg-brand/5"
-                          : "border-neutral-200",
-                      ].join(" ")}
-                    >
-                      <Image
-                        src={item.imageSrc}
-                        alt={item.label}
-                        fill
-                        sizes="100vw"
-                        className="object-cover transition-transform duration-200 group-hover:scale-[1.02]"
-                      />
-                      <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2 py-1 text-[11px] font-bold uppercase tracking-widest text-neutral-900 shadow-sm">
-                        {item.label}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            />
+          <div className="mx-auto w-full max-w-4xl">
+            <div className="mb-8">
+              <ModelScroller
+                items={MODEL_OPTIONS}
+                selectedId={selectedModelId}
+                onSelect={(id) => {
+                  setValue("selectedModelId", id, { shouldDirty: true });
+                  setValue("modelMode", "select", { shouldDirty: true });
+                }}
+              />
+            </div>
             {errors.selectedModelId ? (
               <p className="mb-3 text-xs text-red-600">
                 {errors.selectedModelId.message}
