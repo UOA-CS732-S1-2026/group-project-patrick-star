@@ -1,0 +1,65 @@
+export const ONBOARDING_STEP_KEYS = [
+  "body-profile",
+  "about-yourself",
+  "select-model",
+] as const;
+
+export type OnboardingStepKey = (typeof ONBOARDING_STEP_KEYS)[number];
+
+export const STEP_TITLES: Record<OnboardingStepKey, string> = {
+  "body-profile": "Body profile",
+  "about-yourself": "Style",
+  "select-model": "Select model",
+};
+
+export const BODY_SHAPES = ["Slim", "Athletic", "Regular", "Curvy"] as const;
+export const GENDERS = ["Men", "Women", "Non-binary"] as const;
+export const STYLE_OPTIONS = [
+  "Minimal & Clean",
+  "Street wear",
+  "Smart casual",
+  "Formal & Tailored",
+  "Bohemian",
+] as const;
+
+export const MODEL_OPTIONS = [
+  { id: "model-1", label: "Placeholder for default model" },
+  { id: "model-2", label: "Placeholder for default model" },
+  { id: "model-3", label: "Placeholder for default model" },
+  { id: "model-4", label: "Placeholder for default model" },
+] as const;
+
+export type BodyShape = (typeof BODY_SHAPES)[number];
+export type Gender = (typeof GENDERS)[number];
+export type StyleOption = (typeof STYLE_OPTIONS)[number];
+export type ModelMode = "upload" | "select";
+
+export interface OnboardingFormValues {
+  name: string;
+  age: string;
+  height: string;
+  weight: string;
+  bodyShape: BodyShape;
+  gender: Gender;
+  stylePreference: StyleOption;
+  modelMode: ModelMode;
+  modelPhoto: FileList | null;
+  selectedModelId: string;
+}
+
+export const ONBOARDING_STEP_ORDER: OnboardingStepKey[] = [
+  "body-profile",
+  "about-yourself",
+  "select-model",
+];
+
+export function getStepIndex(step: string | string[] | undefined): number {
+  const value = Array.isArray(step) ? step[0] : step;
+  const resolved = ONBOARDING_STEP_ORDER.indexOf(value as OnboardingStepKey);
+
+  return resolved >= 0 ? resolved : 0;
+}
+
+export function getStepKey(index: number): OnboardingStepKey {
+  return ONBOARDING_STEP_ORDER[index] ?? ONBOARDING_STEP_ORDER[0];
+}

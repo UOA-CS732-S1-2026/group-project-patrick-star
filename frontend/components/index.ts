@@ -14,4 +14,5 @@ export { PageHeader } from "./layout/PageHeader";
 export { Sidebar, type NavItem } from "./layout/Sidebar";
 
 // Onboarding
+export { OnboardingFlow } from "./onboarding/OnboardingFlow";
 export { OnboardingShell } from "./onboarding/OnboardingShell";

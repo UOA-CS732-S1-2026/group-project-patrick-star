@@ -1,49 +1,30 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { OnboardingShell } from "@/components/onboarding/OnboardingShell";
+import { Controller, useFormContext } from "react-hook-form";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
+import {
+  BODY_SHAPES,
+  GENDERS,
+  type OnboardingFormValues,
+} from "../onboarding-data";
 
-const BODY_SHAPES = ["Slim", "Athletic", "Regular", "Curvy"] as const;
-const GENDERS = ["Men", "Women", "Non-binary"] as const;
+interface BodyProfileStepProps {
+  onNext: () => void;
+  onBack: () => void;
+}
 
-export default function BodyProfilePage() {
-  const router = useRouter();
-  const [name, setName] = useState("");
-  const [age, setAge] = useState("");
-  const [height, setHeight] = useState("");
-  const [weight, setWeight] = useState("");
-  const [shape, setShape] = useState<(typeof BODY_SHAPES)[number]>("Athletic");
-  const [gender, setGender] = useState<(typeof GENDERS)[number]>("Men");
-
-  const handleBack = () => {
-    router.push("/onboarding/body-profile");
-  };
-  const handleNext = () => {
-    router.push("/onboarding/about-yourself");
-  };
+export function BodyProfileStep({ onNext, onBack }: BodyProfileStepProps) {
+  const { register, control } = useFormContext<OnboardingFormValues>();
 
   return (
-    <OnboardingShell
-      step={1}
-      totalSteps={3}
-      stepLabel="Body profile"
-      left={
-        <div className="flex aspect-[3/4] w-60 items-center justify-center rounded-3xl bg-neutral-100 text-6xl">
-          <span aria-hidden>🧍</span>
-          <div className="absolute bottom-6 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-            Your model
-          </div>
-        </div>
-      }
-    >
+    <>
       <button
-        onClick={handleBack}
+        type="button"
+        onClick={onBack}
         className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-1.5 text-sm font-medium shadow-sm hover:bg-neutral-50"
       >
-        ← Back
+        Back
       </button>
 
       <h1 className="text-3xl font-bold">Tell us about yourself</h1>
@@ -54,24 +35,22 @@ export default function BodyProfilePage() {
       <div className="mt-8 w-full max-w-md space-y-5">
         <div>
           <div className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-            Name & Age
+            Name &amp; Age
           </div>
           <div className="grid grid-cols-2 gap-3">
             <input
               type="text"
               inputMode="text"
               placeholder="Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
               className="h-11 rounded-xl border border-border bg-white px-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30"
+              {...register("name")}
             />
             <input
               type="number"
               inputMode="numeric"
               placeholder="Age"
-              value={age}
-              onChange={(e) => setAge(e.target.value)}
               className="h-11 rounded-xl border border-border bg-white px-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30"
+              {...register("age")}
             />
           </div>
         </div>
@@ -85,17 +64,15 @@ export default function BodyProfilePage() {
               type="number"
               inputMode="numeric"
               placeholder="Height (cm)"
-              value={height}
-              onChange={(e) => setHeight(e.target.value)}
               className="h-11 rounded-xl border border-border bg-white px-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30"
+              {...register("height")}
             />
             <input
               type="number"
               inputMode="numeric"
               placeholder="Weight (kg)"
-              value={weight}
-              onChange={(e) => setWeight(e.target.value)}
               className="h-11 rounded-xl border border-border bg-white px-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30"
+              {...register("weight")}
             />
           </div>
         </div>
@@ -104,38 +81,56 @@ export default function BodyProfilePage() {
           <div className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
             Body shape
           </div>
-          <div className="flex flex-wrap gap-3">
-            {BODY_SHAPES.map((s) => (
-              <Chip key={s} selected={s === shape} onClick={() => setShape(s)}>
-                {s}
-              </Chip>
-            ))}
-          </div>
+          <Controller
+            control={control}
+            name="bodyShape"
+            render={({ field }) => (
+              <div className="flex flex-wrap gap-3">
+                {BODY_SHAPES.map((shape) => (
+                  <Chip
+                    key={shape}
+                    type="button"
+                    selected={field.value === shape}
+                    onClick={() => field.onChange(shape)}
+                  >
+                    {shape}
+                  </Chip>
+                ))}
+              </div>
+            )}
+          />
         </div>
 
         <div>
           <div className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
             Gender
           </div>
-          <div className="flex flex-wrap gap-3">
-            {GENDERS.map((g) => (
-              <Chip
-                key={g}
-                selected={g === gender}
-                onClick={() => setGender(g)}
-              >
-                {g}
-              </Chip>
-            ))}
-          </div>
+          <Controller
+            control={control}
+            name="gender"
+            render={({ field }) => (
+              <div className="flex flex-wrap gap-3">
+                {GENDERS.map((gender) => (
+                  <Chip
+                    key={gender}
+                    type="button"
+                    selected={field.value === gender}
+                    onClick={() => field.onChange(gender)}
+                  >
+                    {gender}
+                  </Chip>
+                ))}
+              </div>
+            )}
+          />
         </div>
 
         <p className="text-xs text-muted-foreground">All fields are optional</p>
 
-        <Button onClick={handleNext} size="lg" className="w-full">
+        <Button onClick={onNext} size="lg" className="w-full" type="button">
           Continue
         </Button>
       </div>
-    </OnboardingShell>
+    </>
   );
 }
