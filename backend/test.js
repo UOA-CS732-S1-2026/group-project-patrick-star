@@ -8,7 +8,7 @@ async function run() {
   await addItem({
     userId: '000000000000000000000000',
     name: 'Tshirt',
-    category: 'top',
+    category: 'upper_body',
     size: 'M',
     colour: 'black',
     fit: 'regular',
