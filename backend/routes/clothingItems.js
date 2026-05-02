@@ -8,6 +8,8 @@ const {
 const router = express.Router();
 const { requireAuth } = require("../middleware/auth");
 const { getUserByAuth0UserId } = require("../db/userService");
+const { uploadToCloudinary } = require("../lib/cloudinary");
+const upload = require("../middleware/upload");
 
 router.post("/me", requireAuth, async (req, res) => {
   try {
@@ -84,6 +86,41 @@ router.delete("/me/:id", requireAuth, async (req, res) => {
     res.json({ message: "Item deleted successfully" });
   } catch (error) {
     res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.post("/me/:id/image", requireAuth, upload.single("image"), async (req, res) => {
+  try {
+    const auth0UserId = req.auth.payload.sub;
+    const user = await getUserByAuth0UserId(auth0UserId);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    const slot = req.body.slot || "front";
+    const allowedSlots = ["front", "back", "side"];
+
+    if (!allowedSlots.includes(slot)) {
+      return res.status(400).json({ error: "Invalid image slot" });
+    }
+
+    const url = await uploadToCloudinary(req.file.buffer, "clothing");
+    const item = await updateItemForUser(req.params.id, user._id, {
+      [`imageUrls.${slot}`]: url,
+    });
+
+    if (!item) {
+      return res.status(404).json({ error: "Item not found" });
+    }
+
+    res.json({ url, item });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
