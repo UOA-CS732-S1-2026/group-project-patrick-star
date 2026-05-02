@@ -1,9 +1,9 @@
-const ClothingItem = require('../models/ClothingItems')
+const ClothingItem = require("../models/ClothingItems");
 
 const addItem = (data) => ClothingItem.create(data)
 
 async function getItems({ userId, category, size, colour, fit }) {
-  const filter = {};
+  const filter = { userId };
 
   if (userId) filter.userId = userId;
   if (category) filter.category = category;
@@ -14,7 +14,12 @@ async function getItems({ userId, category, size, colour, fit }) {
   return ClothingItem.find(filter);
 }
 
-const updateItem = (id, data) => ClothingItem.findByIdAndUpdate(id, data, { new: true })
-const deleteItem = (id) => ClothingItem.findByIdAndDelete(id)
+const updateItemForUser = (id, userId, data) =>
+  ClothingItem.findOneAndUpdate({ _id: id, userId }, data, {
+    returnDocument: "after",
+  });
 
-module.exports = { addItem, getItems, updateItem, deleteItem }
+const deleteItemForUser = (id, userId) =>
+  ClothingItem.findOneAndDelete({ _id: id, userId });
+
+module.exports = { addItem, getItems, updateItemForUser, deleteItemForUser };
