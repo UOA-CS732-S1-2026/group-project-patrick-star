@@ -9,7 +9,7 @@ const UsersRoutes = require("./routes/users");
 const TryOnRoutes = require("./routes/tryon");
 
 app.use(cors());
-app.use(express.json({ limit: "50mb" }));
+app.use(express.json({ limit: "1mb" }));
 app.use("/api/clothingItems", ClothingItemsRoutes);
 app.use("/api/users", UsersRoutes);
 app.use("/api/tryon", TryOnRoutes);
