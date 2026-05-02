@@ -21,6 +21,19 @@ const CATEGORIES = [
 ] as const;
 type Category = (typeof CATEGORIES)[number];
 
+interface ApiClothingItem {
+  _id: string;
+  name: string;
+  category: string;
+  colour: string;
+  size: string;
+  fit: string;
+  fabric?: string;
+  imageUrls?: {
+    front?: string;
+  };
+}
+
 const SEED_ITEMS: ClothingItem[] = [
   { id: "1", name: "White linen shirt", category: "Tops", emoji: "👕", colour: "White", size: "M", fit: "Regular", fabric: "Linen" },
   { id: "2", name: "Navy trousers", category: "Bottoms", emoji: "👖", colour: "Navy", size: "M", fit: "Slim", fabric: "Cotton" },
@@ -45,6 +58,7 @@ export default function ClosetPage() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ClothingItem | null>(null);
   const [editing, setEditing] = useState(false);
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
 
   const filtered = useMemo(() => {
     return items.filter((item) => {
@@ -54,21 +68,97 @@ export default function ClosetPage() {
     });
   }, [items, category, query]);
 
-  function handleAddItem(newItem: NewClothingItem) {
-    setItems((prev) => [
-      ...prev,
-      {
-        id: String(Date.now()),
+  function toApiCategory(category: string) {
+    if (category === "Bottoms") return "lower_body";
+    if (category === "Dresses") return "dresses";
+    return "upper_body";
+  }
+
+  function toDisplayCategory(category: string) {
+    if (category === "lower_body") return "Bottoms";
+    if (category === "dresses") return "Dresses";
+    return "Tops";
+  }
+
+  function toApiFit(fit: string) {
+    if (fit === "Slim") return "tight";
+    if (fit === "Relaxed") return "loose";
+    return "regular";
+  }
+
+  function toDisplayFit(fit: string) {
+    if (fit === "tight") return "Slim";
+    if (fit === "loose") return "Relaxed";
+    return "Regular";
+  }
+
+  function toClothingItem(item: ApiClothingItem): ClothingItem {
+    return {
+      id: item._id,
+      name: item.name,
+      category: toDisplayCategory(item.category),
+      colour: item.colour,
+      size: item.size,
+      fit: toDisplayFit(item.fit),
+      fabric: item.fabric,
+      emoji: "👕",
+      imageUrl: item.imageUrls?.front,
+    };
+  }
+
+  async function handleAddItem(newItem: NewClothingItem) {
+    const token = localStorage.getItem("access_token");
+    const headers: HeadersInit = { "Content-Type": "application/json" };
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const createResponse = await fetch(`${apiUrl}/api/clothingItems/me`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
         name: newItem.name,
-        category: newItem.category,
+        category: toApiCategory(newItem.category),
         colour: newItem.colour,
         size: newItem.size,
-        fit: newItem.fit,
+        fit: toApiFit(newItem.fit),
         fabric: newItem.fabric,
-        emoji: "👕",
-        imageUrl: newItem.imageFile ? URL.createObjectURL(newItem.imageFile) : undefined,
-      },
-    ]);
+      }),
+    });
+
+    if (!createResponse.ok) {
+      throw new Error("Failed to create clothing item");
+    }
+
+    let item = (await createResponse.json()) as ApiClothingItem;
+
+    if (newItem.imageFile) {
+      const imageData = new FormData();
+      imageData.append("image", newItem.imageFile);
+      imageData.append("slot", "front");
+
+      const uploadHeaders: HeadersInit = {};
+
+      if (token) {
+        uploadHeaders.Authorization = `Bearer ${token}`;
+      }
+
+      const uploadResponse = await fetch(`${apiUrl}/api/clothingItems/me/${item._id}/image`, {
+        method: "POST",
+        headers: uploadHeaders,
+        body: imageData,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error("Failed to upload clothing image");
+      }
+
+      const uploaded = (await uploadResponse.json()) as { item: ApiClothingItem };
+      item = uploaded.item;
+    }
+
+    setItems((prev) => [...prev, toClothingItem(item)]);
   }
 
   function handleSaveItem(updated: ClothingItem) {
