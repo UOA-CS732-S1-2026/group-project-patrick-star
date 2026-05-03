@@ -29,9 +29,6 @@ router.post("/me", requireAuth, async (req, res) => {
   }
 });
 
-router.get("/", async (req, res) => {
-
-
 router.get("/me", requireAuth, async (req, res) => {
   try {
     const auth0UserId = req.auth.payload.sub;

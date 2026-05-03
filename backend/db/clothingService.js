@@ -3,7 +3,7 @@ const ClothingItem = require("../models/ClothingItems");
 const addItem = (data) => ClothingItem.create(data)
 
 async function getItems({ userId, category, size, colour, fit }) {
-  const filter = { userId };
+  const filter = {};
 
   if (userId) filter.userId = userId;
   if (category) filter.category = category;
