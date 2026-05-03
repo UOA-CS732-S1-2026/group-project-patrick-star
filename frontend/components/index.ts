@@ -2,6 +2,7 @@
 export { Badge } from "./ui/Badge";
 export { Button } from "./ui/Button";
 export { Card, CardBody } from "./ui/Card";
+export { AuthField } from "./ui/AuthField";
 export { Chip } from "./ui/Chip";
 export { ItemCard, type ClothingItem } from "./ui/ItemCard";
 export { ProgressBar } from "./ui/ProgressBar";
@@ -17,3 +18,7 @@ export { Sidebar, type NavItem } from "./layout/Sidebar";
 export { OnboardingFlow } from "./onboarding/OnboardingFlow";
 export { ModelScroller, type ModelScrollerItem } from "./onboarding/ModelScroller";
 export { OnboardingShell } from "./onboarding/OnboardingShell";
+
+// Auth
+export { AuthGate } from "./auth/AuthGate";
+export { AuthProvider, useAuth } from "./auth/AuthProvider";
