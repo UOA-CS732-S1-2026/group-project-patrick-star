@@ -4,14 +4,11 @@ import type { ReactNode } from "react";
 import {
   createContext,
   useContext,
+  useCallback,
   useMemo,
   useSyncExternalStore,
 } from "react";
-import {
-  loginWithPassword,
-  normalizeAuthError,
-  signupUser,
-} from "@/lib/auth/browser";
+import { normalizeAuthError, type AuthResult } from "@/lib/auth/browser";
 import {
   buildAuthSession,
   readStoredAuthSession,
@@ -20,19 +17,17 @@ import {
 } from "@/lib/auth/session";
 import { syncAuthenticatedUser } from "@/lib/auth/sync";
 
-type LoginValues = {
-  email: string;
-  password: string;
-};
-
-type SignUpValues = LoginValues & {
-  name: string;
+type AuthenticatedProfile = {
+  name?: string;
+  email?: string;
 };
 
 type AuthContextValue = {
   session: AuthSession | null;
-  login: (values: LoginValues) => Promise<AuthSession>;
-  signup: (values: SignUpValues) => Promise<AuthSession>;
+  completeAuth: (
+    authResult: AuthResult,
+    profile?: AuthenticatedProfile,
+  ) => Promise<AuthSession>;
   logout: () => void;
 };
 
@@ -74,59 +69,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     getServerSnapshot,
   );
 
+  const completeAuth = useCallback<AuthContextValue["completeAuth"]>(
+    async (authResult, profile) => {
+      const email =
+        profile?.email ??
+        authResult.idTokenPayload?.email ??
+        authResult.idTokenPayload?.nickname ??
+        "";
+
+      if (!email) {
+        throw new Error("Missing email in the Auth0 authentication result");
+      }
+
+      const nextSession = buildAuthSession(authResult, {
+        email,
+        preferredName:
+          profile?.name ??
+          authResult.idTokenPayload?.name ??
+          authResult.idTokenPayload?.nickname ??
+          email.split("@")[0],
+      });
+
+      await syncAuthenticatedUser(nextSession, {
+        name: profile?.name ?? nextSession.user.name,
+        email: nextSession.user.email,
+      });
+
+      updateSession(nextSession);
+      return nextSession;
+    },
+    [],
+  );
+
+  const logout = useCallback(() => {
+    updateSession(null);
+  }, []);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       session,
-      login: async (values) => {
-        const authResult = await loginWithPassword(
-          values.email,
-          values.password,
-        );
-        const nextSession = buildAuthSession(authResult, {
-          email: values.email,
-          preferredName:
-            authResult.idTokenPayload?.name ??
-            authResult.idTokenPayload?.nickname ??
-            values.email.split("@")[0],
-        });
-
-        await syncAuthenticatedUser(nextSession, {
-          name: nextSession.user.name,
-          email: nextSession.user.email,
-        });
-
-        updateSession(nextSession);
-        return nextSession;
-      },
-      signup: async (values) => {
-        const signupResponse = await signupUser(values.email, values.password);
-        console.log("[auth] signup succeeded", {
-          email: values.email,
-          signupResponse,
-        });
-        const authResult = await loginWithPassword(
-          values.email,
-          values.password,
-        );
-        const nextSession = buildAuthSession(authResult, {
-          email: values.email,
-          preferredName: values.name,
-        });
-        //auth0.com/docs/get-started/authentication-and-authorization-flow/resource-owner-password-flow
-
-        https: await syncAuthenticatedUser(nextSession, {
-          name: values.name,
-          email: values.email,
-        });
-
-        updateSession(nextSession);
-        return nextSession;
-      },
-      logout: () => {
-        updateSession(null);
-      },
+      completeAuth,
+      logout,
     }),
-    [session],
+    [session, completeAuth, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

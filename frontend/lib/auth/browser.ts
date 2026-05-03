@@ -1,7 +1,5 @@
 "use client";
 
-import auth0 from "auth0-js";
-
 type AuthConfig = {
   domain: string;
   clientID: string;
@@ -9,20 +7,6 @@ type AuthConfig = {
   scope: string;
   connection: string;
 };
-
-type LoginCallback = (error: unknown, result?: AuthResult) => void;
-interface Auth0AuthenticationClient {
-  login(
-    options: {
-      username: string;
-      password: string;
-      realm: string;
-      audience: string;
-      scope: string;
-    },
-    callback: LoginCallback,
-  ): void;
-}
 
 export type AuthResult = {
   accessToken?: string;
@@ -51,7 +35,6 @@ export type Auth0LikeError = Error & {
 };
 
 let authConfig: AuthConfig | null = null;
-let authenticationClient: Auth0AuthenticationClient | null = null;
 
 function requireEnv(name: string, fallback?: string) {
   if (!fallback) {
@@ -80,100 +63,9 @@ export function getAuthConfig(): AuthConfig {
         process.env.NEXT_PUBLIC_AUTH0_CONNECTION ??
         "Username-Password-Authentication",
     };
-    console.log("authConfig", authConfig);
   }
 
   return authConfig;
-}
-
-function createAuthenticationClient() {
-  const config = getAuthConfig();
-  return new auth0.Authentication({
-    domain: config.domain,
-    clientID: config.clientID,
-    audience: config.audience,
-    scope: config.scope,
-  }) as Auth0AuthenticationClient;
-}
-
-export function getAuthenticationClient() {
-  if (!authenticationClient) {
-    authenticationClient = createAuthenticationClient();
-  }
-
-  return authenticationClient;
-}
-
-export function loginWithPassword(email: string, password: string) {
-  const config = getAuthConfig();
-
-  return new Promise<AuthResult>((resolve, reject) => {
-    getAuthenticationClient().login(
-      {
-        username: email,
-        password,
-        realm: config.connection,
-        audience: config.audience,
-        scope: config.scope,
-      },
-      (error, result) => {
-        if (error) {
-          reject(normalizeAuthError(error));
-          return;
-        }
-
-        resolve(result as AuthResult);
-      },
-    );
-  });
-}
-
-export function signupUser(email: string, password: string) {
-  const config = getAuthConfig();
-
-  return fetch(`https://${config.domain}/dbconnections/signup`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      client_id: config.clientID,
-      email,
-      password,
-      connection: config.connection,
-    }),
-  }).then(async (response) => {
-    if (!response.ok) {
-      let message = `Signup failed (${response.status})`;
-      let rawBody = "";
-      try {
-        const payload = (await response.json()) as Record<string, unknown>;
-        message =
-          (typeof payload.error_description === "string" &&
-            payload.error_description) ||
-          (typeof payload.description === "string" && payload.description) ||
-          (typeof payload.message === "string" && payload.message) ||
-          message;
-      } catch {
-        rawBody = await response.text();
-        if (rawBody) {
-          message = rawBody;
-        }
-      }
-
-      if (
-        response.status === 400 &&
-        !rawBody &&
-        message === `Signup failed (${response.status})`
-      ) {
-        message = "That email is already registered. Try logging in instead.";
-      }
-
-      throw normalizeAuthError({ error_description: message });
-    }
-
-    return response.json() as Promise<Record<string, unknown>>;
-  });
 }
 
 export function normalizeAuthError(error: unknown): Auth0LikeError {

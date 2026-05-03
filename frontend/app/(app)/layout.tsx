@@ -1,15 +1,18 @@
 import type { ReactNode } from "react";
-import { AuthGate } from "@/components/auth/AuthGate";
+import { redirect } from "next/navigation";
+import { auth0 } from "@/lib/auth0";
 import { AppShell } from "@/components/layout/AppShell";
 
-export default function AppSectionLayout({
+export default async function AppSectionLayout({
   children,
 }: {
   children: ReactNode;
 }) {
-  return (
-    <AuthGate>
-      <AppShell>{children}</AppShell>
-    </AuthGate>
-  );
+  const session = await auth0.getSession();
+
+  if (!session) {
+    redirect("/login");
+  }
+
+  return <AppShell>{children}</AppShell>;
 }

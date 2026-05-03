@@ -18,7 +18,3 @@ export { Sidebar, type NavItem } from "./layout/Sidebar";
 export { OnboardingFlow } from "./onboarding/OnboardingFlow";
 export { ModelScroller, type ModelScrollerItem } from "./onboarding/ModelScroller";
 export { OnboardingShell } from "./onboarding/OnboardingShell";
-
-// Auth
-export { AuthGate } from "./auth/AuthGate";
-export { AuthProvider, useAuth } from "./auth/AuthProvider";
