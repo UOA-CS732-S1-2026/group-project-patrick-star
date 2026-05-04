@@ -130,11 +130,11 @@ describe("PUT /api/users/me/photo", () => {
     const res = await request(app)
       .put("/api/users/me/photo")
       .set(authHeader)
-      .send({ profilePhoto: "data:image/jpeg;base64,abc123" });
+      .send({ profilePhoto: "https://example.com/photo.jpg" });
 
     expect(res.status).toBe(200);
     expect(res.body.message).toBe("Profile photo updated successfully");
-    expect(res.body.profilePhoto).toBe("data:image/jpeg;base64,abc123");
+    expect(res.body.profilePhoto).toBe("https://example.com/photo.jpg");
   });
 
   it("should return 400 when profilePhoto is missing", async () => {
@@ -152,7 +152,7 @@ describe("PUT /api/users/me/photo", () => {
     const res = await request(app)
       .put("/api/users/me/photo")
       .set(authHeader)
-      .send({ profilePhoto: "data:image/jpeg;base64,abc123" });
+      .send({ profilePhoto: "https://example.com/photo.jpg" });
 
     expect(res.status).toBe(404);
   });

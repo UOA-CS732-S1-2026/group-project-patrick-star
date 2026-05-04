@@ -1,6 +1,21 @@
 const request = require("supertest");
 const mongoose = require("mongoose");
-const app = require("../app");
+
+jest.mock("../middleware/auth.js", () => ({
+  requireAuth: (req, res, next) => {
+    req.auth = {
+      payload: {
+        sub: "auth0|test-user",
+      },
+    };
+
+    next();
+  },
+}));
+
+jest.mock("../db/userService", () => ({
+  getUserByAuth0UserId: jest.fn().mockResolvedValue({ _id: "test-user-id" }),
+}));
 
 // Mock the replicate module so tests never call the real API
 jest.mock("replicate", () => {
@@ -16,6 +31,8 @@ jest.mock("replicate", () => {
   }));
 });
 
+const app = require("../app");
+
 beforeAll(async () => {
   await mongoose.connect(process.env.MONGO_URI);
   process.env.REPLICATE_API_TOKEN = "test-token";
@@ -26,30 +43,30 @@ afterAll(async () => {
 });
 
 describe("POST /api/tryon", () => {
-  it("should return 400 when humanImageBase64 is missing", async () => {
+  it("should return 400 when humanImageUrl is missing", async () => {
     const res = await request(app).post("/api/tryon").send({
-      garmentImageBase64: "https://example.com/garment.jpg",
+      garmentImageUrl: "https://example.com/garment.jpg",
       category: "upper_body",
     });
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe("humanImageBase64 is required");
+    expect(res.body.error).toBe("humanImageUrl is required");
   });
 
-  it("should return 400 when garmentImageBase64 is missing", async () => {
+  it("should return 400 when garmentImageUrl is missing", async () => {
     const res = await request(app).post("/api/tryon").send({
-      humanImageBase64: "https://example.com/human.jpg",
+      humanImageUrl: "https://example.com/human.jpg",
       category: "upper_body",
     });
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe("garmentImageBase64 is required");
+    expect(res.body.error).toBe("garmentImageUrl is required");
   });
 
   it("should return 400 when category is missing", async () => {
     const res = await request(app).post("/api/tryon").send({
-      humanImageBase64: "https://example.com/human.jpg",
-      garmentImageBase64: "https://example.com/garment.jpg",
+      humanImageUrl: "https://example.com/human.jpg",
+      garmentImageUrl: "https://example.com/garment.jpg",
     });
 
     expect(res.status).toBe(400);
@@ -58,8 +75,8 @@ describe("POST /api/tryon", () => {
 
   it("should return 400 for an invalid category", async () => {
     const res = await request(app).post("/api/tryon").send({
-      humanImageBase64: "https://example.com/human.jpg",
-      garmentImageBase64: "https://example.com/garment.jpg",
+      humanImageUrl: "https://example.com/human.jpg",
+      garmentImageUrl: "https://example.com/garment.jpg",
       category: "top",
     });
 
@@ -71,8 +88,8 @@ describe("POST /api/tryon", () => {
 
   it("should return 200 with imageUrl on success", async () => {
     const res = await request(app).post("/api/tryon").send({
-      humanImageBase64: "https://example.com/human.jpg",
-      garmentImageBase64: "https://example.com/garment.jpg",
+      humanImageUrl: "https://example.com/human.jpg",
+      garmentImageUrl: "https://example.com/garment.jpg",
       category: "upper_body",
     });
 

@@ -101,7 +101,7 @@ backend/
 
 - Request and response bodies are JSON.
 - Clothing item categories are `upper_body`, `lower_body`, or `dresses`.
-- The try-on route expects `humanImageBase64`, `garmentImageBase64`, and `category`.
+- The try-on route expects `humanImageUrl`, `garmentImageUrl`, and `category`.
 - MongoDB connects when `app.js` is loaded, so tests and local runs need a valid `MONGO_URI`.
 - `/api/users/me*` and `/api/clothingItems/me*` routes require `Authorization: Bearer <access_token>`.
 - The backend expects Auth0 access tokens issued for this API audience.
