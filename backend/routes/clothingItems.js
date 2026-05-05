@@ -37,8 +37,9 @@ router.get("/me", requireAuth, async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
+    const { category, size, colour, fit } = req.query;
 
-    const items = await getItems(user._id);
+    const items = await getItems({ userId: user._id, category, size, colour, fit });
     res.json(items);
   } catch (error) {
     res.status(500).json({ error: "Server error" });

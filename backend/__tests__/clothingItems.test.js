@@ -62,10 +62,10 @@ afterAll(async () => {
   await mongoose.disconnect();
 });
 
+// POST
 describe("POST /api/clothingItems/me", () => {
   it("should return 401 without a token", async () => {
     const res = await request(app).post("/api/clothingItems/me");
-
     expect(res.status).toBe(401);
   });
 
@@ -93,7 +93,7 @@ describe("POST /api/clothingItems/me", () => {
     expect(res.body.userId).toBe(String(user._id));
   });
 
-  it("should return 404 when the authenticated user has no profile", async () => {
+  it("should return 404 when user profile not found", async () => {
     const res = await request(app)
       .post("/api/clothingItems/me")
       .set(authHeader)
@@ -108,7 +108,7 @@ describe("POST /api/clothingItems/me", () => {
     expect(res.status).toBe(404);
   });
 
-  it("should return 400 for missing required item fields", async () => {
+  it("should return 400 for missing fields", async () => {
     await createTestUser();
 
     const res = await request(app)
@@ -120,12 +120,15 @@ describe("POST /api/clothingItems/me", () => {
   });
 });
 
+// GET
 describe("GET /api/clothingItems/me", () => {
-  it("should return clothing items for the authenticated user", async () => {
+  it("should return clothing items for authenticated user", async () => {
     const user = await createTestUser();
     await createTestItem(user._id);
 
-    const res = await request(app).get("/api/clothingItems/me").set(authHeader);
+    const res = await request(app)
+      .get("/api/clothingItems/me")
+      .set(authHeader);
 
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
@@ -133,24 +136,29 @@ describe("GET /api/clothingItems/me", () => {
     expect(res.body[0].userId).toBe(String(user._id));
   });
 
-  it("should return an empty array when the authenticated user has no items", async () => {
+  it("should return empty array when no items exist", async () => {
     await createTestUser();
 
-    const res = await request(app).get("/api/clothingItems/me").set(authHeader);
+    const res = await request(app)
+      .get("/api/clothingItems/me")
+      .set(authHeader);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual([]);
   });
 
-  it("should return 404 when the authenticated user has no profile", async () => {
-    const res = await request(app).get("/api/clothingItems/me").set(authHeader);
+  it("should return 404 when user profile not found", async () => {
+    const res = await request(app)
+      .get("/api/clothingItems/me")
+      .set(authHeader);
 
     expect(res.status).toBe(404);
   });
 });
 
+// PUT
 describe("PUT /api/clothingItems/me/:id", () => {
-  it("should update an owned clothing item", async () => {
+  it("should update owned item", async () => {
     const user = await createTestUser();
     const item = await createTestItem(user._id);
 
@@ -177,11 +185,9 @@ describe("PUT /api/clothingItems/me/:id", () => {
     expect(res.status).toBe(404);
   });
 
-  it("should return 404 when the authenticated user has no profile", async () => {
-    const itemId = new mongoose.Types.ObjectId();
-
+  it("should return 404 when item not found", async () => {
     const res = await request(app)
-      .put(`/api/clothingItems/me/${itemId}`)
+      .put(`/api/clothingItems/me/${new mongoose.Types.ObjectId()}`)
       .set(authHeader)
       .send({ name: "Ghost" });
 
@@ -189,8 +195,9 @@ describe("PUT /api/clothingItems/me/:id", () => {
   });
 });
 
+// DELETE
 describe("DELETE /api/clothingItems/me/:id", () => {
-  it("should delete an owned clothing item", async () => {
+  it("should delete owned item", async () => {
     const user = await createTestUser();
     const item = await createTestItem(user._id);
 
@@ -214,11 +221,13 @@ describe("DELETE /api/clothingItems/me/:id", () => {
     expect(res.status).toBe(404);
   });
 
-  it("should return 404 when deleting an already deleted item", async () => {
+  it("should return 404 when deleting already deleted item", async () => {
     const user = await createTestUser();
     const item = await createTestItem(user._id);
 
-    await request(app).delete(`/api/clothingItems/me/${item._id}`).set(authHeader);
+    await request(app)
+      .delete(`/api/clothingItems/me/${item._id}`)
+      .set(authHeader);
 
     const res = await request(app)
       .delete(`/api/clothingItems/me/${item._id}`)
