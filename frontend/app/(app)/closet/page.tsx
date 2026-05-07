@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { ItemCard, type ClothingItem } from "@/components/ui/ItemCard";
 import { SearchInput } from "@/components/ui/SearchInput";
-import { UploadItemModal, type NewClothingItem } from "@/components/closet/UploadItemModal";
+import {
+  UploadItemModal,
+  type NewClothingItem,
+} from "@/components/closet/UploadItemModal";
 import { ItemDetailPanel } from "@/components/closet/ItemDetailPanel";
 import { EditItemPanel } from "@/components/closet/EditItemPanel";
 
@@ -56,12 +59,13 @@ export default function ClosetPage() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ClothingItem | null>(null);
   const [editing, setEditing] = useState(false);
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5001";
 
   const filtered = useMemo(() => {
     return items.filter((item) => {
       const matchCategory = category === "All" || item.category === category;
-      const matchQuery = !query || item.name.toLowerCase().includes(query.toLowerCase());
+      const matchQuery =
+        !query || item.name.toLowerCase().includes(query.toLowerCase());
       return matchCategory && matchQuery;
     });
   }, [items, category, query]);
@@ -163,26 +167,55 @@ export default function ClosetPage() {
       imageData.append("image", newItem.imageFile);
       imageData.append("slot", "front");
 
-      const uploadResponse = await fetch(`${apiUrl}/api/clothingItems/me/${item._id}/image`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: imageData,
-      });
+      const uploadResponse = await fetch(
+        `${apiUrl}/api/clothingItems/me/${item._id}/image`,
+        {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: imageData,
+        },
+      );
 
       if (!uploadResponse.ok) {
         throw new Error("Failed to upload clothing image");
       }
 
-      const uploaded = (await uploadResponse.json()) as { item: ApiClothingItem };
+      const uploaded = (await uploadResponse.json()) as {
+        item: ApiClothingItem;
+      };
       item = uploaded.item;
     }
 
     setItems((prev) => [...prev, toClothingItem(item)]);
   }
 
-  function handleSaveItem(updated: ClothingItem) {
-    setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
-    setSelectedItem(updated);
+  async function handleSaveItem(updated: ClothingItem) {
+    const updateResponse = await fetch(
+      `${apiUrl}/api/clothingItems/me/${updated.id}`,
+      {
+        method: "PUT",
+        headers: getAuthHeaders(true),
+        body: JSON.stringify({
+          name: updated.name,
+          category: toApiCategory(updated.category),
+          colour: updated.colour,
+          size: updated.size,
+          fit: toApiFit(updated.fit ?? ""),
+          fabric: updated.fabric,
+        }),
+      },
+    );
+
+    if (!updateResponse.ok) {
+      throw new Error("Failed to update clothing item");
+    }
+
+    const item = toClothingItem(
+      (await updateResponse.json()) as ApiClothingItem,
+    );
+
+    setItems((prev) => prev.map((i) => (i.id === item.id ? item : i)));
+    setSelectedItem(item);
     setEditing(false);
   }
 
@@ -213,7 +246,10 @@ export default function ClosetPage() {
             <div className="text-sm text-muted-foreground whitespace-nowrap">
               {items.length} items
             </div>
-            <Button leftIcon={<span aria-hidden>+</span>} onClick={() => setUploadOpen(true)}>
+            <Button
+              leftIcon={<span aria-hidden>+</span>}
+              onClick={() => setUploadOpen(true)}
+            >
               Add item
             </Button>
           </>
