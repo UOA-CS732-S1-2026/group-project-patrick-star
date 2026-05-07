@@ -219,7 +219,19 @@ export default function ClosetPage() {
     setEditing(false);
   }
 
-  function handleRemoveItem(item: ClothingItem) {
+  async function handleRemoveItem(item: ClothingItem) {
+    const deleteResponse = await fetch(
+      `${apiUrl}/api/clothingItems/me/${item.id}`,
+      {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      },
+    );
+
+    if (!deleteResponse.ok) {
+      throw new Error("Failed to delete clothing item");
+    }
+
     setItems((prev) => prev.filter((i) => i.id !== item.id));
     setSelectedItem(null);
     setEditing(false);
