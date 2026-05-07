@@ -189,7 +189,7 @@ export default function ClosetPage() {
     setItems((prev) => [...prev, toClothingItem(item)]);
   }
 
-  async function handleSaveItem(updated: ClothingItem) {
+  async function handleSaveItem(updated: ClothingItem, imageFile?: File) {
     const updateResponse = await fetch(
       `${apiUrl}/api/clothingItems/me/${updated.id}`,
       {
@@ -210,12 +210,36 @@ export default function ClosetPage() {
       throw new Error("Failed to update clothing item");
     }
 
-    const item = toClothingItem(
-      (await updateResponse.json()) as ApiClothingItem,
-    );
+    let item = (await updateResponse.json()) as ApiClothingItem;
 
-    setItems((prev) => prev.map((i) => (i.id === item.id ? item : i)));
-    setSelectedItem(item);
+    if (imageFile) {
+      const imageData = new FormData();
+      imageData.append("image", imageFile);
+      imageData.append("slot", "front");
+
+      const uploadResponse = await fetch(
+        `${apiUrl}/api/clothingItems/me/${item._id}/image`,
+        {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: imageData,
+        },
+      );
+
+      if (!uploadResponse.ok) {
+        throw new Error("Failed to upload clothing image");
+      }
+
+      const uploaded = (await uploadResponse.json()) as {
+        item: ApiClothingItem;
+      };
+      item = uploaded.item;
+    }
+
+    const savedItem = toClothingItem(item);
+
+    setItems((prev) => prev.map((i) => (i.id === savedItem.id ? savedItem : i)));
+    setSelectedItem(savedItem);
     setEditing(false);
   }
 
