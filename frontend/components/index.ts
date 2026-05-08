@@ -2,6 +2,7 @@
 export { Badge } from "./ui/Badge";
 export { Button } from "./ui/Button";
 export { Card, CardBody } from "./ui/Card";
+export { AuthField } from "./ui/AuthField";
 export { Chip } from "./ui/Chip";
 export { ItemCard, type ClothingItem } from "./ui/ItemCard";
 export { ProgressBar } from "./ui/ProgressBar";
