@@ -1,3 +1,5 @@
+"use client";
+
 import type { ReactNode } from "react";
 import { Sidebar } from "./Sidebar";
 
@@ -6,7 +8,7 @@ interface AppShellProps {
 }
 
 /**
- * Desktop-first application shell — renders the persistent sidebar on the
+ * Desktop-first application shell. Renders the persistent sidebar on the
  * left and the main content area on the right.
  */
 export function AppShell({ children }: AppShellProps) {
