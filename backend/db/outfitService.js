@@ -14,6 +14,7 @@ async function getOutfits({ userId, outfitId }) {
 const updateOutfitForUser = (id, userId, data) =>
   Outfit.findOneAndUpdate({ _id: id, userId }, data, {
     returnDocument: "after",
+    runValidators: true,
   }).populate("items");
 
 const deleteOutfitForUser = (id, userId) =>

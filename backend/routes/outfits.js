@@ -1,5 +1,10 @@
 const express = require("express");
-const { addOutfit, getOutfits } = require("../db/outfitService");
+const {
+  addOutfit,
+  getOutfits,
+  updateOutfitForUser,
+  deleteOutfitForUser,
+} = require("../db/outfitService");
 const ClothingItem = require("../models/ClothingItems");
 const { requireAuth } = require("../middleware/auth");
 const { getUserByAuth0UserId } = require("../db/userService");
@@ -69,6 +74,52 @@ router.get("/me", requireAuth, async (req, res) => {
 
     const outfits = await getOutfits({ userId: user._id });
     res.json(outfits);
+  } catch (error) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.put("/me/:id", requireAuth, async (req, res) => {
+  try {
+    const user = await getAuthenticatedUser(req, res);
+    if (!user) return;
+
+    const update = {};
+    if (Object.hasOwn(req.body, "name")) {
+      update.name = req.body.name;
+    }
+
+    if (req.body.items) {
+      update.items = await validateOwnedItems(user._id, req.body.items);
+    }
+
+    const outfit = await updateOutfitForUser(req.params.id, user._id, update);
+    if (!outfit) {
+      return res.status(404).json({ error: "Outfit not found" });
+    }
+
+    res.json(outfit);
+  } catch (error) {
+    if (error.errors) {
+      const messages = Object.values(error.errors).map((e) => e.message);
+      return res.status(400).json({ errors: messages });
+    }
+
+    res.status(error.statusCode || 400).json({ error: error.message });
+  }
+});
+
+router.delete("/me/:id", requireAuth, async (req, res) => {
+  try {
+    const user = await getAuthenticatedUser(req, res);
+    if (!user) return;
+
+    const outfit = await deleteOutfitForUser(req.params.id, user._id);
+    if (!outfit) {
+      return res.status(404).json({ error: "Outfit not found" });
+    }
+
+    res.json({ message: "Outfit deleted successfully" });
   } catch (error) {
     res.status(500).json({ error: "Server error" });
   }
