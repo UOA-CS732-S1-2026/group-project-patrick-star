@@ -8,8 +8,8 @@ const OutfitSchema = new mongoose.Schema({
 })
 
 // Custom validation to ensure items are from different categories
-OutfitSchema.pre('save', async function(next) {
-  if (this.items.length === 0) return next()
+OutfitSchema.pre('save', async function() {
+  if (this.items.length === 0) return
   
   const ClothingItem = mongoose.model('ClothingItem')
   const items = await ClothingItem.find({ _id: { $in: this.items } }).select('category')
@@ -18,10 +18,8 @@ OutfitSchema.pre('save', async function(next) {
   const uniqueCategories = new Set(categories)
   
   if (categories.length !== uniqueCategories.size) {
-    return next(new Error('Outfit items must be from different categories'))
+    throw new Error('Outfit items must be from different categories')
   }
-  
-  next()
 })
 
 module.exports = mongoose.model('Outfit', OutfitSchema)
