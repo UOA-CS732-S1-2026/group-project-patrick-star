@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, type DragEvent, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
@@ -348,6 +348,98 @@ function OutfitDetailsPanel({
 }
 
 // ---------------------------------------------------------------------------
+// Your Photo upload strip
+// ---------------------------------------------------------------------------
+function YourPhotoSection({
+  preview,
+  isUploading,
+  onFile,
+}: {
+  preview: string | null;
+  isUploading: boolean;
+  onFile: (file: File) => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  function handleDrop(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) onFile(file);
+  }
+
+  function handleFileInput(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) onFile(file);
+  }
+
+  return (
+    <div className="flex shrink-0 items-center gap-5 border-b border-border bg-white px-10 py-4">
+      <p className="whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        Your Photo
+      </p>
+
+      {/* Drop / click zone */}
+      <div
+        onClick={() => fileInputRef.current?.click()}
+        onDrop={handleDrop}
+        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+        onDragLeave={() => setIsDragging(false)}
+        className={cn(
+          "relative flex h-20 w-20 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed transition-colors",
+          isDragging
+            ? "border-brand bg-brand/5"
+            : "border-border bg-neutral-50 hover:bg-neutral-100"
+        )}
+      >
+        {preview ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={preview} alt="Your photo preview" className="h-full w-full object-cover" />
+        ) : isUploading ? (
+          <span className="flex gap-1">
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent"
+                style={{ animationDelay: `${i * 150}ms` }}
+              />
+            ))}
+          </span>
+        ) : (
+          <span className="text-2xl text-neutral-400" aria-hidden>↑</span>
+        )}
+      </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/heic"
+        className="hidden"
+        onChange={handleFileInput}
+      />
+
+      <div className="flex flex-col gap-0.5">
+        {isUploading ? (
+          <p className="text-sm font-medium text-accent">Uploading…</p>
+        ) : preview ? (
+          <p className="text-sm font-medium text-foreground">Photo ready</p>
+        ) : (
+          <p className="text-sm font-medium text-foreground">
+            Click or drag to upload your photo
+          </p>
+        )}
+        <p className="text-xs text-muted-foreground">
+          {preview
+            ? "Click the thumbnail to replace it"
+            : "Used as the human image for virtual try-on"}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main page
 // ---------------------------------------------------------------------------
 export default function OutfitBuilderPage() {
@@ -366,6 +458,45 @@ export default function OutfitBuilderPage() {
   const [occasion, setOccasion] = useState<Occasion | "">("");
   const [season, setSeason] = useState<Season | "">("");
   const [notes, setNotes] = useState("");
+
+  // Human photo state — URL returned by the upload endpoint, used later for try-on
+  const [humanPhotoPreview, setHumanPhotoPreview] = useState<string | null>(null);
+  const [humanImageUrl, setHumanImageUrl] = useState<string | null>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
+
+  async function handleHumanPhotoFile(file: File) {
+    setHumanPhotoPreview(URL.createObjectURL(file));
+    setIsUploadingPhoto(true);
+    try {
+      // TODO: replace with proper getAccessToken() helper once auth is fully wired
+      const stored = typeof window !== "undefined"
+        ? localStorage.getItem("ai-wardrobe.auth-session")
+        : null;
+      const token = stored
+        ? (JSON.parse(stored) as { accessToken?: string }).accessToken
+        : null;
+
+      const formData = new FormData();
+      formData.append("image", file);
+      const headers: HeadersInit = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const res = await fetch(`${apiUrl}/api/users/me/photo/upload`, {
+        method: "POST",
+        headers,
+        body: formData,
+      });
+      if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+      const data = (await res.json()) as { url: string };
+      setHumanImageUrl(data.url);
+    } catch (err) {
+      console.error("Failed to upload photo:", err);
+      setHumanImageUrl(null);
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  }
 
   const selectedItems = useMemo(
     () => closetItems.filter((i) => selectedIds.has(i.id)),
@@ -419,6 +550,12 @@ export default function OutfitBuilderPage() {
             ✕ Discard Changes
           </button>
         }
+      />
+
+      <YourPhotoSection
+        preview={humanPhotoPreview}
+        isUploading={isUploadingPhoto}
+        onFile={handleHumanPhotoFile}
       />
 
       <div className="flex flex-1 overflow-hidden">
