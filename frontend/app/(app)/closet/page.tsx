@@ -37,16 +37,18 @@ interface ApiClothingItem {
   };
 }
 
-function getAuthHeaders(includeJson = false): Record<string, string> {
+async function getAuthHeaders(includeJson = false): Promise<Record<string, string>> {
   const headers: Record<string, string> = {};
-  const token = localStorage.getItem("access_token");
+  // const token = localStorage.getItem("access_token");
 
   if (includeJson) {
     headers["Content-Type"] = "application/json";
   }
 
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
+  const res = await fetch("/api/auth/token");
+  if (res.ok) {
+    const { token } = await res.json();
+    if (token) headers.Authorization = `Bearer ${token}`;
   }
 
   return headers;
@@ -114,7 +116,7 @@ export default function ClosetPage() {
     async function loadItems() {
       try {
         const response = await fetch(`${apiUrl}/api/clothingItems/me`, {
-          headers: getAuthHeaders(),
+          headers: await getAuthHeaders(),
         });
 
         if (!response.ok) {
@@ -145,7 +147,7 @@ export default function ClosetPage() {
   async function handleAddItem(newItem: NewClothingItem) {
     const createResponse = await fetch(`${apiUrl}/api/clothingItems/me`, {
       method: "POST",
-      headers: getAuthHeaders(true),
+      headers: await getAuthHeaders(true),
       body: JSON.stringify({
         name: newItem.name,
         category: toApiCategory(newItem.category),
@@ -171,7 +173,7 @@ export default function ClosetPage() {
         `${apiUrl}/api/clothingItems/me/${item._id}/image`,
         {
           method: "POST",
-          headers: getAuthHeaders(),
+          headers: await getAuthHeaders(),
           body: imageData,
         },
       );
@@ -194,7 +196,7 @@ export default function ClosetPage() {
       `${apiUrl}/api/clothingItems/me/${updated.id}`,
       {
         method: "PUT",
-        headers: getAuthHeaders(true),
+        headers: await getAuthHeaders(true),
         body: JSON.stringify({
           name: updated.name,
           category: toApiCategory(updated.category),
@@ -221,7 +223,7 @@ export default function ClosetPage() {
         `${apiUrl}/api/clothingItems/me/${item._id}/image`,
         {
           method: "POST",
-          headers: getAuthHeaders(),
+          headers: await getAuthHeaders(),
           body: imageData,
         },
       );
@@ -248,7 +250,7 @@ export default function ClosetPage() {
       `${apiUrl}/api/clothingItems/me/${item.id}`,
       {
         method: "DELETE",
-        headers: getAuthHeaders(),
+        headers: await getAuthHeaders(),
       },
     );
 
