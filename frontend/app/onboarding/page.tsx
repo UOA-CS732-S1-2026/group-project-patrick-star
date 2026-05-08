@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { auth0 } from "@/lib/auth0";
 import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
 import { getStepIndex } from "@/components/onboarding/onboarding-data";
 
@@ -15,6 +17,16 @@ export default async function OnboardingPage({
 }: OnboardingPageProps) {
   const params = searchParams ? await searchParams : undefined;
   const initialStepIndex = getStepIndex(params?.step);
+  const session = await auth0.getSession();
 
-  return <OnboardingFlow initialStepIndex={initialStepIndex} />;
+  if (!session) {
+    redirect("/login");
+  }
+
+  return (
+    <OnboardingFlow
+      initialStepIndex={initialStepIndex}
+      session={session}
+    />
+  );
 }
