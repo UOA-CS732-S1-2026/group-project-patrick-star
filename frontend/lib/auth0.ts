@@ -16,6 +16,18 @@ export const auth0 = new Auth0Client({
   beforeSessionSaved: async (session, idToken) => {
     console.log("[auth] login succeeded", buildLoginSuccessLog(session, idToken));
 
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me/sync`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session.tokenSet.accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: session.user.name,
+        email: session.user.email,
+      }),
+    });
+
     return session;
   },
   onCallback: async (error, ctx) => {
