@@ -52,11 +52,17 @@ function ClosetPanel({
   selectedIds,
   onToggle,
   onGenerateTryOn,
+  isGenerating,
+  generateError,
+  tryOnResultUrl,
 }: {
   closetItems: ClothingItem[];
   selectedIds: Set<string>;
   onToggle: (item: ClothingItem) => void;
   onGenerateTryOn: () => void;
+  isGenerating: boolean;
+  generateError: string | null;
+  tryOnResultUrl: string | null;
 }) {
   return (
     <div className="flex w-[240px] shrink-0 flex-col border-r border-border bg-white">
@@ -102,13 +108,64 @@ function ClosetPanel({
         })}
       </div>
 
-      <div className="border-t border-border p-4">
-        <button
-          onClick={onGenerateTryOn}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-accent bg-accent-soft px-4 py-3 text-sm font-semibold text-accent transition-colors hover:bg-accent/20"
-        >
-          <span aria-hidden>↺</span> Generate Try On
-        </button>
+      <div className="flex flex-col border-t border-border">
+        {/* Generate button */}
+        <div className="p-4">
+          <button
+            onClick={onGenerateTryOn}
+            disabled={isGenerating}
+            className={cn(
+              "flex w-full items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-semibold transition-colors",
+              isGenerating
+                ? "cursor-not-allowed border-neutral-200 bg-neutral-100 text-neutral-400"
+                : "border-accent bg-accent-soft text-accent hover:bg-accent/20"
+            )}
+          >
+            {isGenerating ? (
+              <>
+                <span className="flex gap-1">
+                  {[0, 1, 2].map((i) => (
+                    <span
+                      key={i}
+                      className="h-1.5 w-1.5 animate-pulse rounded-full bg-neutral-400"
+                      style={{ animationDelay: `${i * 150}ms` }}
+                    />
+                  ))}
+                </span>
+                Generating…
+              </>
+            ) : (
+              <><span aria-hidden>↺</span> Generate Try On</>
+            )}
+          </button>
+        </div>
+
+        {/* Generating status */}
+        {isGenerating && (
+          <p className="px-4 pb-3 text-center text-xs text-muted-foreground">
+            Generating your outfit…
+          </p>
+        )}
+
+        {/* Error */}
+        {generateError && (
+          <p className="px-4 pb-3 text-xs font-medium text-red-500">{generateError}</p>
+        )}
+
+        {/* Result card */}
+        {tryOnResultUrl && !isGenerating && (
+          <div className="px-4 pb-4">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Your Generated Outfit
+            </p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={tryOnResultUrl}
+              alt="Generated outfit"
+              className="w-full rounded-xl object-cover shadow-sm"
+            />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -548,6 +605,11 @@ export default function OutfitBuilderPage() {
   const [garmentItemsLoading, setGarmentItemsLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<ApiClothingItem | null>(null);
 
+  // Try-on generation state
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
+  const [tryOnResultUrl, setTryOnResultUrl] = useState<string | null>(null);
+
   useEffect(() => {
     async function fetchGarmentItems() {
       try {
@@ -618,10 +680,54 @@ export default function OutfitBuilderPage() {
     });
   }
 
-  function handleGenerateTryOn() {
-    // TODO: POST /api/tryon { humanImageUrl, garmentImageUrl: selectedItem?.imageUrls?.front, category: selectedItem?.category }
-    console.log("try-on inputs:", { humanImageUrl, selectedItem });
+  async function handleGenerateTryOn() {
+    if (!humanImageUrl) {
+      setGenerateError("Upload your photo first.");
+      return;
+    }
+    if (!selectedItem?.imageUrls?.front) {
+      setGenerateError("Select a garment that has a photo.");
+      return;
+    }
+
+    setGenerateError(null);
+    setTryOnResultUrl(null);
+    setIsGenerating(true);
     setIsTryOnActive(true);
+
+    try {
+      // TODO: replace with proper getAccessToken() helper once auth is fully wired
+      const stored = localStorage.getItem("ai-wardrobe.auth-session");
+      const token = stored
+        ? (JSON.parse(stored) as { accessToken?: string }).accessToken
+        : null;
+      const headers: HeadersInit = { "Content-Type": "application/json" };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const res = await fetch(`${apiUrl}/api/tryon`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          humanImageUrl,
+          garmentImageUrl: selectedItem.imageUrls.front,
+          category: selectedItem.category,
+        }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(
+          (body as { error?: string }).error ?? `Request failed (${res.status})`
+        );
+      }
+
+      const data = (await res.json()) as { success: boolean; imageUrl: string };
+      setTryOnResultUrl(data.imageUrl);
+    } catch (err) {
+      setGenerateError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setIsGenerating(false);
+    }
   }
 
   function handleSave() {
@@ -678,6 +784,9 @@ export default function OutfitBuilderPage() {
           selectedIds={selectedIds}
           onToggle={toggleItem}
           onGenerateTryOn={handleGenerateTryOn}
+          isGenerating={isGenerating}
+          generateError={generateError}
+          tryOnResultUrl={tryOnResultUrl}
         />
 
         <TryOnPreview
