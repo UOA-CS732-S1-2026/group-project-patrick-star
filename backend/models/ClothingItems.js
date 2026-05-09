@@ -2,9 +2,9 @@ const mongoose = require('mongoose')
 
 const ClothingItemSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' },
-  
+
   name: { type: String, required: true, minlength: 1, maxlength: 30 },
-  category: { type: String, required: true, enum: ['upper_body', 'lower_body', 'dresses'] },
+  category: { type: String, required: true, enum: ['upper_body', 'lower_body', 'dresses', 'outerwear', 'shoes', 'accessories'] },
   size: { type: String, required: true, enum: ['XS', 'S', 'M', 'L', 'XL', 'XXL'] },
   colour: { type: String, required: true },
   fit: { type: String, required: true, enum: ['tight', 'regular', 'loose'] },
