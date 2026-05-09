@@ -10,6 +10,7 @@ type AuthSession = {
 };
 
 type UserProfilePayload = {
+  name: string;
   bodyProfile: {
     age: number | null;
     height: number | null;
@@ -29,9 +30,10 @@ export class OnboardingService {
     values: OnboardingFormValues,
     session?: AuthSession,
   ): Promise<void> {
-    await this.ensureUserSynced(session);
+    const name = this.buildName(values);
+    await this.ensureUserSynced(session, name);
 
-    const payload = this.buildProfilePayload(values);
+    const payload = this.buildProfilePayload(values, name);
     const response = await fetch(`${this.apiUrl}/api/users/me`, {
       method: "PUT",
       headers: await getAuthHeaders(true),
@@ -51,11 +53,13 @@ export class OnboardingService {
     }
   }
 
-  private async ensureUserSynced(session?: AuthSession): Promise<void> {
-    const name = session?.user?.name;
+  private async ensureUserSynced(
+    session: AuthSession | undefined,
+    name: string,
+  ): Promise<void> {
     const email = session?.user?.email;
 
-    if (!name || !email) {
+    if (!email) {
       return;
     }
 
@@ -73,11 +77,19 @@ export class OnboardingService {
     }
   }
 
-  private buildProfilePayload(values: OnboardingFormValues): UserProfilePayload {
+  private buildName(values: OnboardingFormValues): string {
+    return `${values.firstName.trim()} ${values.lastName.trim()}`.trim();
+  }
+
+  private buildProfilePayload(
+    values: OnboardingFormValues,
+    name: string,
+  ): UserProfilePayload {
     const selectedModel =
       MODEL_OPTIONS.find((item) => item.id === values.selectedModelId) ?? null;
 
     return {
+      name,
       bodyProfile: {
         age: values.age ? Number(values.age) : null,
         height: values.height ? Number(values.height) : null,

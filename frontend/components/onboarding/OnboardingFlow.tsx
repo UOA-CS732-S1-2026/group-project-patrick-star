@@ -38,7 +38,15 @@ interface OnboardingFlowProps {
 }
 
 const STEP_FIELDS = {
-  "body-profile": ["age", "height", "weight", "bodyShape", "gender"],
+  "body-profile": [
+    "firstName",
+    "lastName",
+    "age",
+    "height",
+    "weight",
+    "bodyShape",
+    "gender",
+  ],
   "about-yourself": ["stylePreference"],
   "select-model": ["modelMode", "modelPhoto", "selectedModelId"],
 } as const satisfies Record<
