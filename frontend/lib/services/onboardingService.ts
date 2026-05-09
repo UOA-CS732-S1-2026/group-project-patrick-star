@@ -108,13 +108,16 @@ export class OnboardingService {
     formData.append("image", image);
 
     const response = await fetch(`${this.apiUrl}/api/users/me/photo/upload`, {
-      method: "PUT",
+      method: "POST",
       headers: await getAuthHeaders(),
       body: formData,
     });
 
     if (!response.ok) {
-      throw new Error("Failed to upload model image");
+      const details = await response.text().catch(() => "");
+      throw new Error(
+        `Failed to upload model image (${response.status} ${response.statusText})${details ? `: ${details}` : ""}`,
+      );
     }
   }
 }

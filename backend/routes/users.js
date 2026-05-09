@@ -85,8 +85,8 @@ router.put("/me/photo", requireAuth, async (req, res) => {
   }
 });
 
-router.put(
-  "/me/model-image",
+router.post(
+  "/me/photo/upload",
   requireAuth,
   upload.single("image"),
   async (req, res) => {
@@ -102,15 +102,15 @@ router.put(
         return res.status(400).json({ error: "No file uploaded" });
       }
 
-      const modelImage = await uploadToCloudinary(req.file.buffer, "profiles");
-      const user = await updateUser(existingUser._id, { modelImage });
+      const url = await uploadToCloudinary(req.file.buffer, "profiles");
+      const user = await updateUser(existingUser._id, { modelImage: url });
 
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
 
       res.json({
-        message: "Model image updated successfully",
+        message: "Model image uploaded successfully",
         modelImage: user.modelImage,
       });
     } catch (error) {
