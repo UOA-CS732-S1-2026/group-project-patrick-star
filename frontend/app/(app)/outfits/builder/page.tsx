@@ -1,13 +1,29 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef, useCallback, type DragEvent, type ChangeEvent } from "react";
+import {
+  useState,
+  useMemo,
+  useEffect,
+  useRef,
+  useCallback,
+  type DragEvent,
+  type ChangeEvent,
+} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { type ClothingItem } from "@/components/ui/ItemCard";
 import { cn } from "@/components/ui/cn";
 
-const STYLES = ["Smart", "Casual", "Street", "Minimal", "Fun", "Dresses"] as const;
+const STYLES = [
+  "Smart",
+  "Casual",
+  "Street",
+  "Minimal",
+  "Fun",
+  "Dresses",
+] as const;
+const TRY_ON_CATEGORIES = new Set(["upper_body", "lower_body", "dresses"]);
 type Style = (typeof STYLES)[number];
 
 interface ApiClothingItem {
@@ -18,7 +34,9 @@ interface ApiClothingItem {
   imageUrls?: { front?: string };
 }
 
-async function getAuthHeaders(includeJson = false): Promise<Record<string, string>> {
+async function getAuthHeaders(
+  includeJson = false,
+): Promise<Record<string, string>> {
   const headers: Record<string, string> = {};
   if (includeJson) headers["Content-Type"] = "application/json";
   const res = await fetch("/api/auth/token");
@@ -31,12 +49,18 @@ async function getAuthHeaders(includeJson = false): Promise<Record<string, strin
 
 function toDisplayCategory(category: string) {
   switch (category) {
-    case "lower_body": return "Bottoms";
-    case "outerwear": return "Outerwear";
-    case "shoes": return "Shoes";
-    case "accessories": return "Accessories";
-    case "dresses": return "Dresses";
-    default: return "Tops";
+    case "lower_body":
+      return "Bottoms";
+    case "outerwear":
+      return "Outerwear";
+    case "shoes":
+      return "Shoes";
+    case "accessories":
+      return "Accessories";
+    case "dresses":
+      return "Dresses";
+    default:
+      return "Tops";
   }
 }
 
@@ -90,12 +114,16 @@ function ClosetPanel({
               className={cn(
                 "relative flex items-center justify-center border-b border-r border-border bg-neutral-50 text-4xl transition-colors",
                 "aspect-square hover:bg-neutral-100",
-                selected && "bg-white ring-2 ring-inset ring-brand"
+                selected && "bg-white ring-2 ring-inset ring-brand",
               )}
             >
               {item.imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" />
+                <img
+                  src={item.imageUrl}
+                  alt={item.name}
+                  className="h-full w-full object-cover"
+                />
               ) : (
                 <span aria-hidden>{item.emoji ?? "👕"}</span>
               )}
@@ -105,7 +133,7 @@ function ClosetPanel({
                   "absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full border-2 text-[10px] font-bold transition-colors",
                   selected
                     ? "border-brand bg-brand text-white"
-                    : "border-neutral-300 bg-white text-transparent"
+                    : "border-neutral-300 bg-white text-transparent",
                 )}
               >
                 ✕
@@ -125,7 +153,7 @@ function ClosetPanel({
               "flex w-full items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-semibold transition-colors",
               isGenerating
                 ? "cursor-not-allowed border-neutral-200 bg-neutral-100 text-neutral-400"
-                : "border-accent bg-accent-soft text-accent hover:bg-accent/20"
+                : "border-accent bg-accent-soft text-accent hover:bg-accent/20",
             )}
           >
             {isGenerating ? (
@@ -142,7 +170,9 @@ function ClosetPanel({
                 Generating…
               </>
             ) : (
-              <><span aria-hidden>↺</span> Generate Try On</>
+              <>
+                <span aria-hidden>↺</span> Generate Try On
+              </>
             )}
           </button>
         </div>
@@ -156,7 +186,9 @@ function ClosetPanel({
 
         {/* Error */}
         {generateError && (
-          <p className="px-4 pb-3 text-xs font-medium text-red-500">{generateError}</p>
+          <p className="px-4 pb-3 text-xs font-medium text-red-500">
+            {generateError}
+          </p>
         )}
 
         {/* Result card */}
@@ -186,7 +218,10 @@ function TryOnPreview({
   isTryOnActive: boolean;
 }) {
   const top = selectedItems.find(
-    (i) => i.category === "Tops" || i.category === "Outerwear" || i.category === "Dresses"
+    (i) =>
+      i.category === "Tops" ||
+      i.category === "Outerwear" ||
+      i.category === "Dresses",
   );
   const bottom = selectedItems.find((i) => i.category === "Bottoms");
 
@@ -204,7 +239,12 @@ function TryOnPreview({
         </span>
 
         <span className="absolute right-4 top-4 flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm">
-          <span className={cn("h-2 w-2 rounded-full", isTryOnActive ? "bg-brand" : "bg-neutral-300")} />
+          <span
+            className={cn(
+              "h-2 w-2 rounded-full",
+              isTryOnActive ? "bg-brand" : "bg-neutral-300",
+            )}
+          />
           Your photo
         </span>
 
@@ -221,7 +261,11 @@ function TryOnPreview({
               {top ? (
                 top.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={top.imageUrl} alt={top.name} className="h-full w-full object-cover" />
+                  <img
+                    src={top.imageUrl}
+                    alt={top.name}
+                    className="h-full w-full object-cover"
+                  />
                 ) : (
                   <span aria-hidden>{top.emoji ?? "👕"}</span>
                 )
@@ -237,7 +281,11 @@ function TryOnPreview({
               {bottom ? (
                 bottom.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={bottom.imageUrl} alt={bottom.name} className="h-full w-full object-cover" />
+                  <img
+                    src={bottom.imageUrl}
+                    alt={bottom.name}
+                    className="h-full w-full object-cover"
+                  />
                 ) : (
                   <span aria-hidden>{bottom.emoji ?? "👖"}</span>
                 )
@@ -309,7 +357,7 @@ function OutfitDetailsPanel({
                   "rounded-full border-2 px-3 py-1.5 text-xs font-semibold transition-colors",
                   style === s
                     ? "border-accent bg-accent-soft text-accent"
-                    : "border-border bg-white text-foreground hover:bg-neutral-50"
+                    : "border-border bg-white text-foreground hover:bg-neutral-50",
                 )}
               >
                 {s}
@@ -377,18 +425,25 @@ function YourPhotoSection({
       <div
         onClick={() => fileInputRef.current?.click()}
         onDrop={handleDrop}
-        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setIsDragging(true);
+        }}
         onDragLeave={() => setIsDragging(false)}
         className={cn(
           "relative flex h-20 w-20 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed transition-colors",
           isDragging
             ? "border-brand bg-brand/5"
-            : "border-border bg-neutral-50 hover:bg-neutral-100"
+            : "border-border bg-neutral-50 hover:bg-neutral-100",
         )}
       >
         {preview ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={preview} alt="Your photo preview" className="h-full w-full object-cover" />
+          <img
+            src={preview}
+            alt="Your photo preview"
+            className="h-full w-full object-cover"
+          />
         ) : isUploading ? (
           <span className="flex gap-1">
             {[0, 1, 2].map((i) => (
@@ -400,7 +455,9 @@ function YourPhotoSection({
             ))}
           </span>
         ) : (
-          <span className="text-2xl text-neutral-400" aria-hidden>↑</span>
+          <span className="text-2xl text-neutral-400" aria-hidden>
+            ↑
+          </span>
         )}
       </div>
 
@@ -471,7 +528,7 @@ function GarmentSelectorSection({
                   "relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 transition-colors",
                   isSelected
                     ? "border-brand ring-2 ring-brand ring-offset-1"
-                    : "border-border hover:border-neutral-400"
+                    : "border-border hover:border-neutral-400",
                 )}
               >
                 {item.imageUrls?.front ? (
@@ -552,7 +609,9 @@ export default function OutfitBuilderPage() {
 
         setName(outfit.name);
         setStyle(outfit.style ?? "");
-        setSelectedIds(new Set(outfit.items.map((i: { _id: string }) => i._id)));
+        setSelectedIds(
+          new Set(outfit.items.map((i: { _id: string }) => i._id)),
+        );
       } catch (err) {
         console.error(err);
       }
@@ -562,15 +621,18 @@ export default function OutfitBuilderPage() {
   }, [outfitId, apiUrl]);
 
   // Human photo state — URL returned by the upload endpoint, used later for try-on
-  const [humanPhotoPreview, setHumanPhotoPreview] = useState<string | null>(null);
+  const [humanPhotoPreview, setHumanPhotoPreview] = useState<string | null>(
+    null,
+  );
   const [humanImageUrl, setHumanImageUrl] = useState<string | null>(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
 
   // Garment selector state — fetched from /api/clothingItems/me
   const [garmentItems, setGarmentItems] = useState<ApiClothingItem[]>([]);
   const [garmentItemsLoading, setGarmentItemsLoading] = useState(true);
-  const [selectedItem, setSelectedItem] = useState<ApiClothingItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<ApiClothingItem | null>(
+    null,
+  );
 
   // Try-on generation state
   const [isGenerating, setIsGenerating] = useState(false);
@@ -580,17 +642,14 @@ export default function OutfitBuilderPage() {
   useEffect(() => {
     async function fetchGarmentItems() {
       try {
-        // TODO: replace with proper getAccessToken() helper once auth is fully wired
-        const stored = localStorage.getItem("ai-wardrobe.auth-session");
-        const token = stored
-          ? (JSON.parse(stored) as { accessToken?: string }).accessToken
-          : null;
-        const headers: HeadersInit = {};
-        if (token) headers.Authorization = `Bearer ${token}`;
-
-        const res = await fetch(`${apiUrl}/api/clothingItems/me`, { headers });
+        const res = await fetch(`${apiUrl}/api/clothingItems/me`, {
+          headers: await getAuthHeaders(),
+        });
         if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
-        setGarmentItems((await res.json()) as ApiClothingItem[]);
+        const items = (await res.json()) as ApiClothingItem[];
+        setGarmentItems(
+          items.filter((item) => TRY_ON_CATEGORIES.has(item.category)),
+        );
       } catch (err) {
         console.error("Failed to fetch clothing items:", err);
       } finally {
@@ -605,27 +664,17 @@ export default function OutfitBuilderPage() {
     setHumanPhotoPreview(URL.createObjectURL(file));
     setIsUploadingPhoto(true);
     try {
-      // TODO: replace with proper getAccessToken() helper once auth is fully wired
-      const stored = typeof window !== "undefined"
-        ? localStorage.getItem("ai-wardrobe.auth-session")
-        : null;
-      const token = stored
-        ? (JSON.parse(stored) as { accessToken?: string }).accessToken
-        : null;
-
       const formData = new FormData();
       formData.append("image", file);
-      const headers: HeadersInit = {};
-      if (token) headers.Authorization = `Bearer ${token}`;
 
       const res = await fetch(`${apiUrl}/api/users/me/photo/upload`, {
         method: "POST",
-        headers,
+        headers: await getAuthHeaders(),
         body: formData,
       });
       if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
-      const data = (await res.json()) as { url: string };
-      setHumanImageUrl(data.url);
+      const data = (await res.json()) as { modelImage: string };
+      setHumanImageUrl(data.modelImage);
     } catch (err) {
       console.error("Failed to upload photo:", err);
       setHumanImageUrl(null);
@@ -636,13 +685,17 @@ export default function OutfitBuilderPage() {
 
   const selectedItems = useMemo(
     () => closetItems.filter((i) => selectedIds.has(i.id)),
-    [closetItems, selectedIds]
+    [closetItems, selectedIds],
   );
 
   function toggleItem(item: ClothingItem) {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      next.has(item.id) ? next.delete(item.id) : next.add(item.id);
+      if (next.has(item.id)) {
+        next.delete(item.id);
+      } else {
+        next.add(item.id);
+      }
       return next;
     });
   }
@@ -656,6 +709,10 @@ export default function OutfitBuilderPage() {
       setGenerateError("Select a garment that has a photo.");
       return;
     }
+    if (!TRY_ON_CATEGORIES.has(selectedItem.category)) {
+      setGenerateError("Select a top, bottom, or dress for try-on.");
+      return;
+    }
 
     setGenerateError(null);
     setTryOnResultUrl(null);
@@ -663,17 +720,9 @@ export default function OutfitBuilderPage() {
     setIsTryOnActive(true);
 
     try {
-      // TODO: replace with proper getAccessToken() helper once auth is fully wired
-      const stored = localStorage.getItem("ai-wardrobe.auth-session");
-      const token = stored
-        ? (JSON.parse(stored) as { accessToken?: string }).accessToken
-        : null;
-      const headers: HeadersInit = { "Content-Type": "application/json" };
-      if (token) headers.Authorization = `Bearer ${token}`;
-
       const res = await fetch(`${apiUrl}/api/tryon`, {
         method: "POST",
-        headers,
+        headers: await getAuthHeaders(true),
         body: JSON.stringify({
           humanImageUrl,
           garmentImageUrl: selectedItem.imageUrls.front,
@@ -684,14 +733,17 @@ export default function OutfitBuilderPage() {
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(
-          (body as { error?: string }).error ?? `Request failed (${res.status})`
+          (body as { error?: string }).error ??
+            `Request failed (${res.status})`,
         );
       }
 
       const data = (await res.json()) as { success: boolean; imageUrl: string };
       setTryOnResultUrl(data.imageUrl);
     } catch (err) {
-      setGenerateError(err instanceof Error ? err.message : "Something went wrong.");
+      setGenerateError(
+        err instanceof Error ? err.message : "Something went wrong.",
+      );
     } finally {
       setIsGenerating(false);
     }
@@ -717,7 +769,10 @@ export default function OutfitBuilderPage() {
       });
 
       if (!response.ok) {
-        console.error("Failed to save outfit:", JSON.stringify(await response.json()));
+        console.error(
+          "Failed to save outfit:",
+          JSON.stringify(await response.json()),
+        );
         return;
       }
 
