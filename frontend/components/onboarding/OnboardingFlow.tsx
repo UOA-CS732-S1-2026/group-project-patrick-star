@@ -25,13 +25,28 @@ import {
 import { BodyProfileStep } from "./steps/BodyProfileStep";
 import { AboutYourselfStep } from "./steps/AboutYourselfStep";
 import { SelectModelStep } from "./steps/SelectModelStep";
+import { onboardingService } from "@/lib/services/onboardingService";
 
 interface OnboardingFlowProps {
   initialStepIndex?: number;
+  session?: {
+    user?: {
+      name?: string | null;
+      email?: string | null;
+    };
+  };
 }
 
 const STEP_FIELDS = {
-  "body-profile": ["age", "height", "weight", "bodyShape", "gender"],
+  "body-profile": [
+    "firstName",
+    "lastName",
+    "age",
+    "height",
+    "weight",
+    "bodyShape",
+    "gender",
+  ],
   "about-yourself": ["stylePreference"],
   "select-model": ["modelMode", "modelPhoto", "selectedModelId"],
 } as const satisfies Record<
@@ -132,7 +147,10 @@ function collectLoggedValidationErrors(
   });
 }
 
-export function OnboardingFlow({ initialStepIndex = 0 }: OnboardingFlowProps) {
+export function OnboardingFlow({
+  initialStepIndex = 0,
+  session,
+}: OnboardingFlowProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [stepIndex, setStepIndex] = useState(initialStepIndex);
@@ -176,39 +194,7 @@ export function OnboardingFlow({ initialStepIndex = 0 }: OnboardingFlowProps) {
     const isValid = await methods.trigger(STEP_FIELDS[currentStep], {
       shouldFocus: true,
     });
-
-    // for future debugging purposes
-    if (!isValid) {
-      // const validationErrors = STEP_FIELDS[currentStep]
-      //   .map((field) => {
-      //     const fieldState = methods.getFieldState(field, methods.formState);
-
-      //     return fieldState.error
-      //       ? {
-      //           field,
-      //           message: fieldState.error.message ?? "Validation error",
-      //           type: fieldState.error.type,
-      //         }
-      //       : null;
-      //   })
-      //   .filter(Boolean) as LoggedValidationError[];
-
-      // void fetch("/api/onboarding", {
-      //   method: "POST",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //     "x-onboarding-debug": "validation",
-      //   },
-      //   body: JSON.stringify({
-      //     kind: "validation-error",
-      //     step: currentStep,
-      //     errors: validationErrors,
-      //   }),
-      // }).catch((error) => {
-      //   console.error("Failed to report onboarding validation errors", error);
-      // });
-      return;
-    }
+    if (!isValid) return;
 
     setStepIndex((value) =>
       Math.min(value + 1, ONBOARDING_STEP_ORDER.length - 1),
@@ -221,69 +207,11 @@ export function OnboardingFlow({ initialStepIndex = 0 }: OnboardingFlowProps) {
 
   const onSubmit = methods.handleSubmit(
     async (values) => {
-      const uploadedPhoto = values.modelPhoto?.[0] ?? null;
-      const selectedModelOnSubmit =
-        MODEL_OPTIONS.find((item) => item.id === values.selectedModelId) ??
-        null;
-      const isUploadFlow =
-        values.modelMode === "upload" && Boolean(uploadedPhoto);
-      const isModelFlow =
-        values.modelMode === "select" && Boolean(values.selectedModelId);
-      const payload = {
-        age: values.age ? Number(values.age) : null,
-        height: values.height ? Number(values.height) : null,
-        weight: values.weight ? Number(values.weight) : null,
-        bodyShape: values.bodyShape ?? null,
-        gender: values.gender ?? null,
-        stylePreference: values.stylePreference,
-        modelMode: values.modelMode,
-        selectedModelId: isModelFlow ? values.selectedModelId : null,
-        selectedModelImageSrc: isModelFlow
-          ? (selectedModelOnSubmit?.imageSrc ?? null)
-          : null,
-        photo:
-          isUploadFlow && uploadedPhoto
-            ? {
-                name: uploadedPhoto.name,
-                type: uploadedPhoto.type,
-                size: uploadedPhoto.size,
-              }
-            : null,
-      };
-
-      const formData = new FormData();
-      formData.append("payload", JSON.stringify(payload));
-
-      if (isUploadFlow && uploadedPhoto) {
-        formData.append("photo", uploadedPhoto);
-      }
-      console.log({
-        payload,
-        photo: isUploadFlow && uploadedPhoto ? uploadedPhoto : null,
-      });
+      await onboardingService.save(values, session);
       router.push("/");
     },
     async (errors) => {
-      // right now just print out the errors to the console
       console.error(errors);
-
-      /// here is for future use if we want to report validation errors to the server
-      // const validationErrors = collectLoggedValidationErrors(errors);
-
-      // void fetch("/api/onboarding", {
-      //   method: "POST",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //     "x-onboarding-debug": "validation",
-      //   },
-      //   body: JSON.stringify({
-      //     kind: "validation-error",
-      //     step: "final-submit",
-      //     errors: validationErrors,
-      //   }),
-      // }).catch((error) => {
-      //   console.error("Failed to report onboarding validation errors", error);
-      // });
     },
   );
 

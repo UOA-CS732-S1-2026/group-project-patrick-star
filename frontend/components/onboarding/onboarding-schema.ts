@@ -10,6 +10,14 @@ const fileListSchema = z.custom<FileList | null>((value) => {
 }, "Please upload a photo.");
 
 export const onboardingStep1Schema = z.object({
+  firstName: z
+    .string()
+    .trim()
+    .min(1, "First name is required."),
+  lastName: z
+    .string()
+    .trim()
+    .min(1, "Last name is required."),
   age: z
     .string()
     .trim()
@@ -36,6 +44,14 @@ export const onboardingStep1Schema = z.object({
 });
 
 export const onboardingStep2Schema = z.object({
+  firstName: z
+    .string()
+    .trim()
+    .min(1, "First name is required."),
+  lastName: z
+    .string()
+    .trim()
+    .min(1, "Last name is required."),
   stylePreference: z
     .array(z.enum(STYLE_OPTIONS))
     .min(1, "Select at least one style."),
@@ -81,6 +97,8 @@ export const onboardingStep3Schema = z
   });
 
 export const onboardingFormSchema = z.object({
+  firstName: onboardingStep1Schema.shape.firstName,
+  lastName: onboardingStep1Schema.shape.lastName,
   age: onboardingStep1Schema.shape.age,
   height: onboardingStep1Schema.shape.height,
   weight: onboardingStep1Schema.shape.weight,
@@ -100,6 +118,8 @@ export type OnboardingStep2Values = z.infer<typeof onboardingStep2Schema>;
 export type OnboardingStep3Values = z.infer<typeof onboardingStep3Schema>;
 
 export const DEFAULT_ONBOARDING_VALUES: OnboardingFormValues = {
+  firstName: "",
+  lastName: "",
   age: "",
   height: "",
   weight: "",
