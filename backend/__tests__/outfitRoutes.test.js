@@ -125,6 +125,23 @@ describe("POST /api/outfits/me", () => {
     expect(res.body.favourite).toBe(true);
     expect(res.body.name).toBe("Plain Fit");
   });
+
+  it("should reject two items from the same category", async () => {
+    const user = await createTestUser();
+    const top1 = await createTestItem(user._id, { category: "upper_body" });
+    const top2 = await createTestItem(user._id, { category: "upper_body" });
+
+    const res = await request(app)
+      .post("/api/outfits/me")
+      .set(authHeader)
+      .send({
+        name: "Bad Fit",
+        items: [top1._id, top2._id],
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/different categories/);
+  });
 });
 
 describe("GET /api/outfits/me", () => {
