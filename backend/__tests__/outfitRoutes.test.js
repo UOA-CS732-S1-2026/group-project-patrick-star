@@ -104,6 +104,27 @@ describe("POST /api/outfits/me", () => {
 
     expect(res.status).toBe(404);
   });
+
+  it("should update style and favourite independently", async () => {
+    const user = await createTestUser();
+    const outfit = await Outfit.create({
+      userId: user._id,
+      name: "Plain Fit",
+      items: [],
+      style: "",
+      favourite: false,
+    });
+
+    const res = await request(app)
+      .put(`/api/outfits/me/${outfit._id}`)
+      .set(authHeader)
+      .send({ style: "Smart", favourite: true });
+
+    expect(res.status).toBe(200);
+    expect(res.body.style).toBe("Smart");
+    expect(res.body.favourite).toBe(true);
+    expect(res.body.name).toBe("Plain Fit");
+  });
 });
 
 describe("GET /api/outfits/me", () => {
@@ -198,6 +219,27 @@ describe("PUT /api/outfits/me/:id", () => {
       .send({ items: [otherItem._id] });
 
     expect(res.status).toBe(404);
+  });
+
+  it("should update style and favourite independently", async () => {
+    const user = await createTestUser();
+    const outfit = await Outfit.create({
+      userId: user._id,
+      name: "Plain Fit",
+      items: [],
+      style: "",
+      favourite: false,
+    });
+
+    const res = await request(app)
+      .put(`/api/outfits/me/${outfit._id}`)
+      .set(authHeader)
+      .send({ style: "Smart", favourite: true });
+
+    expect(res.status).toBe(200);
+    expect(res.body.style).toBe("Smart");
+    expect(res.body.favourite).toBe(true);
+    expect(res.body.name).toBe("Plain Fit");
   });
 });
 

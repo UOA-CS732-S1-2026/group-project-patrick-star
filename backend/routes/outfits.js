@@ -49,6 +49,8 @@ router.post("/me", requireAuth, async (req, res) => {
       name: req.body.name,
       items,
       userId: user._id,
+      style: req.body.style ?? "",
+      favourite: req.body.favourite ?? false,
     });
 
     const [populatedOutfit] = await getOutfits({
@@ -85,10 +87,10 @@ router.put("/me/:id", requireAuth, async (req, res) => {
     if (!user) return;
 
     const update = {};
-    if (Object.hasOwn(req.body, "name")) {
-      update.name = req.body.name;
-    }
 
+    if (Object.hasOwn(req.body, "name")) update.name = req.body.name;
+    if (Object.hasOwn(req.body, "style")) update.style = req.body.style;
+    if (Object.hasOwn(req.body, "favourite")) update.favourite = req.body.favourite;
     if (req.body.items) {
       update.items = await validateOwnedItems(user._id, req.body.items);
     }

@@ -98,4 +98,39 @@ describe("Outfit service", () => {
     const fetched = await Outfit.findById(outfit._id);
     expect(fetched).toBeNull();
   });
+
+  it("stores style and favourite on creation", async () => {
+    const user = await createTestUser();
+    const item = await createTestItem(user._id, { category: "upper_body" });
+
+    const outfit = await outfitService.addOutfit({
+      userId: user._id,
+      name: "Styled Outfit",
+      items: [item._id],
+      style: "Street",
+      favourite: true,
+    });
+
+    expect(outfit.style).toBe("Street");
+    expect(outfit.favourite).toBe(true);
+  });
+
+  it("updates favourite without affecting other fields", async () => {
+    const user = await createTestUser();
+    const outfit = await outfitService.addOutfit({
+      userId: user._id,
+      name: "Fav Test",
+      items: [],
+      style: "Minimal",
+      favourite: false,
+    });
+
+    const updated = await outfitService.updateOutfitForUser(outfit._id, user._id, {
+      favourite: true,
+    });
+
+    expect(updated.favourite).toBe(true);
+    expect(updated.style).toBe("Minimal");
+    expect(updated.name).toBe("Fav Test");
+  });
 });
