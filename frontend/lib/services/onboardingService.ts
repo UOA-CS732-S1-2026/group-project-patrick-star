@@ -107,7 +107,7 @@ export class OnboardingService {
     const formData = new FormData();
     formData.append("image", image);
 
-    const response = await fetch(`${this.apiUrl}/api/users/me/model-image`, {
+    const response = await fetch(`${this.apiUrl}/api/users/me/photo/upload`, {
       method: "PUT",
       headers: await getAuthHeaders(),
       body: formData,
