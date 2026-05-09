@@ -29,7 +29,12 @@ import { onboardingService } from "@/lib/services/onboardingService";
 
 interface OnboardingFlowProps {
   initialStepIndex?: number;
-  session?: unknown;
+  session?: {
+    user?: {
+      name?: string | null;
+      email?: string | null;
+    };
+  };
 }
 
 const STEP_FIELDS = {
@@ -134,7 +139,10 @@ function collectLoggedValidationErrors(
   });
 }
 
-export function OnboardingFlow({ initialStepIndex = 0 }: OnboardingFlowProps) {
+export function OnboardingFlow({
+  initialStepIndex = 0,
+  session,
+}: OnboardingFlowProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [stepIndex, setStepIndex] = useState(initialStepIndex);
@@ -191,7 +199,7 @@ export function OnboardingFlow({ initialStepIndex = 0 }: OnboardingFlowProps) {
 
   const onSubmit = methods.handleSubmit(
     async (values) => {
-      await onboardingService.save(values);
+      await onboardingService.save(values, session);
       router.push("/");
     },
     async (errors) => {
