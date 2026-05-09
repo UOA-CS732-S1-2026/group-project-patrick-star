@@ -1,4 +1,4 @@
-# AI Wardrobe — Frontend
+# AI Wardrobe Frontend
 
 Next.js (App Router) + Tailwind CSS v4 + TypeScript. Desktop-first UI for an AI-powered wardrobe/outfit app.
 
@@ -13,76 +13,113 @@ Open http://localhost:3000.
 
 ### Scripts
 
-| Command         | What it does                         |
-| --------------- | ------------------------------------ |
-| `npm run dev`   | Start the dev server on port 3000    |
-| `npm run build` | Production build                     |
-| `npm run start` | Serve the production build           |
-| `npm run lint`  | Run ESLint                           |
+| Command         | What it does                      |
+| --------------- | --------------------------------- |
+| `npm run dev`   | Start the dev server on port 3000 |
+| `npm run build` | Production build                  |
+| `npm run start` | Serve the production build        |
+| `npm run lint`  | Run ESLint                        |
 
 ## Routes
 
-| URL                          | Page                                             |
-| ---------------------------- | ------------------------------------------------ |
-| `/`                          | Home — Today's look, insights, recently worn     |
-| `/closet`                    | My Closet — searchable, filterable item grid     |
-| `/components`                | Component showcase (all reusable UI primitives)  |
-| `/onboarding/body-profile`   | Onboarding step 2 — body profile form            |
+| URL                    | Page                                          |
+| ---------------------- | --------------------------------------------- |
+| `/`                    | Home, today's look, insights, recently worn   |
+| `/closet`              | My Closet, searchable item grid               |
+| `/components`          | Component showcase                            |
+| `/onboarding`          | Onboarding flow                             |
 
-Stubs for `/outfits`, `/calendar`, `/profile` are not yet built — sidebar links pointing at them will 404 until you add `app/(app)/outfits/page.tsx`, etc.
+Stubs for `/outfits`, `/calendar`, and `/profile` are not yet built, so sidebar links pointing at them will 404 until you add the matching pages under `app/(app)/`.
 
 ## Project structure
 
 ```
 frontend/
 ├── app/
-│   ├── layout.tsx                 # Root HTML shell + fonts + metadata
-│   ├── globals.css                # Tailwind import + design tokens (@theme)
-│   ├── (app)/                     # Route group — shares the sidebar layout
-│   │   ├── layout.tsx             #   Wraps children in <AppShell/>
-│   │   ├── page.tsx               #   /           (home)
-│   │   ├── closet/page.tsx        #   /closet
-│   │   └── components/page.tsx    #   /components (showcase)
-│   └── onboarding/
-│       └── body-profile/page.tsx  # /onboarding/body-profile (no sidebar)
+│   ├── layout.tsx
+│   ├── globals.css
+│   ├── providers.tsx
+│   ├── onboarding/
+│   │   └── page.tsx
+│   ├── (auth)/
+│   │   ├── login/page.tsx
+│   │   └── signup/page.tsx
+│   ├── (app)/
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   ├── closet/page.tsx
+│   │   ├── components/page.tsx
+│   │   ├── outfits/page.tsx
+│   │   ├── outfits/builder/page.tsx
+│   │   └── profile/page.tsx
+│   └── api/
+│       └── auth/
+│           └── token/route.ts
 │
 ├── components/
-│   ├── index.ts                   # Barrel — import { Button } from "@/components"
-│   ├── ui/                        # Presentational primitives
-│   │   ├── Button.tsx
-│   │   ├── Card.tsx
-│   │   ├── Badge.tsx
-│   │   ├── Chip.tsx
-│   │   ├── ItemCard.tsx
-│   │   ├── SearchInput.tsx
-│   │   ├── ProgressBar.tsx
-│   │   └── cn.ts                  # Tiny className joiner
+│   ├── index.ts
+│   ├── auth/
+│   │   └── AuthSplitLayout.tsx
+│   ├── closet/
+│   │   ├── EditItemPanel.tsx
+│   │   ├── ItemDetailPanel.tsx
+│   │   └── UploadItemModal.tsx
 │   ├── layout/
-│   │   ├── AppShell.tsx           # Sidebar + main two-column shell
-│   │   ├── Sidebar.tsx            # Persistent nav with active-state
-│   │   └── PageHeader.tsx         # Title/subtitle + right-side actions
-│   └── onboarding/
-│       └── OnboardingShell.tsx    # Two-pane onboarding layout + progress
+│   │   ├── AppShell.tsx
+│   │   ├── PageHeader.tsx
+│   │   └── Sidebar.tsx
+│   ├── onboarding/
+│   │   ├── OnboardingFlow.tsx
+│   │   ├── OnboardingShell.tsx
+│   │   ├── ModelScroller.tsx
+│   │   ├── onboarding-data.ts
+│   │   ├── onboarding-schema.ts
+│   │   └── steps/
+│   │       ├── AboutYourselfStep.tsx
+│   │       ├── BodyProfileStep.tsx
+│   │       └── SelectModelStep.tsx
+│   ├── outfits/
+│   │   ├── OutfitCard.tsx
+│   │   └── OutfitDetailPanel.tsx
+│   └── ui/
+│       ├── AuthField.tsx
+│       ├── BackButton.tsx
+│       ├── Badge.tsx
+│       ├── Button.tsx
+│       ├── Card.tsx
+│       ├── Chip.tsx
+│       ├── ItemCard.tsx
+│       ├── Modal.tsx
+│       ├── ProgressBar.tsx
+│       ├── SearchInput.tsx
+│       └── cn.ts
 │
-├── public/                        # Static assets
+├── lib/
+│   ├── auth0.ts
+│   └── auth/
+│       ├── callback.ts
+│       ├── logging.ts
+│       └── messages.ts
+│
+├── public/
 ├── next.config.ts
-├── tsconfig.json                  # "@/*" path alias → frontend root
+├── tsconfig.json
 └── package.json
 ```
 
 ## Routing conventions (App Router)
 
-- **`folder/`** adds a URL segment (`app/closet/page.tsx` → `/closet`).
-- **`(folder)/`** is a **route group** — it shares a layout but does *not* add a URL segment. `app/(app)/closet/page.tsx` still renders at `/closet`.
-- **`layout.tsx`** wraps every `page.tsx` in its folder and below. The logged-in pages live inside `(app)/` so they all inherit the `AppShell` sidebar. The onboarding flow lives *outside* `(app)/` so it gets a blank canvas.
+- `folder/` adds a URL segment (`app/closet/page.tsx` -> `/closet`).
+- `(folder)/` is a route group. It shares a layout but does not add a URL segment. `app/(app)/closet/page.tsx` still renders at `/closet`.
+- `layout.tsx` wraps every `page.tsx` in its folder and below. The logged-in pages live inside `(app)/` so they inherit the `AppShell` sidebar. The onboarding flow lives outside `(app)/` so it gets a blank canvas.
 
-To add a new logged-in page, drop a `page.tsx` into `app/(app)/<route>/` — it will automatically inherit the sidebar.
+To add a new logged-in page, drop a `page.tsx` into `app/(app)/<route>/` and it will automatically inherit the sidebar.
 
 ## Styling
 
-- **Tailwind v4** via `@tailwindcss/postcss`. No `tailwind.config.js` — tokens are declared in [app/globals.css](app/globals.css) inside `@theme inline { … }`, which exposes them as utility classes like `bg-brand`, `text-muted-foreground`, `border-border`.
+- Tailwind v4 via `@tailwindcss/postcss`. No `tailwind.config.js` file. Tokens are declared in [app/globals.css](app/globals.css) inside `@theme inline`, which exposes them as utility classes like `bg-brand`, `text-muted-foreground`, and `border-border`.
 - Design tokens defined: `background`, `surface`, `foreground`, `muted`, `muted-foreground`, `border`, `brand`, `brand-hover`, `brand-foreground`, `accent`, `accent-soft`.
-- To add a new token, edit `@theme inline` in `globals.css` — no rebuild config needed.
+- To add a new token, edit `@theme inline` in `globals.css`; no rebuild config is needed.
 
 ## Component library
 
@@ -105,7 +142,7 @@ import {
 } from "@/components";
 ```
 
-See **`/components`** in the running app for a live showcase of every variant.
+See `/components` in the running app for a live showcase of every variant.
 
 ### Client vs server components
 
@@ -116,10 +153,10 @@ By default, pages and components are React Server Components. Add `"use client"`
 
 ## Conventions
 
-- **Imports**: use the `@/` alias (`@/components`, `@/app/...`), not relative `../../`.
-- **Class merging**: use the `cn(...)` helper from `@/components/ui/cn` rather than string concatenation.
-- **Icons**: currently placeholder emojis to stay dependency-free. Swap in `lucide-react` or SVGs when ready — change them in one place per component.
-- **Data**: pages currently use hard-coded arrays. Replace with `fetch(...)` / server actions once backend endpoints exist.
+- `@/` imports: use the alias (`@/components`, `@/app/...`), not relative `../../`.
+- Class merging: use the `cn(...)` helper from `@/components/ui/cn` rather than string concatenation.
+- Icons: currently placeholder emojis to stay dependency-free. Swap in `lucide-react` or SVGs when ready, and change them in one place per component.
+- Data: pages currently use hard-coded arrays. Replace with `fetch(...)` or server actions once backend endpoints exist.
 
 ## Backend integration
 
@@ -131,4 +168,4 @@ The backend lives in `../backend/` (Express + Jest). Wire it up by:
 
 ## Notes for contributors
 
-This project is on **Next.js 16**, which has breaking changes from older tutorials. Before writing routing or data-fetching code, skim the docs in `node_modules/next/dist/docs/` after `npm install` — some patterns (e.g. `params`, `searchParams`, caching) differ from Next 13/14.
+This project is on Next.js 16, which has breaking changes from older tutorials. Before writing routing or data-fetching code, skim the docs in `node_modules/next/dist/docs/` after `npm install`; some patterns differ from Next 13/14.
