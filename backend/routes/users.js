@@ -5,10 +5,10 @@ const {
   updateUser,
   deleteUser,
 } = require("../db/userService");
-const router = express.Router();
-const { requireAuth } = require("../middleware/auth");
 const { uploadToCloudinary } = require("../lib/cloudinary");
+const { requireAuth } = require("../middleware/auth");
 const upload = require("../middleware/upload");
+const router = express.Router();
 
 router.post("/me/sync", requireAuth, async (req, res) => {
   try {
@@ -85,27 +85,39 @@ router.put("/me/photo", requireAuth, async (req, res) => {
   }
 });
 
-router.post("/me/photo/upload", requireAuth, upload.single("image"), async (req, res) => {
-  try {
-    const auth0UserId = req.auth.payload.sub;
-    const existingUser = await getUserByAuth0UserId(auth0UserId);
+router.post(
+  "/me/photo/upload",
+  requireAuth,
+  upload.single("image"),
+  async (req, res) => {
+    try {
+      const auth0UserId = req.auth.payload.sub;
+      const existingUser = await getUserByAuth0UserId(auth0UserId);
 
-    if (!existingUser) {
-      return res.status(404).json({ error: "User not found" });
+      if (!existingUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      const url = await uploadToCloudinary(req.file.buffer, "profiles");
+      const user = await updateUser(existingUser._id, { modelImage: url });
+
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      res.json({
+        message: "Model image uploaded successfully",
+        modelImage: user.modelImage,
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
     }
-
-    if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded" });
-    }
-
-    const url = await uploadToCloudinary(req.file.buffer, "profiles");
-    await updateUser(existingUser._id, { profilePhoto: url });
-
-    res.json({ url });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+  },
+);
 
 router.delete("/me", requireAuth, async (req, res) => {
   try {

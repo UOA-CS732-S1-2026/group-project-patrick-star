@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
@@ -8,73 +8,71 @@ import { Chip } from "@/components/ui/Chip";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { OutfitCard, type Outfit } from "@/components/outfits/OutfitCard";
 import { OutfitDetailPanel } from "@/components/outfits/OutfitDetailPanel";
+import { type ClothingItem } from "@/components/ui/ItemCard";
 
 const STYLE_FILTERS = ["All", "Smart", "Street", "Casual", "Fun", "Minimal", "Dresses"] as const;
 type StyleFilter = (typeof STYLE_FILTERS)[number];
 
-const SEED_OUTFITS: Outfit[] = [
-  {
-    id: "1",
-    name: "Friday Meeting Look",
-    style: "Smart",
-    season: "Autumn",
-    occasion: "Work",
-    favourite: true,
-    items: [
-      { id: "1", name: "White linen shirt", category: "Tops", emoji: "👕", colour: "White" },
-      { id: "2", name: "Navy trousers", category: "Bottoms", emoji: "👖", colour: "Navy" },
-      { id: "3", name: "Tan trench", category: "Outerwear", emoji: "🧥", colour: "Tan" },
-      { id: "4", name: "White sneakers", category: "Shoes", emoji: "👟", colour: "White" },
-    ],
-  },
-  {
-    id: "2",
-    name: "Weekend Errand Run",
-    style: "Casual",
-    season: "Summer",
-    occasion: "Weekend",
-    favourite: false,
-    items: [
-      { id: "5", name: "Black turtleneck", category: "Tops", emoji: "🐢", colour: "Black" },
-      { id: "6", name: "Olive shorts", category: "Bottoms", emoji: "🩳", colour: "Olive" },
-      { id: "4", name: "White sneakers", category: "Shoes", emoji: "👟", colour: "White" },
-    ],
-  },
-  {
-    id: "3",
-    name: "City Stroll",
-    style: "Street",
-    season: "Spring",
-    occasion: "Going out",
-    favourite: false,
-    items: [
-      { id: "12", name: "Oxford shirt", category: "Tops", emoji: "👔", colour: "Blue" },
-      { id: "2", name: "Navy trousers", category: "Bottoms", emoji: "👖", colour: "Navy" },
-      { id: "7", name: "Brown boots", category: "Shoes", emoji: "🥾", colour: "Brown" },
-      { id: "9", name: "Bucket hat", category: "Accessories", emoji: "🧢", colour: "Green" },
-    ],
-  },
-  {
-    id: "4",
-    name: "Layered Winter Look",
-    style: "Minimal",
-    season: "Winter",
-    occasion: "Weekend",
-    favourite: false,
-    items: [
-      { id: "5", name: "Black turtleneck", category: "Tops", emoji: "🐢", colour: "Black" },
-      { id: "3", name: "Tan trench", category: "Outerwear", emoji: "🧥", colour: "Tan" },
-      { id: "2", name: "Navy trousers", category: "Bottoms", emoji: "👖", colour: "Navy" },
-      { id: "7", name: "Brown boots", category: "Shoes", emoji: "🥾", colour: "Brown" },
-    ],
-  },
-];
+interface ApiClothingItem {
+  _id: string;
+  name: string;
+  category: string;
+  colour: string;
+  imageUrls?: { front?: string };
+}
+
+interface ApiOutfit {
+  _id: string;
+  name: string;
+  style?: string;
+  favourite?: boolean;
+  items: ApiClothingItem[];
+}
+
+async function getAuthHeaders(includeJson = false): Promise<Record<string, string>> {
+  const headers: Record<string, string> = {};
+  if (includeJson) headers["Content-Type"] = "application/json";
+  const res = await fetch("/api/auth/token");
+  if (res.ok) {
+    const { token } = await res.json();
+    if (token) headers.Authorization = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+function toDisplayCategory(category: string) {
+  if (category === "lower_body") return "Bottoms";
+  if (category === "dresses") return "Dresses";
+  return "Tops";
+}
+
+function toClothingItem(item: ApiClothingItem): ClothingItem {
+  return {
+    id: item._id,
+    name: item.name,
+    category: toDisplayCategory(item.category),
+    colour: item.colour,
+    emoji: "👕",
+    imageUrl: item.imageUrls?.front,
+  };
+}
+
+function toOutfit(api: ApiOutfit): Outfit {
+  return {
+    id: api._id,
+    name: api.name,
+    style: api.style ?? "",
+    favourite: api.favourite ?? false,
+    items: api.items.map(toClothingItem),
+  };
+}
 
 export default function OutfitsPage() {
-  const [outfits, setOutfits] = useState<Outfit[]>(SEED_OUTFITS);
+  const [outfits, setOutfits] = useState<Outfit[]>([]);
   const [styleFilter, setStyleFilter] = useState<StyleFilter>("All");
   const [query, setQuery] = useState("");
   const [selectedOutfit, setSelectedOutfit] = useState<Outfit | null>(null);
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5001";
 
   const filtered = useMemo(() => {
     return outfits.filter((outfit) => {
@@ -84,20 +82,71 @@ export default function OutfitsPage() {
     });
   }, [outfits, styleFilter, query]);
 
+  const loadOutfits = useCallback(async () => {
+    try {
+      const response = await fetch(`${apiUrl}/api/outfits/me`, {
+        headers: await getAuthHeaders(),
+      });
+      if (!response.ok) throw new Error("Failed to load outfits");
+      const apiOutfits = (await response.json()) as ApiOutfit[];
+      setOutfits(apiOutfits.map(toOutfit));
+    } catch (error) {
+      console.error(error);
+      setOutfits([]);
+    }
+  }, [apiUrl]);
+
+  useEffect(() => {
+    loadOutfits();
+  }, [loadOutfits]);
+
   function handleSelectOutfit(outfit: Outfit) {
-    // Clicking the same card again closes the panel
     setSelectedOutfit((prev) => (prev?.id === outfit.id ? null : outfit));
   }
 
-  function handleToggleFavourite(id: string) {
-    // TODO: PATCH /api/outfits/:id { favourite: !current }
+  async function handleToggleFavourite(id: string) {
+    const current = outfits.find((o) => o.id === id);
+    if (!current) return;
+
+    const newFavourite = !current.favourite;
+
     setOutfits((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, favourite: !o.favourite } : o))
+      prev.map((o) => (o.id === id ? { ...o, favourite: newFavourite } : o))
     );
-    // Keep the open panel in sync
     setSelectedOutfit((prev) =>
-      prev?.id === id ? { ...prev, favourite: !prev.favourite } : prev
+      prev?.id === id ? { ...prev, favourite: newFavourite } : prev
     );
+
+    try {
+      const response = await fetch(`${apiUrl}/api/outfits/me/${id}`, {
+        method: "PUT",
+        headers: await getAuthHeaders(true),
+        body: JSON.stringify({ favourite: newFavourite }),
+      });
+      if (!response.ok) throw new Error("Failed to update favourite");
+    } catch (error) {
+      console.error(error);
+      setOutfits((prev) =>
+        prev.map((o) => (o.id === id ? { ...o, favourite: current.favourite } : o))
+      );
+      setSelectedOutfit((prev) =>
+        prev?.id === id ? { ...prev, favourite: current.favourite } : prev
+      );
+    }
+  }
+
+  async function handleDeleteOutfit(id: string) {
+    try {
+      const response = await fetch(`${apiUrl}/api/outfits/me/${id}`, {
+        method: "DELETE",
+        headers: await getAuthHeaders(),
+      });
+      if (!response.ok) throw new Error("Failed to delete outfit");
+      setOutfits((prev) => prev.filter((o) => o.id !== id));
+      setSelectedOutfit(null);
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   return (
@@ -124,7 +173,6 @@ export default function OutfitsPage() {
       />
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Outfit grid */}
         <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-10 py-8">
           <div className="flex flex-wrap gap-2">
             {STYLE_FILTERS.map((s) => (
@@ -165,12 +213,12 @@ export default function OutfitsPage() {
           )}
         </div>
 
-        {/* Right-hand detail panel — mirrors the closet ItemDetailPanel pattern */}
         {selectedOutfit && (
           <OutfitDetailPanel
             outfit={selectedOutfit}
             onClose={() => setSelectedOutfit(null)}
             onToggleFavourite={() => handleToggleFavourite(selectedOutfit.id)}
+            onDelete={() => handleDeleteOutfit(selectedOutfit.id)}
           />
         )}
       </div>

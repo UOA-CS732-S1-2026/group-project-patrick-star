@@ -1,12 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { ItemCard, type ClothingItem } from "@/components/ui/ItemCard";
 import { SearchInput } from "@/components/ui/SearchInput";
-import { UploadItemModal, type NewClothingItem } from "@/components/closet/UploadItemModal";
+import {
+  UploadItemModal,
+  type NewClothingItem,
+} from "@/components/closet/UploadItemModal";
 import { ItemDetailPanel } from "@/components/closet/ItemDetailPanel";
 import { EditItemPanel } from "@/components/closet/EditItemPanel";
 
@@ -34,50 +37,61 @@ interface ApiClothingItem {
   };
 }
 
-const SEED_ITEMS: ClothingItem[] = [
-  { id: "1", name: "White linen shirt", category: "Tops", emoji: "👕", colour: "White", size: "M", fit: "Regular", fabric: "Linen" },
-  { id: "2", name: "Navy trousers", category: "Bottoms", emoji: "👖", colour: "Navy", size: "M", fit: "Slim", fabric: "Cotton" },
-  { id: "3", name: "Tan trench", category: "Outerwear", emoji: "🧥", colour: "Tan", size: "M", fit: "Regular", fabric: "Polyester" },
-  { id: "4", name: "White sneakers", category: "Shoes", emoji: "👟", colour: "White", size: "M" },
-  { id: "5", name: "Black turtleneck", category: "Tops", emoji: "🐢", colour: "Black", size: "S", fit: "Regular", fabric: "Wool" },
-  { id: "6", name: "Olive shorts", category: "Bottoms", emoji: "🩳", colour: "Olive", size: "M", fit: "Relaxed", fabric: "Cotton" },
-  { id: "7", name: "Brown boots", category: "Shoes", emoji: "🥾", colour: "Brown", size: "L" },
-  { id: "8", name: "Canvas tote", category: "Accessories", emoji: "👜", colour: "Beige" },
-  { id: "9", name: "Bucket hat", category: "Accessories", emoji: "🧢", colour: "Green" },
-  { id: "10", name: "Wool scarf", category: "Accessories", emoji: "🧣", colour: "Red", fabric: "Wool" },
-  { id: "11", name: "Sunglasses", category: "Accessories", emoji: "🕶️", colour: "Black" },
-  { id: "12", name: "Oxford shirt", category: "Tops", emoji: "👔", colour: "Blue", size: "M", fit: "Regular", fabric: "Cotton" },
-  { id: "13", name: "Striped scarf", category: "Accessories", emoji: "🧣", colour: "Red" },
-  { id: "14", name: "Leather bag", category: "Accessories", emoji: "👜", colour: "Brown" },
-];
+async function getAuthHeaders(includeJson = false): Promise<Record<string, string>> {
+  const headers: Record<string, string> = {};
+  // const token = localStorage.getItem("access_token");
+
+  if (includeJson) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const res = await fetch("/api/auth/token");
+  if (res.ok) {
+    const { token } = await res.json();
+    if (token) headers.Authorization = `Bearer ${token}`;
+  }
+
+  return headers;
+}
 
 export default function ClosetPage() {
-  const [items, setItems] = useState<ClothingItem[]>(SEED_ITEMS);
+  const [items, setItems] = useState<ClothingItem[]>([]);
   const [category, setCategory] = useState<Category>("All");
   const [query, setQuery] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ClothingItem | null>(null);
   const [editing, setEditing] = useState(false);
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5001";
 
   const filtered = useMemo(() => {
     return items.filter((item) => {
       const matchCategory = category === "All" || item.category === category;
-      const matchQuery = !query || item.name.toLowerCase().includes(query.toLowerCase());
+      const matchQuery =
+        !query || item.name.toLowerCase().includes(query.toLowerCase());
       return matchCategory && matchQuery;
     });
   }, [items, category, query]);
 
   function toApiCategory(category: string) {
-    if (category === "Bottoms") return "lower_body";
-    if (category === "Dresses") return "dresses";
-    return "upper_body";
+    switch (category) {
+      case "Bottoms": return "lower_body";
+      case "Outerwear": return "outerwear";
+      case "Shoes": return "shoes";
+      case "Accessories": return "accessories";
+      case "Dresses": return "dresses";
+      default: return "upper_body"; // Tops
+    }
   }
 
   function toDisplayCategory(category: string) {
-    if (category === "lower_body") return "Bottoms";
-    if (category === "dresses") return "Dresses";
-    return "Tops";
+    switch (category) {
+      case "lower_body": return "Bottoms";
+      case "outerwear": return "Outerwear";
+      case "shoes": return "Shoes";
+      case "accessories": return "Accessories";
+      case "dresses": return "Dresses";
+      default: return "Tops"; // upper_body
+    }
   }
 
   function toApiFit(fit: string) {
@@ -92,7 +106,7 @@ export default function ClosetPage() {
     return "Regular";
   }
 
-  function toClothingItem(item: ApiClothingItem): ClothingItem {
+  const toClothingItem = useCallback((item: ApiClothingItem): ClothingItem => {
     return {
       id: item._id,
       name: item.name,
@@ -104,19 +118,46 @@ export default function ClosetPage() {
       emoji: "👕",
       imageUrl: item.imageUrls?.front,
     };
-  }
+  }, []);
 
-  async function handleAddItem(newItem: NewClothingItem) {
-    const token = localStorage.getItem("access_token");
-    const headers: HeadersInit = { "Content-Type": "application/json" };
+  useEffect(() => {
+    let cancelled = false;
 
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
+    async function loadItems() {
+      try {
+        const response = await fetch(`${apiUrl}/api/clothingItems/me`, {
+          headers: await getAuthHeaders(),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to load clothing items");
+        }
+
+        const apiItems = (await response.json()) as ApiClothingItem[];
+
+        if (!cancelled) {
+          setItems(apiItems.map(toClothingItem));
+        }
+      } catch (error) {
+        console.error(error);
+
+        if (!cancelled) {
+          setItems([]);
+        }
+      }
     }
 
+    loadItems();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiUrl, toClothingItem]);
+
+  async function handleAddItem(newItem: NewClothingItem) {
     const createResponse = await fetch(`${apiUrl}/api/clothingItems/me`, {
       method: "POST",
-      headers,
+      headers: await getAuthHeaders(true),
       body: JSON.stringify({
         name: newItem.name,
         category: toApiCategory(newItem.category),
@@ -138,36 +179,95 @@ export default function ClosetPage() {
       imageData.append("image", newItem.imageFile);
       imageData.append("slot", "front");
 
-      const uploadHeaders: HeadersInit = {};
-
-      if (token) {
-        uploadHeaders.Authorization = `Bearer ${token}`;
-      }
-
-      const uploadResponse = await fetch(`${apiUrl}/api/clothingItems/me/${item._id}/image`, {
-        method: "POST",
-        headers: uploadHeaders,
-        body: imageData,
-      });
+      const uploadResponse = await fetch(
+        `${apiUrl}/api/clothingItems/me/${item._id}/image`,
+        {
+          method: "POST",
+          headers: await getAuthHeaders(),
+          body: imageData,
+        },
+      );
 
       if (!uploadResponse.ok) {
         throw new Error("Failed to upload clothing image");
       }
 
-      const uploaded = (await uploadResponse.json()) as { item: ApiClothingItem };
+      const uploaded = (await uploadResponse.json()) as {
+        item: ApiClothingItem;
+      };
       item = uploaded.item;
     }
 
     setItems((prev) => [...prev, toClothingItem(item)]);
   }
 
-  function handleSaveItem(updated: ClothingItem) {
-    setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
-    setSelectedItem(updated);
+  async function handleSaveItem(updated: ClothingItem, imageFile?: File) {
+    const updateResponse = await fetch(
+      `${apiUrl}/api/clothingItems/me/${updated.id}`,
+      {
+        method: "PUT",
+        headers: await getAuthHeaders(true),
+        body: JSON.stringify({
+          name: updated.name,
+          category: toApiCategory(updated.category),
+          colour: updated.colour,
+          size: updated.size,
+          fit: toApiFit(updated.fit ?? ""),
+          fabric: updated.fabric,
+        }),
+      },
+    );
+
+    if (!updateResponse.ok) {
+      throw new Error("Failed to update clothing item");
+    }
+
+    let item = (await updateResponse.json()) as ApiClothingItem;
+
+    if (imageFile) {
+      const imageData = new FormData();
+      imageData.append("image", imageFile);
+      imageData.append("slot", "front");
+
+      const uploadResponse = await fetch(
+        `${apiUrl}/api/clothingItems/me/${item._id}/image`,
+        {
+          method: "POST",
+          headers: await getAuthHeaders(),
+          body: imageData,
+        },
+      );
+
+      if (!uploadResponse.ok) {
+        throw new Error("Failed to upload clothing image");
+      }
+
+      const uploaded = (await uploadResponse.json()) as {
+        item: ApiClothingItem;
+      };
+      item = uploaded.item;
+    }
+
+    const savedItem = toClothingItem(item);
+
+    setItems((prev) => prev.map((i) => (i.id === savedItem.id ? savedItem : i)));
+    setSelectedItem(savedItem);
     setEditing(false);
   }
 
-  function handleRemoveItem(item: ClothingItem) {
+  async function handleRemoveItem(item: ClothingItem) {
+    const deleteResponse = await fetch(
+      `${apiUrl}/api/clothingItems/me/${item.id}`,
+      {
+        method: "DELETE",
+        headers: await getAuthHeaders(),
+      },
+    );
+
+    if (!deleteResponse.ok) {
+      throw new Error("Failed to delete clothing item");
+    }
+
     setItems((prev) => prev.filter((i) => i.id !== item.id));
     setSelectedItem(null);
     setEditing(false);
@@ -194,7 +294,10 @@ export default function ClosetPage() {
             <div className="text-sm text-muted-foreground whitespace-nowrap">
               {items.length} items
             </div>
-            <Button leftIcon={<span aria-hidden>+</span>} onClick={() => setUploadOpen(true)}>
+            <Button
+              leftIcon={<span aria-hidden>+</span>}
+              onClick={() => setUploadOpen(true)}
+            >
               Add item
             </Button>
           </>

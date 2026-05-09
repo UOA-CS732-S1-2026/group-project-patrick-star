@@ -25,6 +25,26 @@ export function BodyProfileStep({ onNext }: BodyProfileStepProps) {
       <div className="mt-8 w-full max-w-md space-y-5">
         <div>
           <div className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+            Name
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              type="text"
+              placeholder="First name"
+              className="h-11 rounded-xl border border-border bg-white px-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30"
+              {...register("firstName")}
+            />
+            <input
+              type="text"
+              placeholder="Last name"
+              className="h-11 rounded-xl border border-border bg-white px-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30"
+              {...register("lastName")}
+            />
+          </div>
+        </div>
+
+        <div>
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
             Age
           </div>
           <div className="grid grid-cols-1 gap-3">

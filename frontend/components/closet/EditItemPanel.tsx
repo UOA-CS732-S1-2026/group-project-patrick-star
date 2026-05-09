@@ -8,7 +8,7 @@ import { cn } from "@/components/ui/cn";
 interface EditItemPanelProps {
   item: ClothingItem;
   onCancel: () => void;
-  onSave: (updated: ClothingItem) => void;
+  onSave: (updated: ClothingItem, imageFile?: File) => void;
   onRemove: (item: ClothingItem) => void;
 }
 
@@ -53,7 +53,7 @@ export function EditItemPanel({ item, onCancel, onSave, onRemove }: EditItemPane
       ? URL.createObjectURL(imageFile)
       : item.imageUrl;
 
-    onSave({ ...item, name, category, colour, fabric, size, fit, imageUrl: newImageUrl });
+    onSave({ ...item, name, category, colour, fabric, size, fit, imageUrl: newImageUrl }, imageFile ?? undefined);
   }
 
   function handleRemove() {
