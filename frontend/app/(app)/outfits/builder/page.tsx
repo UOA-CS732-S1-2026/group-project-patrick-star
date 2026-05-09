@@ -393,10 +393,12 @@ function OutfitDetailsPanel({
 // ---------------------------------------------------------------------------
 function YourPhotoSection({
   preview,
+  isReady,
   isUploading,
   onFile,
 }: {
   preview: string | null;
+  isReady: boolean;
   isUploading: boolean;
   onFile: (file: File) => void;
 }) {
@@ -472,8 +474,12 @@ function YourPhotoSection({
       <div className="flex flex-col gap-0.5">
         {isUploading ? (
           <p className="text-sm font-medium text-accent">Uploading…</p>
-        ) : preview ? (
+        ) : isReady ? (
           <p className="text-sm font-medium text-foreground">Photo ready</p>
+        ) : preview ? (
+          <p className="text-sm font-medium text-foreground">
+            Photo selected
+          </p>
         ) : (
           <p className="text-sm font-medium text-foreground">
             Click or drag to upload your photo
@@ -662,6 +668,8 @@ export default function OutfitBuilderPage() {
 
   async function handleHumanPhotoFile(file: File) {
     setHumanPhotoPreview(URL.createObjectURL(file));
+    setHumanImageUrl(null);
+    setGenerateError(null);
     setIsUploadingPhoto(true);
     try {
       const formData = new FormData();
@@ -673,11 +681,18 @@ export default function OutfitBuilderPage() {
         body: formData,
       });
       if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
-      const data = (await res.json()) as { modelImage: string };
-      setHumanImageUrl(data.modelImage);
+      const data = (await res.json()) as { modelImage?: string; url?: string };
+      const uploadedUrl = data.modelImage ?? data.url;
+      if (!uploadedUrl) throw new Error("Upload response did not include an image URL");
+
+      setHumanImageUrl(uploadedUrl);
+      setGenerateError(null);
     } catch (err) {
       console.error("Failed to upload photo:", err);
       setHumanImageUrl(null);
+      setGenerateError(
+        err instanceof Error ? err.message : "Failed to upload photo.",
+      );
     } finally {
       setIsUploadingPhoto(false);
     }
@@ -701,6 +716,10 @@ export default function OutfitBuilderPage() {
   }
 
   async function handleGenerateTryOn() {
+    if (isUploadingPhoto) {
+      setGenerateError("Wait for your photo to finish uploading.");
+      return;
+    }
     if (!humanImageUrl) {
       setGenerateError("Upload your photo first.");
       return;
@@ -806,6 +825,7 @@ export default function OutfitBuilderPage() {
 
       <YourPhotoSection
         preview={humanPhotoPreview}
+        isReady={Boolean(humanImageUrl)}
         isUploading={isUploadingPhoto}
         onFile={handleHumanPhotoFile}
       />
