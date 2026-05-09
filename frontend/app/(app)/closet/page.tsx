@@ -73,15 +73,25 @@ export default function ClosetPage() {
   }, [items, category, query]);
 
   function toApiCategory(category: string) {
-    if (category === "Bottoms") return "lower_body";
-    if (category === "Dresses") return "dresses";
-    return "upper_body";
+    switch (category) {
+      case "Bottoms": return "lower_body";
+      case "Outerwear": return "outerwear";
+      case "Shoes": return "shoes";
+      case "Accessories": return "accessories";
+      case "Dresses": return "dresses";
+      default: return "upper_body"; // Tops
+    }
   }
 
   function toDisplayCategory(category: string) {
-    if (category === "lower_body") return "Bottoms";
-    if (category === "dresses") return "Dresses";
-    return "Tops";
+    switch (category) {
+      case "lower_body": return "Bottoms";
+      case "outerwear": return "Outerwear";
+      case "shoes": return "Shoes";
+      case "accessories": return "Accessories";
+      case "dresses": return "Dresses";
+      default: return "Tops"; // upper_body
+    }
   }
 
   function toApiFit(fit: string) {
