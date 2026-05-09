@@ -1,43 +1,55 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
-import { Chip } from "@/components/ui/Chip";
 import { type ClothingItem } from "@/components/ui/ItemCard";
 import { cn } from "@/components/ui/cn";
-import { type Outfit } from "@/components/outfits/OutfitCard";
-
-// ---------------------------------------------------------------------------
-// Seed data — replace with a real API call to GET /api/clothing
-// ---------------------------------------------------------------------------
-const SEED_CLOSET: ClothingItem[] = [
-  { id: "1", name: "White linen shirt", category: "Tops", emoji: "👕", colour: "White" },
-  { id: "2", name: "Navy trousers", category: "Bottoms", emoji: "👖", colour: "Navy" },
-  { id: "3", name: "Tan trench", category: "Outerwear", emoji: "🧥", colour: "Tan" },
-  { id: "4", name: "White sneakers", category: "Shoes", emoji: "👟", colour: "White" },
-  { id: "5", name: "Black turtleneck", category: "Tops", emoji: "🐢", colour: "Black" },
-  { id: "6", name: "Olive shorts", category: "Bottoms", emoji: "🩳", colour: "Olive" },
-  { id: "7", name: "Brown boots", category: "Shoes", emoji: "🥾", colour: "Brown" },
-  { id: "9", name: "Bucket hat", category: "Accessories", emoji: "🧢", colour: "Green" },
-  { id: "10", name: "Wool scarf", category: "Accessories", emoji: "🧣", colour: "Red" },
-  { id: "12", name: "Oxford shirt", category: "Tops", emoji: "👔", colour: "Blue" },
-];
 
 const STYLES = ["Smart", "Casual", "Street", "Minimal", "Fun", "Dresses"] as const;
-const OCCASIONS = ["Work", "Weekend", "Going out", "Travel"] as const;
-const SEASONS = ["Spring", "Summer", "Autumn", "Winter"] as const;
-
 type Style = (typeof STYLES)[number];
-type Occasion = (typeof OCCASIONS)[number];
-type Season = (typeof SEASONS)[number];
+
+interface ApiClothingItem {
+  _id: string;
+  name: string;
+  category: string;
+  colour: string;
+  imageUrls?: { front?: string };
+}
+
+async function getAuthHeaders(includeJson = false): Promise<Record<string, string>> {
+  const headers: Record<string, string> = {};
+  if (includeJson) headers["Content-Type"] = "application/json";
+  const res = await fetch("/api/auth/token");
+  if (res.ok) {
+    const { token } = await res.json();
+    if (token) headers.Authorization = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+function toDisplayCategory(category: string) {
+  if (category === "lower_body") return "Bottoms";
+  if (category === "dresses") return "Dresses";
+  return "Tops";
+}
+
+function toClothingItem(item: ApiClothingItem): ClothingItem {
+  return {
+    id: item._id,
+    name: item.name,
+    category: toDisplayCategory(item.category),
+    colour: item.colour,
+    emoji: "👕",
+    imageUrl: item.imageUrls?.front,
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
 
-/** Left panel: scrollable 2-col closet grid with remove/add toggles */
 function ClosetPanel({
   closetItems,
   selectedIds,
@@ -77,7 +89,6 @@ function ClosetPanel({
                 <span aria-hidden>{item.emoji ?? "👕"}</span>
               )}
 
-              {/* Selected indicator */}
               <span
                 className={cn(
                   "absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full border-2 text-[10px] font-bold transition-colors",
@@ -105,7 +116,6 @@ function ClosetPanel({
   );
 }
 
-/** Centre panel: live try-on preview (split top/bottom body model) */
 function TryOnPreview({
   selectedItems,
   isTryOnActive,
@@ -113,7 +123,9 @@ function TryOnPreview({
   selectedItems: ClothingItem[];
   isTryOnActive: boolean;
 }) {
-  const top = selectedItems.find((i) => i.category === "Tops" || i.category === "Outerwear" || i.category === "Dresses");
+  const top = selectedItems.find(
+    (i) => i.category === "Tops" || i.category === "Outerwear" || i.category === "Dresses"
+  );
   const bottom = selectedItems.find((i) => i.category === "Bottoms");
 
   return (
@@ -125,27 +137,21 @@ function TryOnPreview({
       </div>
 
       <div className="relative flex flex-1 items-center justify-center bg-[#D4C5B0] p-6">
-        {/* AI styled badge */}
         <span className="absolute left-4 top-4 flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm">
           <span className="text-accent">✦</span> AI styled
         </span>
 
-        {/* Your photo toggle */}
         <span className="absolute right-4 top-4 flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm">
           <span className={cn("h-2 w-2 rounded-full", isTryOnActive ? "bg-brand" : "bg-neutral-300")} />
           Your photo
         </span>
 
-        {/* Body mannequin */}
         <div className="flex flex-col items-center">
-          {/* Head */}
           <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-[#C4A882] text-2xl shadow">
             🙂
           </div>
 
-          {/* Body: stacked top + bottom panels */}
           <div className="w-48 overflow-hidden rounded-2xl shadow-lg">
-            {/* Top half */}
             <div
               className="flex items-center justify-center bg-neutral-100 text-7xl"
               style={{ height: "180px" }}
@@ -162,7 +168,6 @@ function TryOnPreview({
               )}
             </div>
 
-            {/* Bottom half */}
             <div
               className="flex items-center justify-center bg-[#1a2a4a] text-7xl"
               style={{ height: "180px" }}
@@ -185,18 +190,11 @@ function TryOnPreview({
   );
 }
 
-/** Right panel: outfit name, style/occasion/season chips, notes, save CTA */
 function OutfitDetailsPanel({
   name,
   onNameChange,
   style,
   onStyleChange,
-  occasion,
-  onOccasionChange,
-  season,
-  onSeasonChange,
-  notes,
-  onNotesChange,
   onSave,
   onDiscard,
   canSave,
@@ -205,12 +203,6 @@ function OutfitDetailsPanel({
   onNameChange: (v: string) => void;
   style: Style | "";
   onStyleChange: (v: Style) => void;
-  occasion: Occasion | "";
-  onOccasionChange: (v: Occasion) => void;
-  season: Season | "";
-  onSeasonChange: (v: Season) => void;
-  notes: string;
-  onNotesChange: (v: string) => void;
   onSave: () => void;
   onDiscard: () => void;
   canSave: boolean;
@@ -227,7 +219,6 @@ function OutfitDetailsPanel({
       </div>
 
       <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-6 py-5">
-        {/* Name */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Name
@@ -241,7 +232,6 @@ function OutfitDetailsPanel({
           />
         </div>
 
-        {/* Style */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Style
@@ -263,69 +253,8 @@ function OutfitDetailsPanel({
             ))}
           </div>
         </div>
-
-        {/* Occasion */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Occasion
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {OCCASIONS.map((o) => (
-              <button
-                key={o}
-                onClick={() => onOccasionChange(o)}
-                className={cn(
-                  "rounded-full border-2 px-3 py-1.5 text-xs font-semibold transition-colors",
-                  occasion === o
-                    ? "border-accent bg-accent-soft text-accent"
-                    : "border-border bg-white text-foreground hover:bg-neutral-50"
-                )}
-              >
-                {o}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Season */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Season
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {SEASONS.map((s) => (
-              <button
-                key={s}
-                onClick={() => onSeasonChange(s)}
-                className={cn(
-                  "rounded-full border-2 px-3 py-1.5 text-xs font-semibold transition-colors",
-                  season === s
-                    ? "border-accent bg-accent-soft text-accent"
-                    : "border-border bg-white text-foreground hover:bg-neutral-50"
-                )}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Notes */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Notes
-          </label>
-          <textarea
-            value={notes}
-            onChange={(e) => onNotesChange(e.target.value)}
-            placeholder="Add any notes about this outfit..."
-            rows={4}
-            className={cn(inputClass, "resize-none")}
-          />
-        </div>
       </div>
 
-      {/* Footer */}
       <div className="flex flex-col gap-3 border-t border-border px-6 py-5">
         <Button
           variant="primary"
@@ -350,22 +279,35 @@ function OutfitDetailsPanel({
 // ---------------------------------------------------------------------------
 // Main page
 // ---------------------------------------------------------------------------
+
 export default function OutfitBuilderPage() {
   const router = useRouter();
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5001";
 
-  // Closet items (replace with API fetch)
-  const closetItems = SEED_CLOSET;
-
-  // Builder state
+  const [closetItems, setClosetItems] = useState<ClothingItem[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isTryOnActive, setIsTryOnActive] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Outfit details state
   const [name, setName] = useState("");
   const [style, setStyle] = useState<Style | "">("");
-  const [occasion, setOccasion] = useState<Occasion | "">("");
-  const [season, setSeason] = useState<Season | "">("");
-  const [notes, setNotes] = useState("");
+
+  const loadCloset = useCallback(async () => {
+    try {
+      const response = await fetch(`${apiUrl}/api/clothingItems/me`, {
+        headers: await getAuthHeaders(),
+      });
+      if (!response.ok) throw new Error("Failed to load closet");
+      const apiItems = (await response.json()) as ApiClothingItem[];
+      setClosetItems(apiItems.map(toClothingItem));
+    } catch (error) {
+      console.error(error);
+    }
+  }, [apiUrl]);
+
+  useEffect(() => {
+    loadCloset();
+  }, [loadCloset]);
 
   const selectedItems = useMemo(
     () => closetItems.filter((i) => selectedIds.has(i.id)),
@@ -381,31 +323,41 @@ export default function OutfitBuilderPage() {
   }
 
   function handleGenerateTryOn() {
-    // TODO: call POST /api/outfits/try-on with { itemIds: [...selectedIds] }
-    //       and display the returned image URL in TryOnPreview
+    // TODO: call POST /api/tryon with selected item IDs and display returned image
     setIsTryOnActive(true);
   }
 
-  function handleSave() {
-    const newOutfit: Outfit = {
-      id: String(Date.now()),
-      name: name.trim() || "My New Outfit",
-      style: style || "Casual",
-      season: season || undefined,
-      occasion: occasion || undefined,
-      notes,
-      items: selectedItems,
-    };
-    // TODO: POST /api/outfits with newOutfit, then navigate on success
-    console.log("Saving outfit:", newOutfit);
-    router.push("/outfits");
+  async function handleSave() {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      const response = await fetch(`${apiUrl}/api/outfits/me`, {
+        method: "POST",
+        headers: await getAuthHeaders(true),
+        body: JSON.stringify({
+          name: name.trim() || "My New Outfit",
+          items: [...selectedIds],
+          style: style || "",
+        }),
+      });
+      if (!response.ok) {
+        const err = await response.json();
+        console.error("Failed to save outfit:", JSON.stringify(err));
+        return;
+      }
+      router.push("/outfits");
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   function handleDiscard() {
     router.push("/outfits");
   }
 
-  const canSave = selectedIds.size > 0;
+  const canSave = selectedIds.size > 0 && !isSaving;
 
   return (
     <>
@@ -439,12 +391,6 @@ export default function OutfitBuilderPage() {
           onNameChange={setName}
           style={style}
           onStyleChange={setStyle}
-          occasion={occasion}
-          onOccasionChange={setOccasion}
-          season={season}
-          onSeasonChange={setSeason}
-          notes={notes}
-          onNotesChange={setNotes}
           onSave={handleSave}
           onDiscard={handleDiscard}
           canSave={canSave}

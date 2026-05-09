@@ -9,12 +9,14 @@ interface OutfitDetailPanelProps {
   outfit: Outfit;
   onClose: () => void;
   onToggleFavourite: () => void;
+  onDelete: () => void;
 }
 
 export function OutfitDetailPanel({
   outfit,
   onClose,
   onToggleFavourite,
+  onDelete,
 }: OutfitDetailPanelProps) {
   const tags = [
     outfit.style,
@@ -154,12 +156,18 @@ export function OutfitDetailPanel({
       </div>
 
       {/* Footer */}
-      <div className="border-t border-border px-6 py-5">
+      <div className="flex flex-col gap-3 border-t border-border px-6 py-5">
         <Link href="/outfits/builder">
           <Button variant="primary" size="lg" className="w-full rounded-xl">
             Build / Edit Outfit
           </Button>
         </Link>
+        <button
+          onClick={onDelete}
+          className="text-center text-sm font-medium text-red-400 hover:text-red-600 transition-colors"
+        >
+          Delete Outfit
+        </button>
       </div>
     </div>
   );
