@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { type ClothingItem } from "@/components/ui/ItemCard";
@@ -30,9 +30,14 @@ async function getAuthHeaders(includeJson = false): Promise<Record<string, strin
 }
 
 function toDisplayCategory(category: string) {
-  if (category === "lower_body") return "Bottoms";
-  if (category === "dresses") return "Dresses";
-  return "Tops";
+  switch (category) {
+    case "lower_body": return "Bottoms";
+    case "outerwear": return "Outerwear";
+    case "shoes": return "Shoes";
+    case "accessories": return "Accessories";
+    case "dresses": return "Dresses";
+    default: return "Tops";
+  }
 }
 
 function toClothingItem(item: ApiClothingItem): ClothingItem {
@@ -198,6 +203,7 @@ function OutfitDetailsPanel({
   onSave,
   onDiscard,
   canSave,
+  isEditing,
 }: {
   name: string;
   onNameChange: (v: string) => void;
@@ -206,6 +212,7 @@ function OutfitDetailsPanel({
   onSave: () => void;
   onDiscard: () => void;
   canSave: boolean;
+  isEditing: boolean;
 }) {
   const inputClass =
     "w-full rounded-xl border-2 border-border bg-neutral-50 px-4 py-3 text-sm font-medium text-foreground outline-none transition focus:border-accent focus:bg-white placeholder:text-muted-foreground";
@@ -263,7 +270,7 @@ function OutfitDetailsPanel({
           disabled={!canSave}
           onClick={onSave}
         >
-          + Save Outfit
+          {isEditing ? "Save Changes" : "+ Save Outfit"}
         </Button>
         <button
           onClick={onDiscard}
@@ -282,6 +289,9 @@ function OutfitDetailsPanel({
 
 export default function OutfitBuilderPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const outfitId = searchParams.get("id");
+  const isEditing = Boolean(outfitId);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5001";
 
   const [closetItems, setClosetItems] = useState<ClothingItem[]>([]);
@@ -309,6 +319,30 @@ export default function OutfitBuilderPage() {
     loadCloset();
   }, [loadCloset]);
 
+  useEffect(() => {
+    if (!outfitId) return;
+
+    async function loadExistingOutfit() {
+      try {
+        const response = await fetch(`${apiUrl}/api/outfits/me`, {
+          headers: await getAuthHeaders(),
+        });
+        if (!response.ok) throw new Error("Failed to load outfits");
+        const outfits = await response.json();
+        const outfit = outfits.find((o: { _id: string }) => o._id === outfitId);
+        if (!outfit) return;
+
+        setName(outfit.name);
+        setStyle(outfit.style ?? "");
+        setSelectedIds(new Set(outfit.items.map((i: { _id: string }) => i._id)));
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    loadExistingOutfit();
+  }, [outfitId, apiUrl]);
+
   const selectedItems = useMemo(
     () => closetItems.filter((i) => selectedIds.has(i.id)),
     [closetItems, selectedIds]
@@ -331,8 +365,13 @@ export default function OutfitBuilderPage() {
     if (isSaving) return;
     setIsSaving(true);
     try {
-      const response = await fetch(`${apiUrl}/api/outfits/me`, {
-        method: "POST",
+      const url = isEditing
+        ? `${apiUrl}/api/outfits/me/${outfitId}`
+        : `${apiUrl}/api/outfits/me`;
+      const method = isEditing ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
         headers: await getAuthHeaders(true),
         body: JSON.stringify({
           name: name.trim() || "My New Outfit",
@@ -340,14 +379,15 @@ export default function OutfitBuilderPage() {
           style: style || "",
         }),
       });
+
       if (!response.ok) {
-        const err = await response.json();
-        console.error("Failed to save outfit:", JSON.stringify(err));
+        console.error("Failed to save outfit:", JSON.stringify(await response.json()));
         return;
       }
+
       router.push("/outfits");
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
     } finally {
       setIsSaving(false);
     }
@@ -362,7 +402,7 @@ export default function OutfitBuilderPage() {
   return (
     <>
       <PageHeader
-        title="Build an outfit"
+        title={isEditing ? "Edit outfit" : "Build an outfit"}
         right={
           <button
             onClick={handleDiscard}
@@ -394,6 +434,7 @@ export default function OutfitBuilderPage() {
           onSave={handleSave}
           onDiscard={handleDiscard}
           canSave={canSave}
+          isEditing={isEditing}
         />
       </div>
     </>

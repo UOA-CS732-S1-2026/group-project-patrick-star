@@ -18,13 +18,8 @@ export function OutfitDetailPanel({
   onToggleFavourite,
   onDelete,
 }: OutfitDetailPanelProps) {
-  const tags = [
-    outfit.style,
-    outfit.occasion,
-    outfit.season,
-  ].filter(Boolean) as string[];
+  const tags = [outfit.style, outfit.occasion, outfit.season].filter(Boolean) as string[];
 
-  // 2×2 preview grid — pad to 4 slots
   const preview = [
     ...outfit.items.slice(0, 4),
     ...Array(Math.max(0, 4 - outfit.items.length)).fill(null),
@@ -54,7 +49,7 @@ export function OutfitDetailPanel({
             ★
           </button>
           <Link
-            href="/outfits/builder"
+            href={`/outfits/builder?id=${outfit.id}`}
             className="flex items-center gap-1.5 rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-hover transition-colors"
           >
             ✎ Edit
@@ -66,7 +61,6 @@ export function OutfitDetailPanel({
       <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-6 py-5">
         <h2 className="text-2xl font-bold text-foreground">{outfit.name}</h2>
 
-        {/* Tags */}
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {tags.map((tag) => (
@@ -136,15 +130,12 @@ export function OutfitDetailPanel({
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   {item.category}
                 </p>
-                <p className="truncate text-sm font-medium text-foreground">
-                  {item.name}
-                </p>
+                <p className="truncate text-sm font-medium text-foreground">{item.name}</p>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Notes */}
         {outfit.notes && (
           <div className="rounded-xl border border-border bg-neutral-50 px-4 py-3">
             <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -157,7 +148,7 @@ export function OutfitDetailPanel({
 
       {/* Footer */}
       <div className="flex flex-col gap-3 border-t border-border px-6 py-5">
-        <Link href="/outfits/builder">
+        <Link href={`/outfits/builder?id=${outfit.id}`}>
           <Button variant="primary" size="lg" className="w-full rounded-xl">
             Build / Edit Outfit
           </Button>
