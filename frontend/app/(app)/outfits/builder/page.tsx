@@ -314,6 +314,9 @@ export default function OutfitBuilderPage() {
   const searchParams = useSearchParams();
   const outfitId = searchParams.get("id");
   const isEditing = Boolean(outfitId);
+  const starterItems = searchParams.get("items");
+  const starterName = searchParams.get("name");
+  const starterStyle = searchParams.get("style");
   const apiUrl = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5001")
     .replace(/\/+$/, "");
 
@@ -342,6 +345,26 @@ export default function OutfitBuilderPage() {
   useEffect(() => {
     loadCloset();
   }, [loadCloset]);
+
+  useEffect(() => {
+    if (isEditing) return;
+
+    if (starterItems) {
+      const itemIds = starterItems
+        .split(",")
+        .map((id) => id.trim())
+        .filter(Boolean);
+      setSelectedIds(new Set(itemIds));
+    }
+
+    if (starterName) {
+      setName(starterName);
+    }
+
+    if (starterStyle && STYLES.includes(starterStyle as Style)) {
+      setStyle(starterStyle as Style);
+    }
+  }, [isEditing, starterItems, starterName, starterStyle]);
 
   useEffect(() => {
     if (!outfitId) return;

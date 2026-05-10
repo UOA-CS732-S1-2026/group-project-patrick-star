@@ -1,67 +1,111 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { OutfitCard, type Outfit } from "@/components/outfits/OutfitCard";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { type ClothingItem } from "@/components/ui/ItemCard";
+import { getAuthHeaders } from "@/lib/api/auth";
 
-const closetItems: ClothingItem[] = [
-  { id: "top-1", name: "White linen shirt", category: "Tops", emoji: "👕" },
-  { id: "top-2", name: "Black knit tee", category: "Tops", emoji: "⚫" },
-  { id: "bottom-1", name: "Navy trousers", category: "Bottoms", emoji: "👖" },
-  { id: "bottom-2", name: "Washed denim", category: "Bottoms", emoji: "🔵" },
-  { id: "outer-1", name: "Tan trench", category: "Outerwear", emoji: "🧥" },
-  { id: "shoe-1", name: "White sneakers", category: "Shoes", emoji: "👟" },
-];
+interface ApiClothingItem {
+  _id: string;
+  name: string;
+  category: string;
+  colour: string;
+  imageUrls?: { front?: string };
+}
 
-const favouriteOutfits: Outfit[] = [
-  {
-    id: "fav-1",
-    name: "Clean Office",
-    style: "Minimal",
-    favourite: true,
-    items: [closetItems[0], closetItems[2], closetItems[5]],
-  },
-  {
-    id: "fav-2",
-    name: "Weekend Walk",
-    style: "Casual",
-    favourite: true,
-    items: [closetItems[1], closetItems[3], closetItems[5]],
-  },
-  {
-    id: "fav-3",
-    name: "Rainy Commute",
-    style: "Smart",
-    favourite: true,
-    items: [closetItems[0], closetItems[2], closetItems[4]],
-  },
-];
+interface ApiOutfit {
+  _id: string;
+  name: string;
+  style?: string;
+  favourite?: boolean;
+  items: ApiClothingItem[];
+}
 
+const apiUrl = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5001")
+  .replace(/\/+$/, "");
 const styleLabels = ["Minimal", "Smart", "Casual", "Street"] as const;
+
+function toDisplayCategory(category: string) {
+  switch (category) {
+    case "lower_body":
+      return "Bottoms";
+    case "outerwear":
+      return "Outerwear";
+    case "shoes":
+      return "Shoes";
+    case "accessories":
+      return "Accessories";
+    case "dresses":
+      return "Dresses";
+    default:
+      return "Tops";
+  }
+}
+
+function toFallbackEmoji(category: string) {
+  switch (category) {
+    case "Bottoms":
+      return "👖";
+    case "Outerwear":
+      return "🧥";
+    case "Shoes":
+      return "👟";
+    case "Dresses":
+      return "👗";
+    default:
+      return "👕";
+  }
+}
+
+function toClothingItem(item: ApiClothingItem): ClothingItem {
+  const category = toDisplayCategory(item.category);
+
+  return {
+    id: item._id,
+    name: item.name,
+    category,
+    colour: item.colour,
+    emoji: toFallbackEmoji(category),
+    imageUrl: item.imageUrls?.front,
+  };
+}
+
+function toOutfit(api: ApiOutfit): Outfit {
+  return {
+    id: api._id,
+    name: api.name,
+    style: api.style ?? "",
+    favourite: api.favourite ?? false,
+    items: api.items.map(toClothingItem),
+  };
+}
 
 function pickRandom<T>(items: T[]) {
   return items[Math.floor(Math.random() * items.length)];
 }
 
-function generateRandomOutfit(): Outfit {
-  const top = pickRandom(closetItems.filter((item) => item.category === "Tops"));
-  const bottom = pickRandom(
-    closetItems.filter((item) => item.category === "Bottoms"),
-  );
-  const shoes = pickRandom(
-    closetItems.filter((item) => item.category === "Shoes"),
-  );
-  const outerwear =
-    Math.random() > 0.45
-      ? pickRandom(closetItems.filter((item) => item.category === "Outerwear"))
-      : null;
+function generateRandomOutfit(closetItems: ClothingItem[]): Outfit | null {
+  const tops = closetItems.filter((item) => item.category === "Tops");
+  const bottoms = closetItems.filter((item) => item.category === "Bottoms");
+  const shoes = closetItems.filter((item) => item.category === "Shoes");
+  const outerwear = closetItems.filter((item) => item.category === "Outerwear");
+
+  if (tops.length === 0 || bottoms.length === 0) {
+    return null;
+  }
+
+  const top = pickRandom(tops);
+  const bottom = pickRandom(bottoms);
+  const shoe = shoes.length > 0 ? pickRandom(shoes) : null;
+  const outer =
+    outerwear.length > 0 && Math.random() > 0.45 ? pickRandom(outerwear) : null;
   const style = pickRandom([...styleLabels]);
-  const items = [top, bottom, shoes, outerwear].filter(Boolean) as ClothingItem[];
+  const items = [top, bottom, shoe, outer].filter(Boolean) as ClothingItem[];
 
   return {
     id: `generated-${Date.now()}`,
@@ -75,18 +119,21 @@ function OutfitPreview({
   outfit,
   aiPreview,
 }: {
-  outfit: Outfit;
+  outfit: Outfit | null;
   aiPreview: boolean;
 }) {
-  const top = outfit.items.find((item) => item.category === "Tops");
-  const bottom = outfit.items.find((item) => item.category === "Bottoms");
-  const shoes = outfit.items.find((item) => item.category === "Shoes");
-  const outerwear = outfit.items.find((item) => item.category === "Outerwear");
+  const top = outfit?.items.find((item) => item.category === "Tops");
+  const bottom = outfit?.items.find((item) => item.category === "Bottoms");
+  const shoes = outfit?.items.find((item) => item.category === "Shoes");
+  const outerwear = outfit?.items.find((item) => item.category === "Outerwear");
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-border bg-neutral-100">
       <div className="absolute left-4 top-4 z-10">
-        <Badge tone={aiPreview ? "accent" : "neutral"} icon={<span aria-hidden>✦</span>}>
+        <Badge
+          tone={aiPreview ? "accent" : "neutral"}
+          icon={<span aria-hidden>✦</span>}
+        >
           {aiPreview ? "AI preview" : "Generated outfit"}
         </Badge>
       </div>
@@ -95,38 +142,64 @@ function OutfitPreview({
         <div className="flex items-center justify-center">
           <div className="flex w-52 flex-col overflow-hidden rounded-[28px] border border-border bg-white shadow-lg">
             <div className="flex h-28 items-center justify-center bg-white text-6xl">
-              {outerwear?.emoji ?? top?.emoji ?? "👕"}
+              {outerwear?.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={outerwear.imageUrl} alt={outerwear.name} className="h-full w-full object-cover" />
+              ) : (
+                <span aria-hidden>{outerwear?.emoji ?? top?.emoji ?? "👕"}</span>
+              )}
             </div>
             <div className="flex h-36 items-center justify-center bg-neutral-50 text-7xl">
-              {top?.emoji ?? "👕"}
+              {top?.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={top.imageUrl} alt={top.name} className="h-full w-full object-cover" />
+              ) : (
+                <span aria-hidden>{top?.emoji ?? "👕"}</span>
+              )}
             </div>
             <div className="flex h-36 items-center justify-center bg-[#1f2a44] text-7xl">
-              {bottom?.emoji ?? "👖"}
+              {bottom?.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={bottom.imageUrl} alt={bottom.name} className="h-full w-full object-cover" />
+              ) : (
+                <span aria-hidden>{bottom?.emoji ?? "👖"}</span>
+              )}
             </div>
             <div className="flex h-20 items-center justify-center bg-white text-5xl">
-              {shoes?.emoji ?? "👟"}
+              {shoes?.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={shoes.imageUrl} alt={shoes.name} className="h-full w-full object-cover" />
+              ) : (
+                <span aria-hidden>{shoes?.emoji ?? "👟"}</span>
+              )}
             </div>
           </div>
         </div>
 
         <div className="flex flex-col justify-end gap-3">
-          {outfit.items.map((item) => (
-            <div
-              key={item.id}
-              className="rounded-xl border border-border bg-white px-3 py-2 shadow-sm"
-            >
-              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {item.category}
+          {outfit ? (
+            outfit.items.map((item) => (
+              <div
+                key={item.id}
+                className="rounded-xl border border-border bg-white px-3 py-2 shadow-sm"
+              >
+                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {item.category}
+                </div>
+                <div className="mt-0.5 truncate text-sm font-semibold text-foreground">
+                  {item.emoji} {item.name}
+                </div>
               </div>
-              <div className="mt-0.5 truncate text-sm font-semibold text-foreground">
-                {item.emoji} {item.name}
-              </div>
+            ))
+          ) : (
+            <div className="rounded-xl border border-border bg-white px-3 py-3 text-sm text-muted-foreground shadow-sm">
+              Add at least one top and one bottom to generate outfits.
             </div>
-          ))}
+          )}
         </div>
       </div>
 
-      {aiPreview && (
+      {aiPreview && outfit && (
         <div className="border-t border-border bg-white px-5 py-4">
           <div className="text-sm font-semibold text-foreground">
             Instant try-on concept
@@ -141,24 +214,96 @@ function OutfitPreview({
 }
 
 export default function HomePage() {
-  const [generatedOutfit, setGeneratedOutfit] = useState<Outfit>(
-    () => favouriteOutfits[0],
-  );
+  const [closetItems, setClosetItems] = useState<ClothingItem[]>([]);
+  const [outfits, setOutfits] = useState<Outfit[]>([]);
+  const [generatedOutfit, setGeneratedOutfit] = useState<Outfit | null>(null);
   const [aiPreview, setAiPreview] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const favouriteOutfits = useMemo(
+    () => outfits.filter((outfit) => outfit.favourite).slice(0, 3),
+    [outfits],
+  );
+  const outfitIdeaCount = useMemo(() => {
+    const tops = closetItems.filter((item) => item.category === "Tops").length;
+    const bottoms = closetItems.filter(
+      (item) => item.category === "Bottoms",
+    ).length;
+    const shoes = Math.max(
+      1,
+      closetItems.filter((item) => item.category === "Shoes").length,
+    );
+
+    return tops * bottoms * shoes;
+  }, [closetItems]);
+  const canGenerate = closetItems.some((item) => item.category === "Tops")
+    && closetItems.some((item) => item.category === "Bottoms");
   const stats = useMemo(
     () => [
       { label: "Closet items", value: closetItems.length },
       { label: "Favourites", value: favouriteOutfits.length },
-      { label: "Outfit ideas", value: 18 },
+      { label: "Outfit ideas", value: outfitIdeaCount },
     ],
-    [],
+    [closetItems.length, favouriteOutfits.length, outfitIdeaCount],
   );
 
+  const loadDashboard = useCallback(async () => {
+    setLoading(true);
+    setErrorMessage(null);
+
+    try {
+      const headers = await getAuthHeaders();
+      const [closetResponse, outfitsResponse] = await Promise.all([
+        fetch(`${apiUrl}/api/clothingItems/me`, { headers }),
+        fetch(`${apiUrl}/api/outfits/me`, { headers }),
+      ]);
+
+      if (!closetResponse.ok) {
+        throw new Error("Failed to load closet items");
+      }
+
+      if (!outfitsResponse.ok) {
+        throw new Error("Failed to load outfits");
+      }
+
+      const apiClosetItems = (await closetResponse.json()) as ApiClothingItem[];
+      const apiOutfits = (await outfitsResponse.json()) as ApiOutfit[];
+      const nextClosetItems = apiClosetItems.map(toClothingItem);
+      const nextOutfits = apiOutfits.map(toOutfit);
+
+      setClosetItems(nextClosetItems);
+      setOutfits(nextOutfits);
+      setGeneratedOutfit(
+        nextOutfits.find((outfit) => outfit.favourite)
+          ?? generateRandomOutfit(nextClosetItems),
+      );
+    } catch (error) {
+      setClosetItems([]);
+      setOutfits([]);
+      setGeneratedOutfit(null);
+      setErrorMessage(
+        error instanceof Error ? error.message : "Failed to load dashboard",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
+
   function handleGenerate() {
-    setGeneratedOutfit(generateRandomOutfit());
+    setGeneratedOutfit(generateRandomOutfit(closetItems));
     setAiPreview(false);
   }
+
+  const builderHref = generatedOutfit
+    ? `/outfits/builder?items=${encodeURIComponent(
+        generatedOutfit.items.map((item) => item.id).join(","),
+      )}&name=${encodeURIComponent(generatedOutfit.name)}&style=${encodeURIComponent(generatedOutfit.style)}`
+    : "/outfits/builder";
 
   return (
     <>
@@ -168,6 +313,12 @@ export default function HomePage() {
       />
 
       <div className="flex flex-1 flex-col gap-8 overflow-y-auto px-10 py-8">
+        {errorMessage && (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {errorMessage}
+          </div>
+        )}
+
         <section className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div>
             <div className="mb-3 flex items-center justify-between gap-4">
@@ -185,20 +336,22 @@ export default function HomePage() {
               <Button
                 type="button"
                 leftIcon={<span aria-hidden>↻</span>}
+                disabled={!canGenerate || loading}
                 onClick={handleGenerate}
               >
-                Generate
+                {loading ? "Loading" : "Generate"}
               </Button>
               <Button
                 type="button"
                 variant="secondary"
                 leftIcon={<span aria-hidden>✦</span>}
+                disabled={!generatedOutfit}
                 onClick={() => setAiPreview(true)}
               >
                 Preview AI fit
               </Button>
               <Link
-                href="/outfits/builder"
+                href={builderHref}
                 className="inline-flex h-10 items-center justify-center rounded-full border border-border bg-white px-4 text-sm font-semibold uppercase transition-colors hover:bg-neutral-50"
               >
                 Edit in builder
@@ -262,11 +415,18 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <div className="grid gap-5 md:grid-cols-3">
-            {favouriteOutfits.map((outfit) => (
-              <OutfitCard key={outfit.id} outfit={outfit} />
-            ))}
-          </div>
+          {favouriteOutfits.length > 0 ? (
+            <div className="grid gap-5 md:grid-cols-3">
+              {favouriteOutfits.map((outfit) => (
+                <OutfitCard key={outfit.id} outfit={outfit} />
+              ))}
+            </div>
+          ) : (
+            <Card className="p-6 text-sm text-muted-foreground">
+              Favourite outfits will appear here once you star them from the
+              outfits page.
+            </Card>
+          )}
         </section>
       </div>
     </>
