@@ -103,6 +103,14 @@ export function Sidebar({
     };
   }, []);
 
+  function handleSignOut() {
+    localStorage.removeItem("access_token");
+    sessionStorage.removeItem("access_token");
+    window.location.assign(
+      `/auth/logout?returnTo=${encodeURIComponent(window.location.origin)}`,
+    );
+  }
+
   return (
     <aside className="flex w-56 shrink-0 flex-col border-r border-border bg-white">
       <div className="px-6 py-6 text-xs font-semibold tracking-[0.2em] text-foreground">
@@ -162,6 +170,14 @@ export function Sidebar({
             )}
           </div>
         </div>
+        <button
+          type="button"
+          onClick={handleSignOut}
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs font-bold uppercase tracking-wide text-red-700 transition-colors hover:border-red-300 hover:bg-red-100"
+        >
+          <span aria-hidden>↪</span>
+          Sign out
+        </button>
       </div>
     </aside>
   );

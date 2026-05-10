@@ -24,9 +24,9 @@ describe("buildCallbackRedirectUrl", () => {
     expect(url.toString()).toBe("http://localhost:3000/outfits");
   });
 
-  it("falls back to the home page when returnTo is missing", () => {
+  it("falls back to onboarding when returnTo is missing", () => {
     const url = buildCallbackRedirectUrl(null, {}, "http://localhost:3000");
 
-    expect(url.toString()).toBe("http://localhost:3000/");
+    expect(url.toString()).toBe("http://localhost:3000/onboarding");
   });
 });
