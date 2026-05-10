@@ -57,23 +57,28 @@ AUTH0_AUDIENCE=https://your-api
 
 ## Routes
 
-| Method   | URL                          | What it does                                               |
-| -------- | ---------------------------- | ---------------------------------------------------------- |
-| `GET`    | `/`                          | Health check, returns `API running`                        |
-| `POST`   | `/api/clothingItems/me`      | Create a clothing item for the authenticated user          |
-| `GET`    | `/api/clothingItems/me`      | List clothing items for the authenticated user             |
-| `PUT`    | `/api/clothingItems/me/:id`  | Update an authenticated user's owned clothing item         |
-| `DELETE` | `/api/clothingItems/me/:id`  | Delete an authenticated user's owned clothing item         |
-| `POST`   | `/api/outfits/me`            | Create an outfit for the authenticated user                |
-| `GET`    | `/api/outfits/me`            | List outfits for the authenticated user                    |
-| `PUT`    | `/api/outfits/me/:id`        | Update an authenticated user's owned outfit                |
-| `DELETE` | `/api/outfits/me/:id`        | Delete an authenticated user's owned outfit                |
-| `POST`   | `/api/users/me/sync`         | Create the authenticated user's MongoDB profile if missing |
-| `GET`    | `/api/users/me`              | Get the authenticated user's profile                       |
-| `PUT`    | `/api/users/me`              | Update the authenticated user's profile                    |
-| `PUT`    | `/api/users/me/photo`        | Update the authenticated user's profile photo              |
-| `DELETE` | `/api/users/me`              | Delete the authenticated user's profile                    |
-| `POST`   | `/api/tryon`                 | Generate a virtual try-on image with Replicate             |
+| Method   | URL                                | What it does                                               |
+| -------- | ---------------------------------- | ---------------------------------------------------------- |
+| `GET`    | `/`                                | Health check, returns `API running`                        |
+| `POST`   | `/api/users/me/sync`               | Create the authenticated user's MongoDB profile if missing |
+| `GET`    | `/api/users/me`                    | Get the authenticated user's profile                       |
+| `PUT`    | `/api/users/me`                    | Replace/update the authenticated user's profile            |
+| `PATCH`  | `/api/users/me/profile`            | Update editable profile fields in one request              |
+| `PATCH`  | `/api/users/me/body-profile`       | Update body profile fields                                 |
+| `PATCH`  | `/api/users/me/style-preferences`  | Update style preferences                                   |
+| `PUT`    | `/api/users/me/photo`              | Update the authenticated user's profile photo URL          |
+| `POST`   | `/api/users/me/photo/upload`       | Upload a user profile/model image                          |
+| `DELETE` | `/api/users/me`                    | Delete the authenticated user's profile                    |
+| `POST`   | `/api/clothingItems/me`            | Create a clothing item for the authenticated user          |
+| `GET`    | `/api/clothingItems/me`            | List clothing items for the authenticated user             |
+| `PUT`    | `/api/clothingItems/me/:id`        | Update an authenticated user's owned clothing item         |
+| `DELETE` | `/api/clothingItems/me/:id`        | Delete an authenticated user's owned clothing item         |
+| `POST`   | `/api/clothingItems/me/:id/image`    | Upload an image for an owned clothing item               |
+| `POST`   | `/api/outfits/me`                  | Create an outfit for the authenticated user                |
+| `GET`    | `/api/outfits/me`                  | List outfits for the authenticated user                    |
+| `PUT`    | `/api/outfits/me/:id`              | Update an authenticated user's owned outfit                |
+| `DELETE` | `/api/outfits/me/:id`              | Delete an authenticated user's owned outfit                |
+| `POST`   | `/api/tryon`                       | Generate a virtual try-on image with Replicate             |
 
 ## Project structure
 
@@ -109,8 +114,11 @@ backend/
 ## API conventions
 
 - Request and response bodies are JSON.
-- Clothing item categories are `upper_body`, `lower_body`, or `dresses`.
+- Clothing item categories are `upper_body`, `lower_body`, `dresses`, `outerwear`, `shoes`, or `accessories`.
+- `GET /api/clothingItems/me` supports query filters for owned closet data.
 - Outfit item IDs must belong to the authenticated user.
+- Outfit items must have distinct categories; duplicate item categories are rejected.
+- Profile PATCH routes reject unsupported fields and run Mongoose validators before saving.
 - The try-on route expects `humanImageUrl`, `garmentImageUrl`, and `category`.
 - MongoDB connects when `app.js` is loaded, so tests and local runs need a valid `MONGO_URI`.
 - `/api/users/me*`, `/api/clothingItems/me*`, and `/api/outfits/me*` routes require `Authorization: Bearer <access_token>`.
@@ -136,3 +144,5 @@ For authenticated routes, the frontend should:
 2. Request an access token for the backend API audience.
 3. Call `POST /api/users/me/sync` once after login with the user's `name` and `email`.
 4. Send that token in the `Authorization` header when calling `/api/users/me*`, `/api/clothingItems/me*`, and `/api/outfits/me*`.
+
+Current frontend pages use these routes for the home dashboard, closet management, outfit builder, favourite outfits, profile editing, onboarding sync, and sign-out flow.

@@ -51,6 +51,21 @@ function toClothingItem(item: ApiClothingItem): ClothingItem {
   };
 }
 
+async function parseApiError(response: Response, fallback: string) {
+  const text = await response.text().catch(() => "");
+
+  if (!text) {
+    return fallback;
+  }
+
+  try {
+    const body = JSON.parse(text) as { error?: string; errors?: string[] };
+    return body.error ?? body.errors?.join(", ") ?? fallback;
+  } catch {
+    return text;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
@@ -204,6 +219,7 @@ function OutfitDetailsPanel({
   onDiscard,
   canSave,
   isEditing,
+  errorMessage,
 }: {
   name: string;
   onNameChange: (v: string) => void;
@@ -213,6 +229,7 @@ function OutfitDetailsPanel({
   onDiscard: () => void;
   canSave: boolean;
   isEditing: boolean;
+  errorMessage?: string | null;
 }) {
   const inputClass =
     "w-full rounded-xl border-2 border-border bg-neutral-50 px-4 py-3 text-sm font-medium text-foreground outline-none transition focus:border-accent focus:bg-white placeholder:text-muted-foreground";
@@ -263,6 +280,11 @@ function OutfitDetailsPanel({
       </div>
 
       <div className="flex flex-col gap-3 border-t border-border px-6 py-5">
+        {errorMessage && (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {errorMessage}
+          </div>
+        )}
         <Button
           variant="primary"
           size="lg"
@@ -292,12 +314,17 @@ export default function OutfitBuilderPage() {
   const searchParams = useSearchParams();
   const outfitId = searchParams.get("id");
   const isEditing = Boolean(outfitId);
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5001";
+  const starterItems = searchParams.get("items");
+  const starterName = searchParams.get("name");
+  const starterStyle = searchParams.get("style");
+  const apiUrl = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5001")
+    .replace(/\/+$/, "");
 
   const [closetItems, setClosetItems] = useState<ClothingItem[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isTryOnActive, setIsTryOnActive] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const [name, setName] = useState("");
   const [style, setStyle] = useState<Style | "">("");
@@ -318,6 +345,26 @@ export default function OutfitBuilderPage() {
   useEffect(() => {
     loadCloset();
   }, [loadCloset]);
+
+  useEffect(() => {
+    if (isEditing) return;
+
+    if (starterItems) {
+      const itemIds = starterItems
+        .split(",")
+        .map((id) => id.trim())
+        .filter(Boolean);
+      setSelectedIds(new Set(itemIds));
+    }
+
+    if (starterName) {
+      setName(starterName);
+    }
+
+    if (starterStyle && STYLES.includes(starterStyle as Style)) {
+      setStyle(starterStyle as Style);
+    }
+  }, [isEditing, starterItems, starterName, starterStyle]);
 
   useEffect(() => {
     if (!outfitId) return;
@@ -348,10 +395,28 @@ export default function OutfitBuilderPage() {
     [closetItems, selectedIds]
   );
 
+  const selectionError = useMemo(() => {
+    const categories = selectedItems.map((item) => item.category);
+    const duplicateCategory = categories.find(
+      (category, index) => categories.indexOf(category) !== index,
+    );
+
+    if (!duplicateCategory) {
+      return null;
+    }
+
+    return `Choose items from different categories. You selected multiple ${duplicateCategory}.`;
+  }, [selectedItems]);
+
   function toggleItem(item: ClothingItem) {
+    setSaveError(null);
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      next.has(item.id) ? next.delete(item.id) : next.add(item.id);
+      if (next.has(item.id)) {
+        next.delete(item.id);
+      } else {
+        next.add(item.id);
+      }
       return next;
     });
   }
@@ -364,6 +429,7 @@ export default function OutfitBuilderPage() {
   async function handleSave() {
     if (isSaving) return;
     setIsSaving(true);
+    setSaveError(null);
     try {
       const url = isEditing
         ? `${apiUrl}/api/outfits/me/${outfitId}`
@@ -381,12 +447,15 @@ export default function OutfitBuilderPage() {
       });
 
       if (!response.ok) {
-        console.error("Failed to save outfit:", JSON.stringify(await response.json()));
+        setSaveError(
+          await parseApiError(response, "Failed to save outfit"),
+        );
         return;
       }
 
       router.push("/outfits");
     } catch (err) {
+      setSaveError("Failed to save outfit. Please try again.");
       console.error(err);
     } finally {
       setIsSaving(false);
@@ -428,13 +497,20 @@ export default function OutfitBuilderPage() {
 
         <OutfitDetailsPanel
           name={name}
-          onNameChange={setName}
+          onNameChange={(value) => {
+            setSaveError(null);
+            setName(value);
+          }}
           style={style}
-          onStyleChange={setStyle}
+          onStyleChange={(value) => {
+            setSaveError(null);
+            setStyle(value);
+          }}
           onSave={handleSave}
           onDiscard={handleDiscard}
           canSave={canSave}
           isEditing={isEditing}
+          errorMessage={saveError ?? selectionError}
         />
       </div>
     </>

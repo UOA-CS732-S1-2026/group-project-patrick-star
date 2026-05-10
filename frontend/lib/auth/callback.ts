@@ -17,6 +17,6 @@ export function buildCallbackRedirectUrl(
     return loginUrl;
   }
 
-  const returnTo = ctx.returnTo ?? "/";
+  const returnTo = ctx.returnTo ?? "/onboarding";
   return new URL(returnTo, appBaseUrl);
 }

@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { getAuthHeaders } from "@/lib/api/auth";
+import { getStyleAvatarEmoji } from "@/lib/profile/avatar";
 import { cn } from "../ui/cn";
 
 export interface NavItem {
@@ -19,14 +22,94 @@ const defaultNav: NavItem[] = [
 
 interface SidebarProps {
   nav?: NavItem[];
-  user?: { name: string; itemCount?: number };
+  user?: { name: string; itemCount?: number; avatarEmoji?: string };
 }
+
+interface ApiUserProfile {
+  name?: string;
+  stylePreferences?: string[];
+}
+
+const apiUrl = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5001")
+  .replace(/\/+$/, "");
 
 export function Sidebar({
   nav = defaultNav,
-  user = { name: "Alex Johnson", itemCount: 42 },
+  user,
 }: SidebarProps) {
   const pathname = usePathname();
+  const [sidebarUser, setSidebarUser] = useState(
+    user ?? { name: "Profile", itemCount: undefined, avatarEmoji: "👤" },
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSidebarUser() {
+      try {
+        const headers = await getAuthHeaders();
+        const [profileResponse, clothingResponse] = await Promise.all([
+          fetch(`${apiUrl}/api/users/me`, { headers }),
+          fetch(`${apiUrl}/api/clothingItems/me`, { headers }),
+        ]);
+
+        if (!profileResponse.ok || cancelled) {
+          return;
+        }
+
+        const profile = (await profileResponse.json()) as ApiUserProfile;
+        const clothingItems = clothingResponse.ok
+          ? ((await clothingResponse.json()) as unknown[])
+          : [];
+
+        if (!cancelled) {
+          setSidebarUser({
+            name: profile.name ?? "Profile",
+            itemCount: clothingItems.length,
+            avatarEmoji: getStyleAvatarEmoji(profile.stylePreferences),
+          });
+        }
+      } catch {
+        // Keep the fallback user details if the sidebar profile request fails.
+      }
+    }
+
+    function handleProfileUpdated(event: Event) {
+      const detail = (
+        event as CustomEvent<{
+          name?: string;
+          stylePreferences?: string[];
+        }>
+      ).detail;
+
+      if (detail?.name) {
+        setSidebarUser((current) => ({ ...current, name: detail.name }));
+      }
+
+      if (detail?.stylePreferences) {
+        setSidebarUser((current) => ({
+          ...current,
+          avatarEmoji: getStyleAvatarEmoji(detail.stylePreferences),
+        }));
+      }
+    }
+
+    loadSidebarUser();
+    window.addEventListener("user-profile-updated", handleProfileUpdated);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener("user-profile-updated", handleProfileUpdated);
+    };
+  }, []);
+
+  function handleSignOut() {
+    localStorage.removeItem("access_token");
+    sessionStorage.removeItem("access_token");
+    window.location.assign(
+      `/auth/logout?returnTo=${encodeURIComponent(window.location.origin)}`,
+    );
+  }
 
   return (
     <aside className="flex w-56 shrink-0 flex-col border-r border-border bg-white">
@@ -70,18 +153,31 @@ export function Sidebar({
       </nav>
       <div className="p-3">
         <div className="flex items-center gap-3 rounded-2xl border border-border bg-white px-3 py-2.5 shadow-sm">
-          <div className="h-9 w-9 shrink-0 rounded-full bg-neutral-200" />
+          <div
+            aria-hidden
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-lg"
+          >
+            {sidebarUser.avatarEmoji}
+          </div>
           <div className="min-w-0">
             <div className="truncate text-sm font-semibold text-foreground">
-              {user.name}
+              {sidebarUser.name}
             </div>
-            {user.itemCount !== undefined && (
+            {sidebarUser.itemCount !== undefined && (
               <div className="text-xs text-muted-foreground">
-                {user.itemCount} items
+                {sidebarUser.itemCount} items
               </div>
             )}
           </div>
         </div>
+        <button
+          type="button"
+          onClick={handleSignOut}
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs font-bold uppercase tracking-wide text-red-700 transition-colors hover:border-red-300 hover:bg-red-100"
+        >
+          <span aria-hidden>↪</span>
+          Sign out
+        </button>
       </div>
     </aside>
   );
