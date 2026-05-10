@@ -23,7 +23,6 @@ const STYLES = [
   "Fun",
   "Dresses",
 ] as const;
-const TRY_ON_CATEGORIES = new Set(["upper_body", "lower_body", "dresses"]);
 type Style = (typeof STYLES)[number];
 
 interface ApiClothingItem {
@@ -496,75 +495,6 @@ function YourPhotoSection({
 }
 
 // ---------------------------------------------------------------------------
-// Garment selector strip
-// ---------------------------------------------------------------------------
-function GarmentSelectorSection({
-  items,
-  loading,
-  selectedItem,
-  onSelect,
-}: {
-  items: ApiClothingItem[];
-  loading: boolean;
-  selectedItem: ApiClothingItem | null;
-  onSelect: (item: ApiClothingItem) => void;
-}) {
-  return (
-    <div className="flex shrink-0 items-center gap-5 border-b border-border bg-white px-10 py-4">
-      <p className="whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        Garment
-      </p>
-
-      {loading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
-      ) : items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No items in your closet yet — add some from the Closet page.
-        </p>
-      ) : (
-        <div className="flex flex-1 gap-3 overflow-x-auto py-1">
-          {items.map((item) => {
-            const isSelected = selectedItem?._id === item._id;
-            return (
-              <button
-                key={item._id}
-                onClick={() => onSelect(item)}
-                title={item.name}
-                className={cn(
-                  "relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 transition-colors",
-                  isSelected
-                    ? "border-brand ring-2 ring-brand ring-offset-1"
-                    : "border-border hover:border-neutral-400",
-                )}
-              >
-                {item.imageUrls?.front ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={item.imageUrls.front}
-                    alt={item.name}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-neutral-100 text-xl">
-                    👕
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {selectedItem && (
-        <p className="whitespace-nowrap text-sm font-medium text-foreground">
-          {selectedItem.name}
-        </p>
-      )}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Main page
 // ---------------------------------------------------------------------------
 
@@ -633,38 +563,10 @@ export default function OutfitBuilderPage() {
   const [humanImageUrl, setHumanImageUrl] = useState<string | null>(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
-  // Garment selector state — fetched from /api/clothingItems/me
-  const [garmentItems, setGarmentItems] = useState<ApiClothingItem[]>([]);
-  const [garmentItemsLoading, setGarmentItemsLoading] = useState(true);
-  const [selectedItem, setSelectedItem] = useState<ApiClothingItem | null>(
-    null,
-  );
-
   // Try-on generation state
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [tryOnResultUrl, setTryOnResultUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function fetchGarmentItems() {
-      try {
-        const res = await fetch(`${apiUrl}/api/clothingItems/me`, {
-          headers: await getAuthHeaders(),
-        });
-        if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
-        const items = (await res.json()) as ApiClothingItem[];
-        setGarmentItems(
-          items.filter((item) => TRY_ON_CATEGORIES.has(item.category)),
-        );
-      } catch (err) {
-        console.error("Failed to fetch clothing items:", err);
-      } finally {
-        setGarmentItemsLoading(false);
-      }
-    }
-
-    fetchGarmentItems();
-  }, [apiUrl]);
 
   async function handleHumanPhotoFile(file: File) {
     setHumanPhotoPreview(URL.createObjectURL(file));
@@ -724,12 +626,8 @@ export default function OutfitBuilderPage() {
       setGenerateError("Upload your photo first.");
       return;
     }
-    if (!selectedItem?.imageUrls?.front) {
-      setGenerateError("Select a garment that has a photo.");
-      return;
-    }
-    if (!TRY_ON_CATEGORIES.has(selectedItem.category)) {
-      setGenerateError("Select a top, bottom, or dress for try-on.");
+    if (!outfitId) {
+      setGenerateError("Save this outfit before generating a try-on.");
       return;
     }
 
@@ -744,8 +642,7 @@ export default function OutfitBuilderPage() {
         headers: await getAuthHeaders(true),
         body: JSON.stringify({
           humanImageUrl,
-          garmentImageUrl: selectedItem.imageUrls.front,
-          category: selectedItem.category,
+          outfitId,
         }),
       });
 
@@ -828,13 +725,6 @@ export default function OutfitBuilderPage() {
         isReady={Boolean(humanImageUrl)}
         isUploading={isUploadingPhoto}
         onFile={handleHumanPhotoFile}
-      />
-
-      <GarmentSelectorSection
-        items={garmentItems}
-        loading={garmentItemsLoading}
-        selectedItem={selectedItem}
-        onSelect={setSelectedItem}
       />
 
       <div className="flex flex-1 overflow-hidden">
