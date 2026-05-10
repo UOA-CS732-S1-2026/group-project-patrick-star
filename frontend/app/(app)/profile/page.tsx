@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
 import { getAuthHeaders } from "@/lib/api/auth";
+import { getStyleAvatarEmoji } from "@/lib/profile/avatar";
 import {
   BODY_SHAPES,
   GENDERS,
@@ -111,6 +112,10 @@ export default function ProfilePage() {
       .map((style) => style.replace(/^[^\w]+ /, ""))
       .join(", ");
   }, [preferredStyles]);
+  const avatarEmoji = useMemo(
+    () => getStyleAvatarEmoji(preferredStyles),
+    [preferredStyles],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -218,6 +223,11 @@ export default function ProfilePage() {
       }
 
       setStatusMessage("Profile details saved.");
+      window.dispatchEvent(
+        new CustomEvent("user-profile-updated", {
+          detail: { name: accountName },
+        }),
+      );
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -282,6 +292,11 @@ export default function ProfilePage() {
       }
 
       setStatusMessage("Style preferences saved.");
+      window.dispatchEvent(
+        new CustomEvent("user-profile-updated", {
+          detail: { stylePreferences: preferredStyles },
+        }),
+      );
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -371,7 +386,7 @@ export default function ProfilePage() {
                   aria-hidden
                   className="flex h-32 w-32 items-center justify-center rounded-full border border-border bg-neutral-100 text-5xl"
                 >
-                  👤
+                  {avatarEmoji}
                 </div>
               )}
 
