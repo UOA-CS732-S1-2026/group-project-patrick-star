@@ -64,6 +64,10 @@ AUTH0_AUDIENCE=https://your-api
 | `GET`    | `/api/clothingItems/me`      | List clothing items for the authenticated user             |
 | `PUT`    | `/api/clothingItems/me/:id`  | Update an authenticated user's owned clothing item         |
 | `DELETE` | `/api/clothingItems/me/:id`  | Delete an authenticated user's owned clothing item         |
+| `GET`    | `/api/users/me`              | Get the authenticated user's profile                       |
+| `PATCH`  | `/api/users/me/profile`      | Update editable profile fields in one request              |
+| `PATCH`  | `/api/users/me/body-profile` | Update body profile fields                                 |
+| `PATCH`  | `/api/users/me/style-preferences` | Update style preferences                              |
 | `POST`   | `/api/outfits/me`            | Create an outfit for the authenticated user                |
 | `GET`    | `/api/outfits/me`            | List outfits for the authenticated user                    |
 | `PUT`    | `/api/outfits/me/:id`        | Update an authenticated user's owned outfit                |

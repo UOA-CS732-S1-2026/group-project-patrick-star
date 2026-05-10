@@ -123,6 +123,112 @@ describe("PUT /api/users/me", () => {
   });
 });
 
+describe("PATCH /api/users/me/profile", () => {
+  it("should update profile details in one request", async () => {
+    await createTestUser();
+
+    const res = await request(app)
+      .patch("/api/users/me/profile")
+      .set(authHeader)
+      .send({
+        name: "Jane Updated",
+        bodyProfile: {
+          age: "29",
+          height: "170",
+          weight: "62",
+          bodyShape: "Athletic",
+          gender: "Women",
+        },
+        stylePreferences: ["minimal", "smart casual"],
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.name).toBe("Jane Updated");
+    expect(res.body.bodyProfile.age).toBe(29);
+    expect(res.body.bodyProfile.height).toBe(170);
+    expect(res.body.bodyProfile.weight).toBe(62);
+    expect(res.body.bodyProfile.bodyType).toBe("Athletic");
+    expect(res.body.bodyProfile.gender).toBe("Women");
+    expect(res.body.stylePreferences).toEqual(["minimal", "smart casual"]);
+  });
+
+  it("should reject unsupported profile fields", async () => {
+    await createTestUser();
+
+    const res = await request(app)
+      .patch("/api/users/me/profile")
+      .set(authHeader)
+      .send({ email: "changed@example.com" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("Unsupported profile fields");
+  });
+});
+
+describe("PATCH /api/users/me/body-profile", () => {
+  it("should update body profile details", async () => {
+    await createTestUser();
+
+    const res = await request(app)
+      .patch("/api/users/me/body-profile")
+      .set(authHeader)
+      .send({
+        age: 31,
+        height: 180,
+        weight: 75,
+        bodyType: "Regular",
+        gender: "Non-binary",
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.bodyProfile).toMatchObject({
+      age: 31,
+      height: 180,
+      weight: 75,
+      bodyType: "Regular",
+      gender: "Non-binary",
+    });
+  });
+
+  it("should reject invalid body profile numbers", async () => {
+    await createTestUser();
+
+    const res = await request(app)
+      .patch("/api/users/me/body-profile")
+      .set(authHeader)
+      .send({ age: -1 });
+
+    expect(res.status).toBe(400);
+    expect(res.body.errors).toContain("age must be a non-negative number");
+  });
+});
+
+describe("PATCH /api/users/me/style-preferences", () => {
+  it("should update style preferences", async () => {
+    await createTestUser();
+
+    const res = await request(app)
+      .patch("/api/users/me/style-preferences")
+      .set(authHeader)
+      .send({ stylePreferences: ["streetwear", "formal"] });
+
+    expect(res.status).toBe(200);
+    expect(res.body.stylePreferences).toEqual(["streetwear", "formal"]);
+  });
+
+  it("should reject non-array style preferences", async () => {
+    await createTestUser();
+
+    const res = await request(app)
+      .patch("/api/users/me/style-preferences")
+      .set(authHeader)
+      .send({ stylePreferences: "streetwear" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("stylePreferences must be an array");
+  });
+});
+
 // Upload profile photo
 describe("PUT /api/users/me/photo", () => {
   it("should upload a profile photo and return success", async () => {
