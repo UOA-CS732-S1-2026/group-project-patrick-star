@@ -23,6 +23,12 @@ interface UploadItemModalProps {
 
 const SIZES = ["XS", "S", "M", "L", "XL"] as const;
 const FITS = ["Relaxed", "Regular", "Slim"] as const;
+const CATEGORIES = [
+  { label: "Top", value: "Tops" },
+  { label: "Bottom", value: "Bottoms" },
+  { label: "Shoes", value: "Shoes" },
+  { label: "Outerwear", value: "Outerwear" },
+] as const;
 
 export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProps) {
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -195,17 +201,24 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-2">
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Categories
+                Category
               </label>
               {aiTag}
             </div>
-            <input
-              type="text"
+            <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              placeholder="e.g. Tops"
               className={inputClass}
-            />
+            >
+              <option value="" disabled>
+                Select a category
+              </option>
+              {CATEGORIES.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Colour */}
