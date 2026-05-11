@@ -14,10 +14,20 @@ interface EditItemPanelProps {
 
 const SIZES = ["XS", "S", "M", "L", "XL"] as const;
 const FITS = ["Relaxed", "Regular", "Slim"] as const;
+const CATEGORIES = [
+  { label: "Top", value: "Tops" },
+  { label: "Bottom", value: "Bottoms" },
+  { label: "Shoes", value: "Shoes" },
+  { label: "Outerwear", value: "Outerwear" },
+] as const;
+
+const CATEGORY_VALUES = new Set(CATEGORIES.map((category) => category.value));
 
 export function EditItemPanel({ item, onCancel, onSave, onRemove }: EditItemPanelProps) {
   const [name, setName] = useState(item.name);
-  const [category, setCategory] = useState(item.category);
+  const [category, setCategory] = useState(
+    CATEGORY_VALUES.has(item.category) ? item.category : "",
+  );
   const [size, setSize] = useState(item.size ?? "");
   const [fit, setFit] = useState(item.fit ?? "");
 
@@ -61,6 +71,7 @@ export function EditItemPanel({ item, onCancel, onSave, onRemove }: EditItemPane
 
   const inputClass =
     "w-full rounded-xl border-2 border-border bg-neutral-50 px-4 py-2.5 text-sm font-medium text-foreground outline-none transition focus:border-accent focus:bg-white placeholder:text-muted-foreground";
+  const canSave = Boolean(category && size && fit);
 
   return (
     <div className="flex h-full w-[340px] shrink-0 flex-col border-l border-border bg-white">
@@ -118,23 +129,37 @@ export function EditItemPanel({ item, onCancel, onSave, onRemove }: EditItemPane
           onChange={handleFileInput}
         />
 
-        {/* Text fields */}
-        {([
-          { label: "Name", value: name, setter: setName },
-          { label: "Category", value: category, setter: setCategory },
-        ] as const).map(({ label, value, setter }) => (
-          <div key={label} className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {label}
-            </label>
-            <input
-              type="text"
-              value={value}
-              onChange={(e) => (setter as (v: string) => void)(e.target.value)}
-              className={inputClass}
-            />
-          </div>
-        ))}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Name
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className={inputClass}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Category
+          </label>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className={inputClass}
+          >
+            <option value="" disabled>
+              Select a category
+            </option>
+            {CATEGORIES.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
         {/* Size toggle */}
         <div className="flex flex-col gap-1.5">
@@ -185,7 +210,13 @@ export function EditItemPanel({ item, onCancel, onSave, onRemove }: EditItemPane
 
       {/* Footer */}
       <div className="flex flex-col gap-3 border-t border-border px-6 py-5">
-        <Button variant="primary" size="lg" className="w-full rounded-xl" onClick={handleSave}>
+        <Button
+          variant="primary"
+          size="lg"
+          className="w-full rounded-xl"
+          onClick={handleSave}
+          disabled={!canSave}
+        >
           Save
         </Button>
         <button
