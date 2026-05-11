@@ -14,6 +14,7 @@ const UserSchema = new mongoose.Schema({
   stylePreferences: [String],
   profilePhoto: { type: String },
   modelImage: { type: String },
+  isCompleteOnboarding: { type: Boolean, default: false },
 });
 
 module.exports = mongoose.model("User", UserSchema);

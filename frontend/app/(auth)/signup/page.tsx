@@ -28,7 +28,7 @@ export default function SignUpPage() {
           </p>
           <div className="mt-10 flex flex-col gap-4">
             <a
-              href="/auth/login?screen_hint=signup&returnTo=/onboarding"
+              href="/auth/login"
               className="flex h-11 items-center justify-center rounded-[12px] bg-[#73cf1f] px-5 text-[14px] font-semibold text-white shadow-[0_4px_10px_rgba(115,207,31,0.28)] transition hover:bg-[#67c018]"
             >
               Continue to sign up
