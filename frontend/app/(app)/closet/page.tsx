@@ -20,8 +20,6 @@ const CATEGORIES = [
   "Bottoms",
   "Outerwear",
   "Shoes",
-  "Accessories",
-  "Dresses",
 ] as const;
 type Category = (typeof CATEGORIES)[number];
 
