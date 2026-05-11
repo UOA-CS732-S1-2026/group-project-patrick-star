@@ -22,14 +22,18 @@ Open http://localhost:3000.
 
 ## Routes
 
-| URL                    | Page                                          |
-| ---------------------- | --------------------------------------------- |
-| `/`                    | Home, today's look, insights, recently worn   |
-| `/closet`              | My Closet, searchable item grid               |
-| `/components`          | Component showcase                            |
-| `/onboarding`          | Onboarding flow                             |
-
-Stubs for `/outfits`, `/calendar`, and `/profile` are not yet built, so sidebar links pointing at them will 404 until you add the matching pages under `app/(app)/`.
+| URL                | Page                                                                           |
+| ------------------ | ------------------------------------------------------------------------------ |
+| `/`                | Home dashboard with random outfit generator, AI preview toggle, stats, actions |
+| `/closet`          | My Closet, searchable item grid, item details, add/edit item flows             |
+| `/closet?addItem=1` | Opens My Closet with the add clothing item modal already open                 |
+| `/outfits`         | Saved outfit library with favourite outfit support                             |
+| `/outfits/builder` | Create or edit outfits from closet items                                       |
+| `/profile`         | Profile details, body profile, style preferences, and photo upload             |
+| `/components`      | Component showcase                                                             |
+| `/onboarding`      | Onboarding flow after Auth0 sign-in                                            |
+| `/login`           | Auth0 sign-in entry point                                                      |
+| `/signup`          | Auth0 sign-up entry point                                                      |
 
 ## Project structure
 
@@ -95,7 +99,13 @@ frontend/
 │       └── cn.ts
 │
 ├── lib/
+│   ├── api/
+│   │   └── auth.ts
 │   ├── auth0.ts
+│   ├── profile/
+│   │   └── avatar.ts
+│   ├── services/
+│   │   └── onboardingService.ts
 │   └── auth/
 │       ├── callback.ts
 │       ├── logging.ts
@@ -148,23 +158,35 @@ See `/components` in the running app for a live showcase of every variant.
 
 By default, pages and components are React Server Components. Add `"use client"` at the top of a file only when it needs state, effects, or browser APIs. In this project:
 
-- `Sidebar`, `Chip`, and pages with `useState` (closet, onboarding, component showcase) are client components.
-- Everything else (`Button`, `Card`, `Badge`, `ItemCard`, `PageHeader`, `AppShell`, home page) is a server component.
+- Pages that fetch authenticated browser-side data are client components, including home, closet, outfits, outfit builder, profile, onboarding, and the component showcase.
+- `Sidebar` is a client component because it reads user profile data, shows the style-based avatar emoji, and handles sign out.
+- Reusable primitives such as `Button`, `Card`, `Badge`, `ItemCard`, `PageHeader`, and `AppShell` stay server-compatible unless they need browser APIs.
 
 ## Conventions
 
 - `@/` imports: use the alias (`@/components`, `@/app/...`), not relative `../../`.
 - Class merging: use the `cn(...)` helper from `@/components/ui/cn` rather than string concatenation.
 - Icons: currently placeholder emojis to stay dependency-free. Swap in `lucide-react` or SVGs when ready, and change them in one place per component.
-- Data: pages currently use hard-coded arrays. Replace with `fetch(...)` or server actions once backend endpoints exist.
+- Authenticated API calls use `getAuthHeaders()` from `@/lib/api/auth`.
+- API URLs come from `NEXT_PUBLIC_API_URL`; client pages normalize the base URL before joining route paths.
+- Closet category input is fixed to Top, Bottom, Shoes, and Outerwear, then mapped to backend category values before submit.
+- Outfit builder surfaces backend validation errors, including attempts to save multiple selected items from the same category.
 
 ## Backend integration
 
 The backend lives in `../backend/` (Express + Jest). Wire it up by:
 
-1. Adding a `NEXT_PUBLIC_API_URL` env var.
-2. Fetching from server components (`async function Page()`) or route handlers under `app/api/`.
-3. Replacing the hard-coded arrays in [app/(app)/page.tsx](app/(app)/page.tsx) and [app/(app)/closet/page.tsx](app/(app)/closet/page.tsx).
+1. Adding `NEXT_PUBLIC_API_URL=http://localhost:5001` to the frontend environment.
+2. Signing in with Auth0 so the app can request a backend access token through `app/api/auth/token/route.ts`.
+3. Sending `Authorization: Bearer <access_token>` via `getAuthHeaders()` for authenticated backend calls.
+
+Current backend-backed flows:
+
+- Home fetches `/api/clothingItems/me` and `/api/outfits/me` to power quick stats, favourite outfits, and random outfit generation.
+- My Closet fetches and mutates `/api/clothingItems/me`; `?addItem=1` opens the add item modal from quick actions.
+- Outfit builder creates and updates `/api/outfits/me`, and can be prefilled from the home generator using query parameters.
+- Profile fetches `/api/users/me`, updates profile/body/style fields with PATCH routes, and uploads images through `/api/users/me/photo/upload`.
+- Auth0 login routes users through onboarding; sign out clears browser tokens and returns to the sign-in page.
 
 ## Notes for contributors
 

@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ChangeEvent, ReactNode } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
+import { getAuthHeaders } from "@/lib/api/auth";
+import { getStyleAvatarEmoji } from "@/lib/profile/avatar";
 import {
   BODY_SHAPES,
   GENDERS,
@@ -15,11 +17,8 @@ import {
   type StyleOption,
 } from "@/components/onboarding/onboarding-data";
 
-const accountSummary = {
-  name: "Alex Johnson",
-  wardrobeItems: 42,
-  savedOutfits: 12,
-};
+const apiUrl = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5001")
+  .replace(/\/+$/, "");
 
 interface BodyProfileState {
   age: string;
@@ -30,22 +29,79 @@ interface BodyProfileState {
 }
 
 const initialBodyProfile: BodyProfileState = {
-  age: "28",
-  height: "172",
-  weight: "68",
-  bodyShape: "Regular",
-  gender: "Non-binary",
+  age: "",
+  height: "",
+  weight: "",
+  bodyShape: null,
+  gender: null,
 };
 
-const initialStyles: StyleOption[] = ["🤍 Minimal & Clean", "👔 Smart casual"];
+interface ApiUserProfile {
+  name?: string;
+  bodyProfile?: {
+    age?: number | null;
+    height?: number | null;
+    weight?: number | null;
+    bodyType?: string | null;
+    gender?: string | null;
+  };
+  stylePreferences?: string[];
+  profilePhoto?: string | null;
+  modelImage?: string | null;
+}
+
+function isBodyShape(value: string | null | undefined): value is BodyShape {
+  return BODY_SHAPES.includes(value as BodyShape);
+}
+
+function isGender(value: string | null | undefined): value is Gender {
+  return GENDERS.includes(value as Gender);
+}
+
+function isStyleOption(value: string): value is StyleOption {
+  return STYLE_OPTIONS.includes(value as StyleOption);
+}
+
+function toInputValue(value: number | null | undefined) {
+  return value === null || value === undefined ? "" : String(value);
+}
+
+function toNullableNumber(value: string) {
+  return value.trim() === "" ? null : Number(value);
+}
+
+async function parseError(response: Response, fallback: string) {
+  const text = await response.text().catch(() => "");
+
+  if (!text) {
+    return fallback;
+  }
+
+  try {
+    const body = JSON.parse(text) as { error?: string; errors?: string[] };
+    return body.error ?? body.errors?.join(", ") ?? fallback;
+  } catch {
+    return text;
+  }
+}
 
 export default function ProfilePage() {
+  const [accountName, setAccountName] = useState("Profile");
+  const [wardrobeItems, setWardrobeItems] = useState(0);
+  const [savedOutfits, setSavedOutfits] = useState(0);
   const [bodyProfile, setBodyProfile] =
     useState<BodyProfileState>(initialBodyProfile);
   const [preferredStyles, setPreferredStyles] =
-    useState<StyleOption[]>(initialStyles);
+    useState<StyleOption[]>([]);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoName, setPhotoName] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+  const [accountSaving, setAccountSaving] = useState(false);
+  const [bodySaving, setBodySaving] = useState(false);
+  const [stylesSaving, setStylesSaving] = useState(false);
+  const [photoSaving, setPhotoSaving] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const styleSummary = useMemo(() => {
     if (preferredStyles.length === 0) {
@@ -56,6 +112,82 @@ export default function ProfilePage() {
       .map((style) => style.replace(/^[^\w]+ /, ""))
       .join(", ");
   }, [preferredStyles]);
+  const avatarEmoji = useMemo(
+    () => getStyleAvatarEmoji(preferredStyles),
+    [preferredStyles],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadProfile() {
+      setLoading(true);
+      setErrorMessage(null);
+
+      try {
+        const headers = await getAuthHeaders();
+        const [profileResponse, clothingResponse, outfitsResponse] =
+          await Promise.all([
+            fetch(`${apiUrl}/api/users/me`, { headers }),
+            fetch(`${apiUrl}/api/clothingItems/me`, { headers }),
+            fetch(`${apiUrl}/api/outfits/me`, { headers }),
+          ]);
+
+        if (!profileResponse.ok) {
+          throw new Error(
+            await parseError(profileResponse, "Failed to load profile"),
+          );
+        }
+
+        const profile = (await profileResponse.json()) as ApiUserProfile;
+        const clothingItems = clothingResponse.ok
+          ? ((await clothingResponse.json()) as unknown[])
+          : [];
+        const outfits = outfitsResponse.ok
+          ? ((await outfitsResponse.json()) as unknown[])
+          : [];
+
+        if (cancelled) {
+          return;
+        }
+
+        setAccountName(profile.name ?? "Profile");
+        setWardrobeItems(clothingItems.length);
+        setSavedOutfits(outfits.length);
+        setPhotoPreview(profile.profilePhoto ?? profile.modelImage ?? null);
+        setBodyProfile({
+          age: toInputValue(profile.bodyProfile?.age),
+          height: toInputValue(profile.bodyProfile?.height),
+          weight: toInputValue(profile.bodyProfile?.weight),
+          bodyShape: isBodyShape(profile.bodyProfile?.bodyType)
+            ? profile.bodyProfile.bodyType
+            : null,
+          gender: isGender(profile.bodyProfile?.gender)
+            ? profile.bodyProfile.gender
+            : null,
+        });
+        setPreferredStyles(
+          (profile.stylePreferences ?? []).filter(isStyleOption),
+        );
+      } catch (error) {
+        if (!cancelled) {
+          setErrorMessage(
+            error instanceof Error ? error.message : "Failed to load profile",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadProfile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function updateBodyProfile<Field extends keyof BodyProfileState>(
     field: Field,
@@ -72,7 +204,111 @@ export default function ProfilePage() {
     );
   }
 
-  function handlePhotoChange(event: ChangeEvent<HTMLInputElement>) {
+  async function handleSaveAccount() {
+    setAccountSaving(true);
+    setStatusMessage(null);
+    setErrorMessage(null);
+
+    try {
+      const response = await fetch(`${apiUrl}/api/users/me/profile`, {
+        method: "PATCH",
+        headers: await getAuthHeaders(true),
+        body: JSON.stringify({ name: accountName }),
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          await parseError(response, "Failed to save profile details"),
+        );
+      }
+
+      setStatusMessage("Profile details saved.");
+      window.dispatchEvent(
+        new CustomEvent("user-profile-updated", {
+          detail: { name: accountName },
+        }),
+      );
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Failed to save profile details",
+      );
+    } finally {
+      setAccountSaving(false);
+    }
+  }
+
+  async function handleSaveBodyProfile() {
+    setBodySaving(true);
+    setStatusMessage(null);
+    setErrorMessage(null);
+
+    try {
+      const response = await fetch(`${apiUrl}/api/users/me/body-profile`, {
+        method: "PATCH",
+        headers: await getAuthHeaders(true),
+        body: JSON.stringify({
+          age: toNullableNumber(bodyProfile.age),
+          height: toNullableNumber(bodyProfile.height),
+          weight: toNullableNumber(bodyProfile.weight),
+          bodyShape: bodyProfile.bodyShape,
+          gender: bodyProfile.gender,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          await parseError(response, "Failed to save body profile"),
+        );
+      }
+
+      setStatusMessage("Body profile saved.");
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Failed to save body profile",
+      );
+    } finally {
+      setBodySaving(false);
+    }
+  }
+
+  async function handleSaveStyles() {
+    setStylesSaving(true);
+    setStatusMessage(null);
+    setErrorMessage(null);
+
+    try {
+      const response = await fetch(`${apiUrl}/api/users/me/style-preferences`, {
+        method: "PATCH",
+        headers: await getAuthHeaders(true),
+        body: JSON.stringify({ stylePreferences: preferredStyles }),
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          await parseError(response, "Failed to save style preferences"),
+        );
+      }
+
+      setStatusMessage("Style preferences saved.");
+      window.dispatchEvent(
+        new CustomEvent("user-profile-updated", {
+          detail: { stylePreferences: preferredStyles },
+        }),
+      );
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Failed to save style preferences",
+      );
+    } finally {
+      setStylesSaving(false);
+    }
+  }
+
+  async function handlePhotoChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
 
     if (!file) {
@@ -81,6 +317,38 @@ export default function ProfilePage() {
 
     setPhotoName(file.name);
     setPhotoPreview(URL.createObjectURL(file));
+    setPhotoSaving(true);
+    setStatusMessage(null);
+    setErrorMessage(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const response = await fetch(`${apiUrl}/api/users/me/photo/upload`, {
+        method: "POST",
+        headers: await getAuthHeaders(),
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(await parseError(response, "Failed to upload photo"));
+      }
+
+      const result = (await response.json()) as { modelImage?: string };
+
+      if (result.modelImage) {
+        setPhotoPreview(result.modelImage);
+      }
+
+      setStatusMessage("Profile photo uploaded.");
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Failed to upload photo",
+      );
+    } finally {
+      setPhotoSaving(false);
+    }
   }
 
   return (
@@ -91,6 +359,18 @@ export default function ProfilePage() {
       />
 
       <div className="flex flex-1 flex-col gap-8 overflow-y-auto px-10 py-8">
+        {(statusMessage || errorMessage) && (
+          <div
+            className={
+              errorMessage
+                ? "rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                : "rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+            }
+          >
+            {errorMessage ?? statusMessage}
+          </div>
+        )}
+
         <section className="grid gap-6 lg:grid-cols-[minmax(260px,340px)_minmax(0,1fr)]">
           <Card className="p-6">
             <div className="flex flex-col items-center text-center">
@@ -106,22 +386,45 @@ export default function ProfilePage() {
                   aria-hidden
                   className="flex h-32 w-32 items-center justify-center rounded-full border border-border bg-neutral-100 text-5xl"
                 >
-                  👤
+                  {avatarEmoji}
                 </div>
               )}
 
               <h2 className="mt-4 text-xl font-bold text-foreground">
-                {accountSummary.name}
+                {loading ? "Loading..." : accountName}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {styleSummary}
               </p>
             </div>
 
+            <div className="mt-6">
+              <ProfileField label="Display name">
+                <input
+                  type="text"
+                  maxLength={20}
+                  value={accountName}
+                  disabled={loading}
+                  onChange={(event) => setAccountName(event.target.value)}
+                  className="h-11 w-full rounded-xl border border-border bg-white px-4 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 disabled:bg-neutral-50"
+                />
+              </ProfileField>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="mt-3 w-full"
+                disabled={accountSaving || loading}
+                onClick={handleSaveAccount}
+              >
+                {accountSaving ? "Saving" : "Save details"}
+              </Button>
+            </div>
+
             <div className="mt-6 grid grid-cols-2 gap-3">
               <div className="rounded-xl border border-border bg-neutral-50 p-4">
                 <div className="text-2xl font-bold">
-                  {accountSummary.wardrobeItems}
+                  {wardrobeItems}
                 </div>
                 <div className="mt-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   Wardrobe items
@@ -129,7 +432,7 @@ export default function ProfilePage() {
               </div>
               <div className="rounded-xl border border-border bg-neutral-50 p-4">
                 <div className="text-2xl font-bold">
-                  {accountSummary.savedOutfits}
+                  {savedOutfits}
                 </div>
                 <div className="mt-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   Saved outfits
@@ -146,8 +449,14 @@ export default function ProfilePage() {
                   These details help personalise fit and outfit suggestions.
                 </p>
               </div>
-              <Button type="button" variant="secondary" size="sm">
-                Save
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={bodySaving || loading}
+                onClick={handleSaveBodyProfile}
+              >
+                {bodySaving ? "Saving" : "Save"}
               </Button>
             </div>
 
@@ -230,8 +539,14 @@ export default function ProfilePage() {
                   Choose the style directions you want outfits to lean toward.
                 </p>
               </div>
-              <Button type="button" variant="secondary" size="sm">
-                Save
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={stylesSaving || loading}
+                onClick={handleSaveStyles}
+              >
+                {stylesSaving ? "Saving" : "Save"}
               </Button>
             </div>
 
@@ -276,7 +591,7 @@ export default function ProfilePage() {
                 Choose a new photo
               </span>
               <span className="mt-1 text-xs text-muted-foreground">
-                {photoName || "PNG, JPG, or WEBP"}
+                {photoSaving ? "Uploading..." : photoName || "PNG, JPG, or WEBP"}
               </span>
             </label>
           </Card>

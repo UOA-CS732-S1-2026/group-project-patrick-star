@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
@@ -57,6 +58,7 @@ async function getAuthHeaders(
 }
 
 export default function ClosetPage() {
+  const searchParams = useSearchParams();
   const [items, setItems] = useState<ClothingItem[]>([]);
   const [category, setCategory] = useState<Category>("All");
   const [query, setQuery] = useState("");
@@ -167,6 +169,12 @@ export default function ClosetPage() {
       cancelled = true;
     };
   }, [apiUrl, toClothingItem]);
+
+  useEffect(() => {
+    if (searchParams.get("addItem") === "1") {
+      setUploadOpen(true);
+    }
+  }, [searchParams]);
 
   async function handleAddItem(newItem: NewClothingItem) {
     const createResponse = await fetch(`${apiUrl}/api/clothingItems/me`, {
