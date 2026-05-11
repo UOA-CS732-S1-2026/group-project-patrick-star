@@ -9,7 +9,7 @@ type AuthSession = {
   };
 };
 
-type UserProfilePayload = {
+export type UserProfilePayload = {
   name: string;
   bodyProfile: {
     age: number | null;
