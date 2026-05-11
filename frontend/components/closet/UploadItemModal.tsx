@@ -32,7 +32,6 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [aiProcessing, setAiProcessing] = useState(false);
 
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
@@ -44,13 +43,6 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
   function handleFile(file: File) {
     setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
-
-    // TODO: Replace with real AI image analysis via the OpenAI API
-    setAiProcessing(true);
-    setTimeout(() => {
-      setCategory("Tops");
-      setAiProcessing(false);
-    }, 1800);
   }
 
   function handleDrop(e: DragEvent<HTMLDivElement>) {
@@ -78,7 +70,6 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
     setCategory("");
     setSize("");
     setFit("");
-    setAiProcessing(false);
     onClose();
   }
 
@@ -87,37 +78,32 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
   const inputClass =
     "w-full rounded-xl border-2 border-border bg-neutral-50 px-4 py-3 text-sm font-medium text-foreground outline-none transition focus:border-accent focus:bg-white placeholder:text-muted-foreground";
 
-  const aiTag = aiProcessing ? (
-    <span className="rounded bg-accent-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent">
-      AI ✦
-    </span>
-  ) : null;
-
   return (
     <Modal open={open} onClose={handleClose} className="max-w-3xl">
-      {/* Header */}
-      <div className="flex items-center justify-between px-8 pt-7 pb-6 border-b border-border">
+      <div className="flex items-center justify-between border-b border-border px-8 pb-6 pt-7">
         <h2 className="text-xl font-bold text-foreground">Upload Clothing Item</h2>
         <button
           onClick={handleClose}
-          className="text-sm font-medium text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
+          className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
-          <span aria-hidden>✕</span> Cancel
+          <span aria-hidden>×</span> Cancel
         </button>
       </div>
 
       <div className="grid grid-cols-2 gap-8 p-8">
-        {/* Left: Image upload */}
         <div
           onClick={() => fileInputRef.current?.click()}
           onDrop={handleDrop}
-          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDragging(true);
+          }}
           onDragLeave={() => setIsDragging(false)}
           className={cn(
-            "flex flex-col items-center justify-center rounded-2xl border-2 border-dashed cursor-pointer transition-colors min-h-72",
+            "flex min-h-72 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-colors",
             isDragging
               ? "border-brand bg-brand/5"
-              : "border-border bg-neutral-50 hover:bg-neutral-100"
+              : "border-border bg-neutral-50 hover:bg-neutral-100",
           )}
         >
           {imagePreview ? (
@@ -125,11 +111,11 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
             <img
               src={imagePreview}
               alt="Preview"
-              className="h-full w-full rounded-2xl object-contain max-h-72"
+              className="h-full max-h-72 w-full rounded-2xl object-contain"
             />
           ) : (
             <>
-              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-200 text-neutral-500 text-xl">
+              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-200 text-xl text-neutral-500">
                 ↑
               </div>
               <p className="text-sm font-medium text-foreground">Click to upload or drag &amp; drop</p>
@@ -145,36 +131,9 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
           onChange={handleFileInput}
         />
 
-        {/* Right: Item setup */}
         <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold text-foreground">Item setup</h3>
-            {/* AI status badge — only shown once a file is selected */}
-            {imageFile && (
-              <div className={cn(
-                "flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold transition-colors",
-                aiProcessing ? "bg-accent-soft text-accent" : "bg-neutral-100 text-muted-foreground"
-              )}>
-                <span>✦</span>
-                {aiProcessing ? (
-                  <>
-                    AI PROCESSING
-                    <span className="flex gap-1 ml-1">
-                      {[0, 1, 2].map((i) => (
-                        <span
-                          key={i}
-                          className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse"
-                          style={{ animationDelay: `${i * 150}ms` }}
-                        />
-                      ))}
-                    </span>
-                  </>
-                ) : "AI READY"}
-              </div>
-            )}
-          </div>
+          <h3 className="text-lg font-bold text-foreground">Item setup</h3>
 
-          {/* Name */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Name
@@ -188,14 +147,10 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
             />
           </div>
 
-          {/* Category */}
           <div className="flex flex-col gap-1.5">
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Category
-              </label>
-              {aiTag}
-            </div>
+            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Category
+            </label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
@@ -212,7 +167,6 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
             </select>
           </div>
 
-          {/* Size */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Size
@@ -226,7 +180,7 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
                     "flex-1 rounded-xl border-2 py-2.5 text-sm font-semibold transition-colors",
                     size === s
                       ? "border-accent bg-accent-soft text-accent"
-                      : "border-border bg-white text-foreground hover:bg-neutral-50"
+                      : "border-border bg-white text-foreground hover:bg-neutral-50",
                   )}
                 >
                   {s}
@@ -235,7 +189,6 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
             </div>
           </div>
 
-          {/* Fit */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Fit
@@ -249,7 +202,7 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
                     "flex-1 rounded-xl border-2 py-2.5 text-sm font-semibold transition-colors",
                     fit === f
                       ? "border-accent bg-accent-soft text-accent"
-                      : "border-border bg-white text-foreground hover:bg-neutral-50"
+                      : "border-border bg-white text-foreground hover:bg-neutral-50",
                   )}
                 >
                   {f}
@@ -258,13 +211,12 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
             </div>
           </div>
 
-          {/* CTA */}
           <Button
             variant="primary"
             size="lg"
             disabled={!canSubmit}
             onClick={handleSubmit}
-            className="w-full mt-auto rounded-xl"
+            className="mt-auto w-full rounded-xl"
           >
             Add to Closet
           </Button>
