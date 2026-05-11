@@ -20,6 +20,7 @@ type UserProfilePayload = {
   };
   stylePreferences: string[];
   modelImage: string | null;
+  isCompleteOnboarding: boolean;
 };
 
 export class OnboardingService {
@@ -99,7 +100,10 @@ export class OnboardingService {
       },
       stylePreferences: values.stylePreference,
       modelImage:
-        values.modelMode === "select" ? selectedModel?.imageSrc ?? null : null,
+        values.modelMode === "select"
+          ? (selectedModel?.imageSrc ?? null)
+          : null,
+      isCompleteOnboarding: true,
     };
   }
 
