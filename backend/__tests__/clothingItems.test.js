@@ -37,7 +37,6 @@ const createTestItem = (userId, overrides = {}) =>
     name: "Tshirt",
     category: "upper_body",
     size: "M",
-    colour: "black",
     fit: "regular",
     imageUrls: {
       front: "",
@@ -79,7 +78,6 @@ describe("POST /api/clothingItems/me", () => {
         name: "Tshirt",
         category: "upper_body",
         size: "M",
-        colour: "black",
         fit: "regular",
         imageUrls: {
           front: "",
@@ -101,7 +99,6 @@ describe("POST /api/clothingItems/me", () => {
         name: "Tshirt",
         category: "upper_body",
         size: "M",
-        colour: "black",
         fit: "regular",
       });
 
@@ -165,11 +162,11 @@ describe("PUT /api/clothingItems/me/:id", () => {
     const res = await request(app)
       .put(`/api/clothingItems/me/${item._id}`)
       .set(authHeader)
-      .send({ name: "Hoodie", colour: "blue" });
+      .send({ name: "Hoodie", fit: "loose" });
 
     expect(res.status).toBe(200);
     expect(res.body.name).toBe("Hoodie");
-    expect(res.body.colour).toBe("blue");
+    expect(res.body.fit).toBe("loose");
   });
 
   it("should return 404 when updating another user's item", async () => {

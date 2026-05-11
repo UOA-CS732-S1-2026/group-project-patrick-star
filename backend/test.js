@@ -10,12 +10,11 @@ async function run() {
     name: 'Tshirt',
     category: 'upper_body',
     size: 'M',
-    colour: 'black',
     fit: 'regular',
     imageUrls: {}
   })
 
-  const items = await getItems('000000000000000000000000')
+  const items = await getItems({ userId: '000000000000000000000000' })
   console.log(items)
 
   await mongoose.disconnect()

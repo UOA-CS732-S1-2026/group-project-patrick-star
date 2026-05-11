@@ -18,8 +18,6 @@ const FITS = ["Relaxed", "Regular", "Slim"] as const;
 export function EditItemPanel({ item, onCancel, onSave, onRemove }: EditItemPanelProps) {
   const [name, setName] = useState(item.name);
   const [category, setCategory] = useState(item.category);
-  const [colour, setColour] = useState(item.colour ?? "");
-  const [fabric, setFabric] = useState(item.fabric ?? "");
   const [size, setSize] = useState(item.size ?? "");
   const [fit, setFit] = useState(item.fit ?? "");
 
@@ -53,7 +51,7 @@ export function EditItemPanel({ item, onCancel, onSave, onRemove }: EditItemPane
       ? URL.createObjectURL(imageFile)
       : item.imageUrl;
 
-    onSave({ ...item, name, category, colour, fabric, size, fit, imageUrl: newImageUrl }, imageFile ?? undefined);
+    onSave({ ...item, name, category, size, fit, imageUrl: newImageUrl }, imageFile ?? undefined);
   }
 
   function handleRemove() {
@@ -124,8 +122,6 @@ export function EditItemPanel({ item, onCancel, onSave, onRemove }: EditItemPane
         {([
           { label: "Name", value: name, setter: setName },
           { label: "Category", value: category, setter: setCategory },
-          { label: "Colour", value: colour, setter: setColour },
-          { label: "Fabric", value: fabric, setter: setFabric },
         ] as const).map(({ label, value, setter }) => (
           <div key={label} className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">

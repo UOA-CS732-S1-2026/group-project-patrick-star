@@ -18,7 +18,6 @@ const createTestItem = (userId, overrides = {}) =>
     name: "Tshirt",
     category: "upper_body",
     size: "M",
-    colour: "black",
     fit: "regular",
     imageUrls: {
       front: "",

@@ -29,10 +29,8 @@ interface ApiClothingItem {
   _id: string;
   name: string;
   category: string;
-  colour: string;
   size: string;
   fit: string;
-  fabric?: string;
   imageUrls?: {
     front?: string;
   };
@@ -127,10 +125,8 @@ export default function ClosetPage() {
       id: item._id,
       name: item.name,
       category: toDisplayCategory(item.category),
-      colour: item.colour,
       size: item.size,
       fit: toDisplayFit(item.fit),
-      fabric: item.fabric,
       emoji: "👕",
       imageUrl: item.imageUrls?.front,
     };
@@ -183,10 +179,8 @@ export default function ClosetPage() {
       body: JSON.stringify({
         name: newItem.name,
         category: toApiCategory(newItem.category),
-        colour: newItem.colour,
         size: newItem.size,
         fit: toApiFit(newItem.fit),
-        fabric: newItem.fabric,
       }),
     });
 
@@ -232,10 +226,8 @@ export default function ClosetPage() {
         body: JSON.stringify({
           name: updated.name,
           category: toApiCategory(updated.category),
-          colour: updated.colour,
           size: updated.size,
           fit: toApiFit(updated.fit ?? ""),
-          fabric: updated.fabric,
         }),
       },
     );

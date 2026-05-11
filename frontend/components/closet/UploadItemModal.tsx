@@ -8,10 +8,8 @@ import { cn } from "@/components/ui/cn";
 export interface NewClothingItem {
   name: string;
   category: string;
-  colour: string;
   size: string;
   fit: string;
-  fabric: string;
   imageFile?: File;
 }
 
@@ -38,8 +36,6 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
 
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
-  const [colour, setColour] = useState("");
-  const [fabric, setFabric] = useState("");
   const [size, setSize] = useState("");
   const [fit, setFit] = useState("");
 
@@ -53,8 +49,6 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
     setAiProcessing(true);
     setTimeout(() => {
       setCategory("Tops");
-      setColour("White");
-      setFabric("Cotton");
       setAiProcessing(false);
     }, 1800);
   }
@@ -72,9 +66,8 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
   }
 
   function handleSubmit() {
-    // Fall back to "Colour Category" if the user left the name blank
-    const resolvedName = name.trim() || `${colour} ${category}`.trim();
-    onSubmit({ name: resolvedName, category, colour, fabric, size, fit, imageFile: imageFile ?? undefined });
+    const resolvedName = name.trim() || category;
+    onSubmit({ name: resolvedName, category, size, fit, imageFile: imageFile ?? undefined });
     handleClose();
   }
 
@@ -83,15 +76,13 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
     setImagePreview(null);
     setName("");
     setCategory("");
-    setColour("");
-    setFabric("");
     setSize("");
     setFit("");
     setAiProcessing(false);
     onClose();
   }
 
-  const canSubmit = category && colour && size && fit;
+  const canSubmit = category && size && fit;
 
   const inputClass =
     "w-full rounded-xl border-2 border-border bg-neutral-50 px-4 py-3 text-sm font-medium text-foreground outline-none transition focus:border-accent focus:bg-white placeholder:text-muted-foreground";
@@ -154,10 +145,10 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
           onChange={handleFileInput}
         />
 
-        {/* Right: Item details */}
+        {/* Right: Item setup */}
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold text-foreground">Item details</h3>
+            <h3 className="text-lg font-bold text-foreground">Item setup</h3>
             {/* AI status badge — only shown once a file is selected */}
             {imageFile && (
               <div className={cn(
@@ -192,7 +183,7 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. White linen shirt"
+              placeholder="e.g. Linen shirt"
               className={inputClass}
             />
           </div>
@@ -219,40 +210,6 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
                 </option>
               ))}
             </select>
-          </div>
-
-          {/* Colour */}
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Colour
-              </label>
-              {aiTag}
-            </div>
-            <input
-              type="text"
-              value={colour}
-              onChange={(e) => setColour(e.target.value)}
-              placeholder="e.g. White"
-              className={inputClass}
-            />
-          </div>
-
-          {/* Fabric */}
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Fabric
-              </label>
-              {aiTag}
-            </div>
-            <input
-              type="text"
-              value={fabric}
-              onChange={(e) => setFabric(e.target.value)}
-              placeholder="e.g. Linen"
-              className={inputClass}
-            />
           </div>
 
           {/* Size */}

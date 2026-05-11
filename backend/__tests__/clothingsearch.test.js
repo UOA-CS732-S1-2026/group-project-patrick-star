@@ -37,7 +37,6 @@ const createTestItem = (userId, overrides = {}) =>
     name: "Tshirt",
     category: "upper_body",
     size: "M",
-    colour: "black",
     fit: "regular",
     imageUrls: {
       front: "",
@@ -62,14 +61,12 @@ beforeEach(async () => {
     name: "Black Shirt",
     category: "upper_body",
     size: "M",
-    colour: "black",
     fit: "regular",
   });
   await createTestItem(user._id, {
     name: "Blue Jeans",
     category: "lower_body",
     size: "L",
-    colour: "blue",
     fit: "tight",
   });
 });
@@ -89,14 +86,14 @@ describe("GET /api/clothingItems/me (filters)", () => {
     expect(res.body.every((i) => i.category === "upper_body")).toBe(true);
   });
 
-  it("should filter by colour", async () => {
+  it("should filter by fit", async () => {
     const res = await request(app)
       .get("/api/clothingItems/me")
       .set(authHeader)
-      .query({ colour: "blue" });
+      .query({ fit: "tight" });
 
     expect(res.status).toBe(200);
-    expect(res.body.every((i) => i.colour === "blue")).toBe(true);
+    expect(res.body.every((i) => i.fit === "tight")).toBe(true);
   });
 
   it("should filter by multiple fields", async () => {

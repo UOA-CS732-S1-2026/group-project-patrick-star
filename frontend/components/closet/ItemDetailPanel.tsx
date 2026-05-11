@@ -11,16 +11,12 @@ interface ItemDetailPanelProps {
 const DETAIL_FIELDS: { key: keyof ClothingItem; label: string }[] = [
   { key: "category", label: "CATEGORY" },
   { key: "size", label: "SIZE" },
-  { key: "colour", label: "COLOUR" },
   { key: "fit", label: "FIT" },
-  { key: "fabric", label: "FABRIC" },
 ];
 
 export function ItemDetailPanel({ item, onClose, onEdit }: ItemDetailPanelProps) {
   const tags = [
     item.category,
-    item.colour,
-    item.fabric,
     item.fit ? `${item.fit} fit` : null,
   ].filter(Boolean) as string[];
 
@@ -87,11 +83,7 @@ export function ItemDetailPanel({ item, onClose, onEdit }: ItemDetailPanelProps)
           )}
         </div>
 
-        {/* Details table */}
         <div className="flex flex-col rounded-xl border border-border overflow-hidden">
-          <div className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border">
-            Details
-          </div>
           {DETAIL_FIELDS.map(({ key, label }) => (
             <div
               key={key}
