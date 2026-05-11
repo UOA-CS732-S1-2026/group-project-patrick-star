@@ -2,6 +2,7 @@ const express = require("express");
 const Replicate = require("replicate");
 const { requireAuth } = require("../middleware/auth");
 const { getUserByAuth0UserId } = require("../db/userService");
+const Outfit = require("../models/Outfit");
 
 const router = express.Router();
 const replicate = new Replicate({
@@ -18,33 +19,37 @@ router.post("/", requireAuth, async (req, res) => {
     const user = await getUserByAuth0UserId(auth0UserId);
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    const { humanImageUrl, garmentImageUrl, category } = req.body;
+    const { humanImageUrl, outfitId } = req.body;
 
     if (!humanImageUrl) return res.status(400).json({ error: "humanImageUrl is required" });
-    if (!garmentImageUrl) return res.status(400).json({ error: "garmentImageUrl is required" });
-    if (!category) return res.status(400).json({ error: "category is required" });
+    if (!outfitId) return res.status(400).json({ error: "outfitId is required" });
 
-    const validCategories = ["upper_body", "lower_body", "dresses"];
-    if (!validCategories.includes(category)) {
-      return res.status(400).json({ error: "category must be one of: upper_body, lower_body, dresses" });
+    const outfit = await Outfit.findById(outfitId).populate("items");
+    if (!outfit) return res.status(404).json({ error: "Outfit not found" });
+    if (outfit.userId.toString() !== user._id.toString()) {
+      return res.status(403).json({ error: "Forbidden" });
     }
 
-    const prediction = await replicate.predictions.create({
-      version: "0513734a452173b8173e907e3a59d19a36266e55b48528559432bd21c7d7e985",
+    const garmentImageUrls = outfit.items.map(item => item.imageUrls?.front).filter(Boolean);
+    if (garmentImageUrls.length === 0) {
+      return res.status(400).json({ error: "No garment images found in this outfit" });
+    }
+
+    const clothingDescription = outfit.items.map(item => `${item.name} (${item.colour} ${item.category})`).join(", ");
+
+    const output = await replicate.run("openai/gpt-image-2", {
       input: {
-        human_img: humanImageUrl,
-        garm_img: garmentImageUrl,
-        garment_des: category,
-        category,
-        crop: false,
-        seed: 42,
-        steps: 30,
-        force_dc: false,
+        prompt: `Virtual try-on: dress the person in Image 1 in the clothing shown in the remaining reference images (${clothingDescription}). Preserve the person's face, skin tone, hair, and body shape exactly. Show the full outfit worn together naturally.`,
+        input_images: [humanImageUrl, ...garmentImageUrls],
+        quality: "low",
+        aspect_ratio: "1:1",
+        number_of_images: 1,
       },
     });
 
-    const result = await replicate.wait(prediction);
-    res.json({ success: true, imageUrl: result.output });
+    const rawUrl = Array.isArray(output) ? output[0] : output;
+    const imageUrl = typeof rawUrl?.url === "function" ? rawUrl.url() : String(rawUrl);
+    res.json({ success: true, imageUrl });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }

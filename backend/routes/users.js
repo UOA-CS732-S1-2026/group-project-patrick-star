@@ -6,9 +6,9 @@ const {
   deleteUser,
 } = require("../db/userService");
 const { uploadToCloudinary } = require("../lib/cloudinary");
+const { requireAuth } = require("../middleware/auth");
 const upload = require("../middleware/upload");
 const router = express.Router();
-const { requireAuth } = require("../middleware/auth");
 
 const PROFILE_FIELDS = [
   "name",

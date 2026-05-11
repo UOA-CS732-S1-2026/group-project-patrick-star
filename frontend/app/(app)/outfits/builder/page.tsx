@@ -1,13 +1,28 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import {
+  useState,
+  useMemo,
+  useEffect,
+  useRef,
+  useCallback,
+  type DragEvent,
+  type ChangeEvent,
+} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { type ClothingItem } from "@/components/ui/ItemCard";
 import { cn } from "@/components/ui/cn";
 
-const STYLES = ["Smart", "Casual", "Street", "Minimal", "Fun", "Dresses"] as const;
+const STYLES = [
+  "Smart",
+  "Casual",
+  "Street",
+  "Minimal",
+  "Fun",
+  "Dresses",
+] as const;
 type Style = (typeof STYLES)[number];
 
 interface ApiClothingItem {
@@ -18,7 +33,9 @@ interface ApiClothingItem {
   imageUrls?: { front?: string };
 }
 
-async function getAuthHeaders(includeJson = false): Promise<Record<string, string>> {
+async function getAuthHeaders(
+  includeJson = false,
+): Promise<Record<string, string>> {
   const headers: Record<string, string> = {};
   if (includeJson) headers["Content-Type"] = "application/json";
   const res = await fetch("/api/auth/token");
@@ -31,12 +48,18 @@ async function getAuthHeaders(includeJson = false): Promise<Record<string, strin
 
 function toDisplayCategory(category: string) {
   switch (category) {
-    case "lower_body": return "Bottoms";
-    case "outerwear": return "Outerwear";
-    case "shoes": return "Shoes";
-    case "accessories": return "Accessories";
-    case "dresses": return "Dresses";
-    default: return "Tops";
+    case "lower_body":
+      return "Bottoms";
+    case "outerwear":
+      return "Outerwear";
+    case "shoes":
+      return "Shoes";
+    case "accessories":
+      return "Accessories";
+    case "dresses":
+      return "Dresses";
+    default:
+      return "Tops";
   }
 }
 
@@ -75,11 +98,17 @@ function ClosetPanel({
   selectedIds,
   onToggle,
   onGenerateTryOn,
+  isGenerating,
+  generateError,
+  tryOnResultUrl,
 }: {
   closetItems: ClothingItem[];
   selectedIds: Set<string>;
   onToggle: (item: ClothingItem) => void;
   onGenerateTryOn: () => void;
+  isGenerating: boolean;
+  generateError: string | null;
+  tryOnResultUrl: string | null;
 }) {
   return (
     <div className="flex w-[240px] shrink-0 flex-col border-r border-border bg-white">
@@ -99,12 +128,16 @@ function ClosetPanel({
               className={cn(
                 "relative flex items-center justify-center border-b border-r border-border bg-neutral-50 text-4xl transition-colors",
                 "aspect-square hover:bg-neutral-100",
-                selected && "bg-white ring-2 ring-inset ring-brand"
+                selected && "bg-white ring-2 ring-inset ring-brand",
               )}
             >
               {item.imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" />
+                <img
+                  src={item.imageUrl}
+                  alt={item.name}
+                  className="h-full w-full object-cover"
+                />
               ) : (
                 <span aria-hidden>{item.emoji ?? "👕"}</span>
               )}
@@ -114,7 +147,7 @@ function ClosetPanel({
                   "absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full border-2 text-[10px] font-bold transition-colors",
                   selected
                     ? "border-brand bg-brand text-white"
-                    : "border-neutral-300 bg-white text-transparent"
+                    : "border-neutral-300 bg-white text-transparent",
                 )}
               >
                 ✕
@@ -124,13 +157,68 @@ function ClosetPanel({
         })}
       </div>
 
-      <div className="border-t border-border p-4">
-        <button
-          onClick={onGenerateTryOn}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-accent bg-accent-soft px-4 py-3 text-sm font-semibold text-accent transition-colors hover:bg-accent/20"
-        >
-          <span aria-hidden>↺</span> Generate Try On
-        </button>
+      <div className="flex flex-col border-t border-border">
+        {/* Generate button */}
+        <div className="p-4">
+          <button
+            onClick={onGenerateTryOn}
+            disabled={isGenerating}
+            className={cn(
+              "flex w-full items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-semibold transition-colors",
+              isGenerating
+                ? "cursor-not-allowed border-neutral-200 bg-neutral-100 text-neutral-400"
+                : "border-accent bg-accent-soft text-accent hover:bg-accent/20",
+            )}
+          >
+            {isGenerating ? (
+              <>
+                <span className="flex gap-1">
+                  {[0, 1, 2].map((i) => (
+                    <span
+                      key={i}
+                      className="h-1.5 w-1.5 animate-pulse rounded-full bg-neutral-400"
+                      style={{ animationDelay: `${i * 150}ms` }}
+                    />
+                  ))}
+                </span>
+                Generating…
+              </>
+            ) : (
+              <>
+                <span aria-hidden>↺</span> Generate Try On
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Generating status */}
+        {isGenerating && (
+          <p className="px-4 pb-3 text-center text-xs text-muted-foreground">
+            Generating your outfit…
+          </p>
+        )}
+
+        {/* Error */}
+        {generateError && (
+          <p className="px-4 pb-3 text-xs font-medium text-red-500">
+            {generateError}
+          </p>
+        )}
+
+        {/* Result card */}
+        {tryOnResultUrl && !isGenerating && (
+          <div className="px-4 pb-4">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Your Generated Outfit
+            </p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={tryOnResultUrl}
+              alt="Generated outfit"
+              className="w-full rounded-xl object-cover shadow-sm"
+            />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -144,7 +232,10 @@ function TryOnPreview({
   isTryOnActive: boolean;
 }) {
   const top = selectedItems.find(
-    (i) => i.category === "Tops" || i.category === "Outerwear" || i.category === "Dresses"
+    (i) =>
+      i.category === "Tops" ||
+      i.category === "Outerwear" ||
+      i.category === "Dresses",
   );
   const bottom = selectedItems.find((i) => i.category === "Bottoms");
 
@@ -162,7 +253,12 @@ function TryOnPreview({
         </span>
 
         <span className="absolute right-4 top-4 flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm">
-          <span className={cn("h-2 w-2 rounded-full", isTryOnActive ? "bg-brand" : "bg-neutral-300")} />
+          <span
+            className={cn(
+              "h-2 w-2 rounded-full",
+              isTryOnActive ? "bg-brand" : "bg-neutral-300",
+            )}
+          />
           Your photo
         </span>
 
@@ -179,7 +275,11 @@ function TryOnPreview({
               {top ? (
                 top.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={top.imageUrl} alt={top.name} className="h-full w-full object-cover" />
+                  <img
+                    src={top.imageUrl}
+                    alt={top.name}
+                    className="h-full w-full object-cover"
+                  />
                 ) : (
                   <span aria-hidden>{top.emoji ?? "👕"}</span>
                 )
@@ -195,7 +295,11 @@ function TryOnPreview({
               {bottom ? (
                 bottom.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={bottom.imageUrl} alt={bottom.name} className="h-full w-full object-cover" />
+                  <img
+                    src={bottom.imageUrl}
+                    alt={bottom.name}
+                    className="h-full w-full object-cover"
+                  />
                 ) : (
                   <span aria-hidden>{bottom.emoji ?? "👖"}</span>
                 )
@@ -269,7 +373,7 @@ function OutfitDetailsPanel({
                   "rounded-full border-2 px-3 py-1.5 text-xs font-semibold transition-colors",
                   style === s
                     ? "border-accent bg-accent-soft text-accent"
-                    : "border-border bg-white text-foreground hover:bg-neutral-50"
+                    : "border-border bg-white text-foreground hover:bg-neutral-50",
                 )}
               >
                 {s}
@@ -300,6 +404,113 @@ function OutfitDetailsPanel({
         >
           Discard Changes
         </button>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Your Photo upload strip
+// ---------------------------------------------------------------------------
+function YourPhotoSection({
+  preview,
+  isReady,
+  isUploading,
+  onFile,
+}: {
+  preview: string | null;
+  isReady: boolean;
+  isUploading: boolean;
+  onFile: (file: File) => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  function handleDrop(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) onFile(file);
+  }
+
+  function handleFileInput(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) onFile(file);
+  }
+
+  return (
+    <div className="flex shrink-0 items-center gap-5 border-b border-border bg-white px-10 py-4">
+      <p className="whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        Your Photo
+      </p>
+
+      {/* Drop / click zone */}
+      <div
+        onClick={() => fileInputRef.current?.click()}
+        onDrop={handleDrop}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setIsDragging(true);
+        }}
+        onDragLeave={() => setIsDragging(false)}
+        className={cn(
+          "relative flex h-20 w-20 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed transition-colors",
+          isDragging
+            ? "border-brand bg-brand/5"
+            : "border-border bg-neutral-50 hover:bg-neutral-100",
+        )}
+      >
+        {preview ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={preview}
+            alt="Your photo preview"
+            className="h-full w-full object-cover"
+          />
+        ) : isUploading ? (
+          <span className="flex gap-1">
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent"
+                style={{ animationDelay: `${i * 150}ms` }}
+              />
+            ))}
+          </span>
+        ) : (
+          <span className="text-2xl text-neutral-400" aria-hidden>
+            ↑
+          </span>
+        )}
+      </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/heic"
+        className="hidden"
+        onChange={handleFileInput}
+      />
+
+      <div className="flex flex-col gap-0.5">
+        {isUploading ? (
+          <p className="text-sm font-medium text-accent">Uploading…</p>
+        ) : isReady ? (
+          <p className="text-sm font-medium text-foreground">Photo ready</p>
+        ) : preview ? (
+          <p className="text-sm font-medium text-foreground">
+            Photo selected
+          </p>
+        ) : (
+          <p className="text-sm font-medium text-foreground">
+            Click or drag to upload your photo
+          </p>
+        )}
+        <p className="text-xs text-muted-foreground">
+          {preview
+            ? "Click the thumbnail to replace it"
+            : "Used as the human image for virtual try-on"}
+        </p>
       </div>
     </div>
   );
@@ -381,7 +592,9 @@ export default function OutfitBuilderPage() {
 
         setName(outfit.name);
         setStyle(outfit.style ?? "");
-        setSelectedIds(new Set(outfit.items.map((i: { _id: string }) => i._id)));
+        setSelectedIds(
+          new Set(outfit.items.map((i: { _id: string }) => i._id)),
+        );
       } catch (err) {
         console.error(err);
       }
@@ -390,9 +603,53 @@ export default function OutfitBuilderPage() {
     loadExistingOutfit();
   }, [outfitId, apiUrl]);
 
+  // Human photo state — URL returned by the upload endpoint, used later for try-on
+  const [humanPhotoPreview, setHumanPhotoPreview] = useState<string | null>(
+    null,
+  );
+  const [humanImageUrl, setHumanImageUrl] = useState<string | null>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
+  // Try-on generation state
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
+  const [tryOnResultUrl, setTryOnResultUrl] = useState<string | null>(null);
+
+  async function handleHumanPhotoFile(file: File) {
+    setHumanPhotoPreview(URL.createObjectURL(file));
+    setHumanImageUrl(null);
+    setGenerateError(null);
+    setIsUploadingPhoto(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const res = await fetch(`${apiUrl}/api/users/me/photo/upload`, {
+        method: "POST",
+        headers: await getAuthHeaders(),
+        body: formData,
+      });
+      if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+      const data = (await res.json()) as { modelImage?: string; url?: string };
+      const uploadedUrl = data.modelImage ?? data.url;
+      if (!uploadedUrl) throw new Error("Upload response did not include an image URL");
+
+      setHumanImageUrl(uploadedUrl);
+      setGenerateError(null);
+    } catch (err) {
+      console.error("Failed to upload photo:", err);
+      setHumanImageUrl(null);
+      setGenerateError(
+        err instanceof Error ? err.message : "Failed to upload photo.",
+      );
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  }
+
   const selectedItems = useMemo(
     () => closetItems.filter((i) => selectedIds.has(i.id)),
-    [closetItems, selectedIds]
+    [closetItems, selectedIds],
   );
 
   const selectionError = useMemo(() => {
@@ -421,9 +678,52 @@ export default function OutfitBuilderPage() {
     });
   }
 
-  function handleGenerateTryOn() {
-    // TODO: call POST /api/tryon with selected item IDs and display returned image
+  async function handleGenerateTryOn() {
+    if (isUploadingPhoto) {
+      setGenerateError("Wait for your photo to finish uploading.");
+      return;
+    }
+    if (!humanImageUrl) {
+      setGenerateError("Upload your photo first.");
+      return;
+    }
+    if (!outfitId) {
+      setGenerateError("Save this outfit before generating a try-on.");
+      return;
+    }
+
+    setGenerateError(null);
+    setTryOnResultUrl(null);
+    setIsGenerating(true);
     setIsTryOnActive(true);
+
+    try {
+      const res = await fetch(`${apiUrl}/api/tryon`, {
+        method: "POST",
+        headers: await getAuthHeaders(true),
+        body: JSON.stringify({
+          humanImageUrl,
+          outfitId,
+        }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(
+          (body as { error?: string }).error ??
+            `Request failed (${res.status})`,
+        );
+      }
+
+      const data = (await res.json()) as { success: boolean; imageUrl: string };
+      setTryOnResultUrl(data.imageUrl);
+    } catch (err) {
+      setGenerateError(
+        err instanceof Error ? err.message : "Something went wrong.",
+      );
+    } finally {
+      setIsGenerating(false);
+    }
   }
 
   async function handleSave() {
@@ -482,12 +782,22 @@ export default function OutfitBuilderPage() {
         }
       />
 
+      <YourPhotoSection
+        preview={humanPhotoPreview}
+        isReady={Boolean(humanImageUrl)}
+        isUploading={isUploadingPhoto}
+        onFile={handleHumanPhotoFile}
+      />
+
       <div className="flex flex-1 overflow-hidden">
         <ClosetPanel
           closetItems={closetItems}
           selectedIds={selectedIds}
           onToggle={toggleItem}
           onGenerateTryOn={handleGenerateTryOn}
+          isGenerating={isGenerating}
+          generateError={generateError}
+          tryOnResultUrl={tryOnResultUrl}
         />
 
         <TryOnPreview

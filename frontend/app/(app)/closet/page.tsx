@@ -38,7 +38,9 @@ interface ApiClothingItem {
   };
 }
 
-async function getAuthHeaders(includeJson = false): Promise<Record<string, string>> {
+async function getAuthHeaders(
+  includeJson = false,
+): Promise<Record<string, string>> {
   const headers: Record<string, string> = {};
   // const token = localStorage.getItem("access_token");
 
@@ -76,23 +78,35 @@ export default function ClosetPage() {
 
   function toApiCategory(category: string) {
     switch (category) {
-      case "Bottoms": return "lower_body";
-      case "Outerwear": return "outerwear";
-      case "Shoes": return "shoes";
-      case "Accessories": return "accessories";
-      case "Dresses": return "dresses";
-      default: return "upper_body"; // Tops
+      case "Bottoms":
+        return "lower_body";
+      case "Outerwear":
+        return "outerwear";
+      case "Shoes":
+        return "shoes";
+      case "Accessories":
+        return "accessories";
+      case "Dresses":
+        return "dresses";
+      default:
+        return "upper_body"; // Tops
     }
   }
 
   function toDisplayCategory(category: string) {
     switch (category) {
-      case "lower_body": return "Bottoms";
-      case "outerwear": return "Outerwear";
-      case "shoes": return "Shoes";
-      case "accessories": return "Accessories";
-      case "dresses": return "Dresses";
-      default: return "Tops"; // upper_body
+      case "lower_body":
+        return "Bottoms";
+      case "outerwear":
+        return "Outerwear";
+      case "shoes":
+        return "Shoes";
+      case "accessories":
+        return "Accessories";
+      case "dresses":
+        return "Dresses";
+      default:
+        return "Tops"; // upper_body
     }
   }
 
@@ -258,7 +272,9 @@ export default function ClosetPage() {
 
     const savedItem = toClothingItem(item);
 
-    setItems((prev) => prev.map((i) => (i.id === savedItem.id ? savedItem : i)));
+    setItems((prev) =>
+      prev.map((i) => (i.id === savedItem.id ? savedItem : i)),
+    );
     setSelectedItem(savedItem);
     setEditing(false);
   }
