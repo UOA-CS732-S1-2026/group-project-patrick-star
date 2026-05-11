@@ -21,7 +21,9 @@ const CATEGORIES = [
   { label: "Outerwear", value: "Outerwear" },
 ] as const;
 
-const CATEGORY_VALUES = new Set(CATEGORIES.map((category) => category.value));
+const CATEGORY_VALUES = new Set<string>(
+  CATEGORIES.map((category) => category.value),
+);
 
 export function EditItemPanel({ item, onCancel, onSave, onRemove }: EditItemPanelProps) {
   const [name, setName] = useState(item.name);
