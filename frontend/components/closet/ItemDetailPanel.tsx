@@ -1,13 +1,11 @@
 "use client";
 
-import { Button } from "@/components/ui/Button";
 import { type ClothingItem } from "@/components/ui/ItemCard";
 
 interface ItemDetailPanelProps {
   item: ClothingItem;
   onClose: () => void;
   onEdit: () => void;
-  onAddToOutfit?: (item: ClothingItem) => void;
 }
 
 const DETAIL_FIELDS: { key: keyof ClothingItem; label: string }[] = [
@@ -18,7 +16,7 @@ const DETAIL_FIELDS: { key: keyof ClothingItem; label: string }[] = [
   { key: "fabric", label: "FABRIC" },
 ];
 
-export function ItemDetailPanel({ item, onClose, onEdit, onAddToOutfit }: ItemDetailPanelProps) {
+export function ItemDetailPanel({ item, onClose, onEdit }: ItemDetailPanelProps) {
   const tags = [
     item.category,
     item.colour,
@@ -125,18 +123,6 @@ export function ItemDetailPanel({ item, onClose, onEdit, onAddToOutfit }: ItemDe
             ) : null}
           </div>
         )}
-      </div>
-
-      {/* Footer */}
-      <div className="border-t border-border px-6 py-5">
-        <Button
-          variant="primary"
-          size="lg"
-          className="w-full rounded-xl"
-          onClick={() => { onAddToOutfit?.(item); onClose(); }}
-        >
-          Add to Existing Outfit
-        </Button>
       </div>
     </div>
   );
