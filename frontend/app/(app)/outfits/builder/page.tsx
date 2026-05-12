@@ -13,6 +13,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { type ClothingItem } from "@/components/ui/ItemCard";
 import { cn } from "@/components/ui/cn";
+import { getOutfitPreviewItems } from "@/components/outfits/preview";
 
 const STYLES = [
   "Smart",
@@ -97,7 +98,6 @@ function ClosetPanel({
   onGenerateTryOn,
   isGenerating,
   generateError,
-  tryOnResultUrl,
 }: {
   closetItems: ClothingItem[];
   selectedIds: Set<string>;
@@ -105,7 +105,6 @@ function ClosetPanel({
   onGenerateTryOn: () => void;
   isGenerating: boolean;
   generateError: string | null;
-  tryOnResultUrl: string | null;
 }) {
   return (
     <div className="flex w-[240px] shrink-0 flex-col border-r border-border bg-white">
@@ -197,45 +196,25 @@ function ClosetPanel({
             {generateError}
           </p>
         )}
-
-        {tryOnResultUrl && !isGenerating && (
-          <div className="px-4 pb-4">
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Your Generated Outfit
-            </p>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={tryOnResultUrl}
-              alt="Generated outfit"
-              className="w-full rounded-xl object-cover shadow-sm"
-            />
-          </div>
-        )}
       </div>
     </div>
   );
 }
 
 function TryOnPreview({
-  selectedItems,
   isTryOnActive,
+  isGenerating,
+  tryOnResultUrl,
 }: {
-  selectedItems: ClothingItem[];
   isTryOnActive: boolean;
+  isGenerating: boolean;
+  tryOnResultUrl: string | null;
 }) {
-  const top = selectedItems.find(
-    (item) =>
-      item.category === "Tops"
-      || item.category === "Outerwear"
-      || item.category === "Dresses",
-  );
-  const bottom = selectedItems.find((item) => item.category === "Bottoms");
-
   return (
     <div className="flex flex-1 flex-col">
       <div className="border-b border-border px-6 py-4">
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Live Try-On Preview
+          Try-On Preview
         </p>
       </div>
 
@@ -254,59 +233,37 @@ function TryOnPreview({
           Your photo
         </span>
 
-        <div className="flex flex-col items-center">
-          <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-[#C4A882] text-2xl shadow">
-            🙂
+        {tryOnResultUrl ? (
+          <div className="w-full max-w-[440px] overflow-hidden rounded-[32px] border border-white/40 bg-white shadow-2xl">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={tryOnResultUrl}
+              alt="Generated try-on preview"
+              className="aspect-square w-full object-cover"
+            />
           </div>
-
-          <div className="w-48 overflow-hidden rounded-2xl shadow-lg">
-            <div
-              className="flex items-center justify-center bg-neutral-100 text-7xl"
-              style={{ height: "180px" }}
-            >
-              {top ? (
-                top.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={top.imageUrl}
-                    alt={top.name}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <span aria-hidden>{top.emoji ?? "👕"}</span>
-                )
-              ) : (
-                <span className="text-4xl text-neutral-300">👕</span>
-              )}
+        ) : (
+          <div className="flex w-full max-w-[440px] flex-col items-center rounded-[32px] border border-dashed border-white/60 bg-white/70 px-8 py-14 text-center shadow-xl backdrop-blur">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#C4A882] text-3xl shadow">
+              {isGenerating ? "…" : "✦"}
             </div>
-
-            <div
-              className="flex items-center justify-center bg-[#1a2a4a] text-7xl"
-              style={{ height: "180px" }}
-            >
-              {bottom ? (
-                bottom.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={bottom.imageUrl}
-                    alt={bottom.name}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <span aria-hidden>{bottom.emoji ?? "👖"}</span>
-                )
-              ) : (
-                <span className="text-4xl text-neutral-400">👖</span>
-              )}
-            </div>
+            <p className="mt-5 text-lg font-semibold text-foreground">
+              {isGenerating ? "Generating your try-on..." : "Your try-on will appear here"}
+            </p>
+            <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+              {isGenerating
+                ? "We are creating a styled preview using your saved profile photo and the selected outfit."
+                : "Pick outfit pieces, then generate a try-on to replace this placeholder with the real image."}
+            </p>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
 }
 
 function OutfitDetailsPanel({
+  selectedItems,
   name,
   onNameChange,
   style,
@@ -317,6 +274,7 @@ function OutfitDetailsPanel({
   errorMessage,
   saveStatus,
 }: {
+  selectedItems: ClothingItem[];
   name: string;
   onNameChange: (value: string) => void;
   style: Style | "";
@@ -329,6 +287,7 @@ function OutfitDetailsPanel({
 }) {
   const inputClass =
     "w-full rounded-xl border-2 border-border bg-neutral-50 px-4 py-3 text-sm font-medium text-foreground outline-none transition focus:border-accent focus:bg-white placeholder:text-muted-foreground";
+  const previewItems = getOutfitPreviewItems(selectedItems);
 
   return (
     <div className="flex w-[300px] shrink-0 flex-col border-l border-border bg-white">
@@ -341,6 +300,37 @@ function OutfitDetailsPanel({
       <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-6 py-5">
         <div className="rounded-xl border border-border bg-neutral-50 px-3 py-2 text-sm text-muted-foreground">
           {saveStatus}
+        </div>
+
+        <div className="overflow-hidden rounded-2xl border border-border">
+          <div className="border-b border-border px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Outfit Preview
+          </div>
+          <div className="grid grid-cols-2 bg-white">
+            {previewItems.map((item, index) => (
+              <div
+                key={item?.id ?? `builder-preview-${index}`}
+                className={cn(
+                  "flex aspect-square items-center justify-center bg-neutral-100 text-4xl",
+                  index % 2 === 0 ? "border-r border-border" : "",
+                  index < 2 ? "border-b border-border" : "",
+                )}
+              >
+                {item ? (
+                  item.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={item.imageUrl}
+                      alt={item.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span aria-hidden>{item.emoji ?? "👕"}</span>
+                  )
+                ) : null}
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -801,15 +791,16 @@ export default function OutfitBuilderPage() {
           onGenerateTryOn={handleGenerateTryOn}
           isGenerating={isGenerating}
           generateError={generateError}
-          tryOnResultUrl={tryOnResultUrl}
         />
 
         <TryOnPreview
-          selectedItems={selectedItems}
           isTryOnActive={isTryOnActive}
+          isGenerating={isGenerating}
+          tryOnResultUrl={tryOnResultUrl}
         />
 
         <OutfitDetailsPanel
+          selectedItems={selectedItems}
           name={name}
           onNameChange={(value) => {
             setSaveError(null);
