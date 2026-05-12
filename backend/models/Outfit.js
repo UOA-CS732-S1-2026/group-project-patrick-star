@@ -6,6 +6,7 @@ const OutfitSchema = new mongoose.Schema({
   items: [{ type: mongoose.Schema.Types.ObjectId, ref: 'ClothingItem' }],
   style: { type: String, default: '' },
   favourite: { type: Boolean, default: false },
+  lastTryOnPreviewUrl: { type: String, default: null },
 })
 
 // Custom validation to ensure items are from different categories

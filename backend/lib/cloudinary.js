@@ -20,4 +20,10 @@ function uploadToCloudinary(buffer, folder) {
   });
 }
 
-module.exports = { uploadToCloudinary };
+function uploadImageUrlToCloudinary(imageUrl, folder) {
+  return cloudinary.uploader
+    .upload(imageUrl, { folder, resource_type: "image" })
+    .then((result) => result.secure_url);
+}
+
+module.exports = { uploadToCloudinary, uploadImageUrlToCloudinary };

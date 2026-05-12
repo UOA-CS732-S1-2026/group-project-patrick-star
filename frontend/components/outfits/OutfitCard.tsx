@@ -13,6 +13,7 @@ export interface Outfit {
   notes?: string;
   items: ClothingItem[];
   favourite?: boolean;
+  lastTryOnPreviewUrl?: string | null;
 }
 
 interface OutfitCardProps {

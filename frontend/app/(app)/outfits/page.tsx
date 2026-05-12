@@ -25,6 +25,7 @@ interface ApiOutfit {
   name: string;
   style?: string;
   favourite?: boolean;
+  lastTryOnPreviewUrl?: string | null;
   items: ApiClothingItem[];
 }
 
@@ -41,6 +42,9 @@ async function getAuthHeaders(includeJson = false): Promise<Record<string, strin
 
 function toDisplayCategory(category: string) {
   if (category === "lower_body") return "Bottoms";
+  if (category === "outerwear") return "Outerwear";
+  if (category === "shoes") return "Shoes";
+  if (category === "accessories") return "Accessories";
   if (category === "dresses") return "Dresses";
   return "Tops";
 }
@@ -61,6 +65,7 @@ function toOutfit(api: ApiOutfit): Outfit {
     name: api.name,
     style: api.style ?? "",
     favourite: api.favourite ?? false,
+    lastTryOnPreviewUrl: api.lastTryOnPreviewUrl ?? null,
     items: api.items.map(toClothingItem),
   };
 }

@@ -102,6 +102,24 @@ export function OutfitDetailPanel({
           </div>
         </div>
 
+        <div className="overflow-hidden rounded-2xl border border-border bg-white">
+          <div className="border-b border-border px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Latest Try-On Preview
+          </div>
+          {outfit.lastTryOnPreviewUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={outfit.lastTryOnPreviewUrl}
+              alt={`${outfit.name} try-on preview`}
+              className="aspect-square w-full object-cover"
+            />
+          ) : (
+            <div className="flex aspect-square items-center justify-center bg-neutral-50 px-6 text-center text-sm text-muted-foreground">
+              No try-on preview yet.
+            </div>
+          )}
+        </div>
+
         {/* Items list */}
         <div className="flex flex-col rounded-xl border border-border overflow-hidden">
           <div className="border-b border-border px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
