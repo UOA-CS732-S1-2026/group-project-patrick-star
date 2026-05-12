@@ -196,6 +196,36 @@ describe("POST /api/tryon", () => {
     );
   });
 
+  it("handles Replicate output URLs returned as URL objects", async () => {
+    mockRun.mockResolvedValue([
+      {
+        url: () => new URL("https://example.com/result-from-url-object.jpg"),
+      },
+    ]);
+    mockOutfitLookup({
+      userId: { toString: () => "user-1" },
+      save: jest.fn().mockResolvedValue(undefined),
+      items: [
+        {
+          name: "Tshirt",
+          category: "upper_body",
+          imageUrls: { front: "https://example.com/tshirt-front.jpg" },
+        },
+      ],
+    });
+
+    const res = await request(app).post("/api/tryon").send({
+      humanImageUrl: "https://example.com/person.jpg",
+      outfitId: "outfit-1",
+    });
+
+    expect(res.status).toBe(200);
+    expect(uploadImageUrlToCloudinary).toHaveBeenCalledWith(
+      "https://example.com/result-from-url-object.jpg",
+      "tryon-previews",
+    );
+  });
+
   it("returns 500 if Replicate throws an error", async () => {
     mockRun.mockRejectedValue(new Error("Replicate network failure"));
     mockOutfitLookup({

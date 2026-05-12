@@ -51,7 +51,9 @@ router.post("/", requireAuth, async (req, res) => {
     });
 
     const rawUrl = Array.isArray(output) ? output[0] : output;
-    const imageUrl = typeof rawUrl?.url === "function" ? rawUrl.url() : String(rawUrl);
+    const imageUrl = String(
+      typeof rawUrl?.url === "function" ? rawUrl.url() : rawUrl,
+    );
     const storedImageUrl = await uploadImageUrlToCloudinary(imageUrl, "tryon-previews");
 
     outfit.lastTryOnPreviewUrl = storedImageUrl;
