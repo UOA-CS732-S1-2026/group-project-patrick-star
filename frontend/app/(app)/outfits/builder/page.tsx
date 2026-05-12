@@ -6,6 +6,7 @@ import {
   useEffect,
   useRef,
   useCallback,
+  useTransition,
   type DragEvent,
   type ChangeEvent,
 } from "react";
@@ -322,6 +323,7 @@ function OutfitDetailsPanel({
   canSave,
   isEditing,
   errorMessage,
+  saveStatus,
 }: {
   name: string;
   onNameChange: (v: string) => void;
@@ -332,6 +334,7 @@ function OutfitDetailsPanel({
   canSave: boolean;
   isEditing: boolean;
   errorMessage?: string | null;
+  saveStatus: string;
 }) {
   const inputClass =
     "w-full rounded-xl border-2 border-border bg-neutral-50 px-4 py-3 text-sm font-medium text-foreground outline-none transition focus:border-accent focus:bg-white placeholder:text-muted-foreground";
@@ -345,6 +348,10 @@ function OutfitDetailsPanel({
       </div>
 
       <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-6 py-5">
+        <div className="rounded-xl border border-border bg-neutral-50 px-3 py-2 text-sm text-muted-foreground">
+          {saveStatus}
+        </div>
+
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Name
@@ -394,7 +401,7 @@ function OutfitDetailsPanel({
           disabled={!canSave}
           onClick={onSave}
         >
-          {isEditing ? "Save Changes" : "+ Save Outfit"}
+          {isEditing ? "Save & Close" : "Save & Close"}
         </Button>
         <button
           onClick={onDiscard}
@@ -521,8 +528,8 @@ function YourPhotoSection({
 export default function OutfitBuilderPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const outfitId = searchParams.get("id");
-  const isEditing = Boolean(outfitId);
+  const initialOutfitId = searchParams.get("id");
+  const isEditing = Boolean(initialOutfitId);
   const starterItems = searchParams.get("items");
   const starterName = searchParams.get("name");
   const starterStyle = searchParams.get("style");
@@ -534,6 +541,16 @@ export default function OutfitBuilderPage() {
   const [isTryOnActive, setIsTryOnActive] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [currentOutfitId, setCurrentOutfitId] = useState<string | null>(
+    initialOutfitId,
+  );
+  const [saveState, setSaveState] = useState<
+    "idle" | "dirty" | "saving" | "saved" | "error"
+  >(initialOutfitId ? "saved" : "idle");
+  const [hasLoadedInitialOutfit, setHasLoadedInitialOutfit] = useState(!initialOutfitId);
+  const [isNavigatingAfterSave, startNavigatingAfterSave] = useTransition();
+  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestSaveRequestRef = useRef(0);
 
   const [name, setName] = useState("");
   const [style, setStyle] = useState<Style | "">("");
@@ -558,25 +575,34 @@ export default function OutfitBuilderPage() {
   useEffect(() => {
     if (isEditing) return;
 
+    let hasStarterState = false;
+
     if (starterItems) {
       const itemIds = starterItems
         .split(",")
         .map((id) => id.trim())
         .filter(Boolean);
       setSelectedIds(new Set(itemIds));
+      hasStarterState = itemIds.length > 0;
     }
 
     if (starterName) {
       setName(starterName);
+      hasStarterState = true;
     }
 
     if (starterStyle && STYLES.includes(starterStyle as Style)) {
       setStyle(starterStyle as Style);
+      hasStarterState = true;
+    }
+
+    if (hasStarterState) {
+      setSaveState("dirty");
     }
   }, [isEditing, starterItems, starterName, starterStyle]);
 
   useEffect(() => {
-    if (!outfitId) return;
+    if (!initialOutfitId) return;
 
     async function loadExistingOutfit() {
       try {
@@ -585,7 +611,7 @@ export default function OutfitBuilderPage() {
         });
         if (!response.ok) throw new Error("Failed to load outfits");
         const outfits = await response.json();
-        const outfit = outfits.find((o: { _id: string }) => o._id === outfitId);
+        const outfit = outfits.find((o: { _id: string }) => o._id === initialOutfitId);
         if (!outfit) return;
 
         setName(outfit.name);
@@ -593,13 +619,16 @@ export default function OutfitBuilderPage() {
         setSelectedIds(
           new Set(outfit.items.map((i: { _id: string }) => i._id)),
         );
+        setSaveState("saved");
       } catch (err) {
         console.error(err);
+      } finally {
+        setHasLoadedInitialOutfit(true);
       }
     }
 
     loadExistingOutfit();
-  }, [outfitId, apiUrl]);
+  }, [initialOutfitId, apiUrl]);
 
   // Human photo state — URL returned by the upload endpoint, used later for try-on
   const [humanPhotoPreview, setHumanPhotoPreview] = useState<string | null>(
@@ -663,8 +692,116 @@ export default function OutfitBuilderPage() {
     return `Choose items from different categories. You selected multiple ${duplicateCategory}.`;
   }, [selectedItems]);
 
+  const canPersistOutfit = selectedIds.size > 0 && !selectionError;
+
+  const saveStatusMessage = useMemo(() => {
+    if (selectionError) {
+      return selectionError;
+    }
+
+    if (saveError) {
+      return saveError;
+    }
+
+    if (isNavigatingAfterSave) {
+      return "Saving changes and leaving builder...";
+    }
+
+    switch (saveState) {
+      case "dirty":
+        return "Unsaved changes. Saving automatically...";
+      case "saving":
+        return "Saving changes...";
+      case "saved":
+        return "All changes saved.";
+      case "error":
+        return "Autosave failed. We will try again on your next edit or when you generate a try-on.";
+      default:
+        return "Changes are saved automatically a few seconds after you edit.";
+    }
+  }, [isNavigatingAfterSave, saveError, saveState, selectionError]);
+
+  const persistOutfit = useCallback(async () => {
+    if (!hasLoadedInitialOutfit || !canPersistOutfit) {
+      return currentOutfitId;
+    }
+
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
+    }
+
+    const requestId = latestSaveRequestRef.current + 1;
+    latestSaveRequestRef.current = requestId;
+    setIsSaving(true);
+    setSaveError(null);
+    setSaveState("saving");
+
+    try {
+      const targetOutfitId = currentOutfitId;
+      const url = targetOutfitId
+        ? `${apiUrl}/api/outfits/me/${targetOutfitId}`
+        : `${apiUrl}/api/outfits/me`;
+      const method = targetOutfitId ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
+        headers: await getAuthHeaders(true),
+        body: JSON.stringify({
+          name: name.trim() || "My New Outfit",
+          items: [...selectedIds],
+          style: style || "",
+        }),
+      });
+
+      if (!response.ok) {
+        const message = await parseApiError(response, "Failed to save outfit");
+        if (latestSaveRequestRef.current === requestId) {
+          setSaveError(message);
+          setSaveState("error");
+        }
+        return null;
+      }
+
+      const savedOutfit = (await response.json()) as { _id?: string };
+      const savedOutfitId = savedOutfit._id ?? targetOutfitId ?? null;
+
+      if (latestSaveRequestRef.current === requestId) {
+        setCurrentOutfitId(savedOutfitId);
+        setSaveState("saved");
+        setSaveError(null);
+        if (!targetOutfitId && savedOutfitId) {
+          router.replace(`/outfits/builder?id=${savedOutfitId}`);
+        }
+      }
+
+      return savedOutfitId;
+    } catch (err) {
+      if (latestSaveRequestRef.current === requestId) {
+        setSaveError("Failed to save outfit. Please try again.");
+        setSaveState("error");
+      }
+      console.error(err);
+      return null;
+    } finally {
+      if (latestSaveRequestRef.current === requestId) {
+        setIsSaving(false);
+      }
+    }
+  }, [
+    apiUrl,
+    canPersistOutfit,
+    currentOutfitId,
+    hasLoadedInitialOutfit,
+    name,
+    router,
+    selectedIds,
+    style,
+  ]);
+
   function toggleItem(item: ClothingItem) {
     setSaveError(null);
+    setSaveState("dirty");
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(item.id)) {
@@ -685,8 +822,16 @@ export default function OutfitBuilderPage() {
       setGenerateError("Upload your photo first.");
       return;
     }
-    if (!outfitId) {
-      setGenerateError("Save this outfit before generating a try-on.");
+    if (!canPersistOutfit) {
+      setGenerateError(
+        selectionError ?? "Add at least one outfit item before generating a try-on.",
+      );
+      return;
+    }
+
+    const savedOutfitId = await persistOutfit();
+    if (!savedOutfitId) {
+      setGenerateError("We couldn't save the latest outfit changes for try-on.");
       return;
     }
 
@@ -701,7 +846,7 @@ export default function OutfitBuilderPage() {
         headers: await getAuthHeaders(true),
         body: JSON.stringify({
           humanImageUrl,
-          outfitId,
+          outfitId: savedOutfitId,
         }),
       });
 
@@ -725,46 +870,48 @@ export default function OutfitBuilderPage() {
   }
 
   async function handleSave() {
-    if (isSaving) return;
-    setIsSaving(true);
-    setSaveError(null);
-    try {
-      const url = isEditing
-        ? `${apiUrl}/api/outfits/me/${outfitId}`
-        : `${apiUrl}/api/outfits/me`;
-      const method = isEditing ? "PUT" : "POST";
+    if (isSaving || !canPersistOutfit) return;
 
-      const response = await fetch(url, {
-        method,
-        headers: await getAuthHeaders(true),
-        body: JSON.stringify({
-          name: name.trim() || "My New Outfit",
-          items: [...selectedIds],
-          style: style || "",
-        }),
-      });
+    const savedOutfitId = await persistOutfit();
+    if (!savedOutfitId) return;
 
-      if (!response.ok) {
-        setSaveError(
-          await parseApiError(response, "Failed to save outfit"),
-        );
-        return;
-      }
-
+    startNavigatingAfterSave(() => {
       router.push("/outfits");
-    } catch (err) {
-      setSaveError("Failed to save outfit. Please try again.");
-      console.error(err);
-    } finally {
-      setIsSaving(false);
-    }
+    });
   }
 
   function handleDiscard() {
     router.push("/outfits");
   }
 
-  const canSave = selectedIds.size > 0 && !isSaving;
+  const canSave = canPersistOutfit && !isSaving && !isNavigatingAfterSave;
+
+  useEffect(() => {
+    if (!hasLoadedInitialOutfit) return;
+    if (!canPersistOutfit) return;
+    if (saveState !== "dirty") return;
+
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+    }
+
+    autosaveTimerRef.current = setTimeout(() => {
+      void persistOutfit();
+    }, 2500);
+
+    return () => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+      }
+    };
+  }, [canPersistOutfit, hasLoadedInitialOutfit, persistOutfit, saveState]);
+
+  useEffect(() => () => {
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+    }
+  }, []);
 
   return (
     <>
@@ -807,18 +954,21 @@ export default function OutfitBuilderPage() {
           name={name}
           onNameChange={(value) => {
             setSaveError(null);
+            setSaveState("dirty");
             setName(value);
           }}
           style={style}
           onStyleChange={(value) => {
             setSaveError(null);
+            setSaveState("dirty");
             setStyle(value);
           }}
           onSave={handleSave}
           onDiscard={handleDiscard}
           canSave={canSave}
           isEditing={isEditing}
-          errorMessage={saveError ?? selectionError}
+          errorMessage={saveError}
+          saveStatus={saveStatusMessage}
         />
       </div>
     </>
