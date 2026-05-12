@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { type Outfit } from "@/components/outfits/OutfitCard";
+import { getOutfitPreviewItems } from "@/components/outfits/preview";
 import { cn } from "@/components/ui/cn";
 
 interface OutfitDetailPanelProps {
@@ -20,10 +21,7 @@ export function OutfitDetailPanel({
 }: OutfitDetailPanelProps) {
   const tags = [outfit.style, outfit.occasion, outfit.season].filter(Boolean) as string[];
 
-  const preview = [
-    ...outfit.items.slice(0, 4),
-    ...Array(Math.max(0, 4 - outfit.items.length)).fill(null),
-  ];
+  const preview = getOutfitPreviewItems(outfit.items);
 
   return (
     <div className="flex h-full w-[340px] shrink-0 flex-col border-l border-border bg-white">
