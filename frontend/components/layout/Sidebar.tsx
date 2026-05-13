@@ -100,11 +100,11 @@ export function Sidebar({ nav = defaultNav, user }: SidebarProps) {
   }
 
   return (
-    <aside className="flex w-56 shrink-0 flex-col border-r border-border bg-white">
-      <div className="px-6 py-6 text-xs font-semibold tracking-[0.2em] text-foreground">
+    <aside className="sticky top-0 flex h-screen w-56 shrink-0 flex-col overflow-hidden border-r border-border bg-white">
+      <div className="shrink-0 px-6 py-6 text-xs font-semibold tracking-[0.2em] text-foreground">
         AI WARDROBE
       </div>
-      <nav className="flex-1 px-3 py-2">
+      <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
         <ul className="flex flex-col gap-1">
           {nav.map((item) => {
             const active =
@@ -139,7 +139,7 @@ export function Sidebar({ nav = defaultNav, user }: SidebarProps) {
           })}
         </ul>
       </nav>
-      <div className="p-3">
+      <div className="shrink-0 border-t border-border bg-white p-3">
         <Link
           href="/profile"
           className="flex items-center gap-3 rounded-2xl border border-border bg-white px-3 py-2.5 shadow-sm transition-colors hover:border-brand/30 hover:bg-brand/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
@@ -165,7 +165,7 @@ export function Sidebar({ nav = defaultNav, user }: SidebarProps) {
         <button
           type="button"
           onClick={handleSignOut}
-          className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border border-black bg-black px-4 text-xs font-semibold uppercase tracking-wide text-white shadow-sm transition-colors hover:bg-neutral-900 hover:border-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+          className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border border-black bg-black px-4 text-xs font-semibold uppercase tracking-wide text-white shadow-sm transition-colors hover:border-neutral-900 hover:bg-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
         >
           Sign out
         </button>
