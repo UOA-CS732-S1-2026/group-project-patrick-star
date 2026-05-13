@@ -3,6 +3,7 @@
 import { useState, useRef, type DragEvent, type ChangeEvent } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
+import { UploadGuidelinesModal } from "@/components/ui/UploadGuidelinesModal";
 import { cn } from "@/components/ui/cn";
 
 export interface NewClothingItem {
@@ -32,6 +33,7 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [showGuidelines, setShowGuidelines] = useState(false);
 
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
@@ -81,6 +83,7 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
     setCategory("");
     setSize("");
     setFit("");
+    setShowGuidelines(false);
     onClose();
   }
 
@@ -103,37 +106,65 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
       </div>
 
       <div className="grid grid-cols-2 gap-8 p-8">
-        <div
-          onClick={() => fileInputRef.current?.click()}
-          onDrop={handleDrop}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setIsDragging(true);
-          }}
-          onDragLeave={() => setIsDragging(false)}
-          className={cn(
-            "flex min-h-72 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-colors",
-            isDragging
-              ? "border-brand bg-brand/5"
-              : "border-border bg-neutral-50 hover:bg-neutral-100",
-          )}
-        >
-          {imagePreview ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={imagePreview}
-              alt="Preview"
-              className="h-full max-h-72 w-full rounded-2xl object-contain"
-            />
-          ) : (
-            <>
-              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-200 text-xl text-neutral-500">
-                ↑
-              </div>
-              <p className="text-sm font-medium text-foreground">Click to upload or drag &amp; drop</p>
-              <p className="mt-1 text-xs text-muted-foreground">JPG, PNG or HEIC</p>
-            </>
-          )}
+        <div>
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            onDrop={handleDrop}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDragging(true);
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            className={cn(
+              "flex min-h-72 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-colors",
+              isDragging
+                ? "border-brand bg-brand/5"
+                : "border-border bg-neutral-50 hover:bg-neutral-100",
+            )}
+          >
+            {imagePreview ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={imagePreview}
+                alt="Preview"
+                className="h-full max-h-72 w-full rounded-2xl object-contain"
+              />
+            ) : (
+              <>
+                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-200 text-xl text-neutral-500">
+                  ↑
+                </div>
+                <p className="text-sm font-medium text-foreground">Click to upload or drag &amp; drop</p>
+                <p className="mt-1 text-xs text-muted-foreground">JPG, PNG or HEIC</p>
+              </>
+            )}
+          </div>
+          <div className="mt-3 flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => setShowGuidelines(true)}
+              className="inline-flex w-fit items-center gap-1.5 text-xs font-bold text-[#58CC02] transition-colors hover:text-[#46A302]"
+            >
+              <svg
+                aria-hidden
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 16v-4" />
+                <path d="M12 8h.01" />
+              </svg>
+              Guidelines
+            </button>
+            <p className="text-xs leading-5 text-muted-foreground">
+              Lay item flat on a plain background · No logos or offensive graphics
+            </p>
+          </div>
         </div>
         <input
           ref={fileInputRef}
@@ -236,6 +267,13 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
           </Button>
         </div>
       </div>
+
+      {showGuidelines ? (
+        <UploadGuidelinesModal
+          type="garment"
+          onClose={() => setShowGuidelines(false)}
+        />
+      ) : null}
     </Modal>
   );
 }
