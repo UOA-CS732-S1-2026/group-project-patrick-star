@@ -59,7 +59,7 @@ cd ..
 2. Create the environment files:
 
 - `backend/.env`
-- `frontend/.env.local`
+- `frontend/.env`
 
 Use the examples in the Setup section below.
 
@@ -80,7 +80,7 @@ http://localhost:3000
 The backend runs at:
 
 ```text
-http://localhost:5001
+http://localhost:5000
 ```
 
 ## Setup
@@ -98,7 +98,7 @@ Create `backend/.env`:
 
 ```env
 MONGO_URI=mongodb://127.0.0.1:27017/ai-wardrobe
-PORT=5001
+PORT=5000
 AUTH0_DOMAIN=your-tenant.auth0.com
 AUTH0_AUDIENCE=https://your-api-audience
 CLOUDINARY_CLOUD_NAME=your_cloud_name
@@ -107,10 +107,10 @@ CLOUDINARY_API_SECRET=your_api_secret
 REPLICATE_API_TOKEN=your_replicate_token
 ```
 
-Create `frontend/.env.local`:
+Create `frontend/.env`:
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:5001
+NEXT_PUBLIC_API_URL=http://localhost:5000
 AUTH0_SECRET=your_auth0_secret
 APP_BASE_URL=http://localhost:3000
 AUTH0_ISSUER_BASE_URL=https://your-tenant.auth0.com
@@ -138,7 +138,7 @@ npm run dev:frontend
 Default local URLs:
 
 - Frontend: `http://localhost:3000`
-- Backend: `http://localhost:5001`
+- Backend: `http://localhost:5000`
 
 ## Scripts
 
