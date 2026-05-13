@@ -133,6 +133,7 @@ async function getAuthenticatedUser(req, res) {
   return user;
 }
 
+// Create the app profile for an Auth0 user, or return it if it already exists.
 router.post("/me/sync", requireAuth, async (req, res) => {
   try {
     const auth0UserId = req.auth.payload.sub;
@@ -154,6 +155,7 @@ router.post("/me/sync", requireAuth, async (req, res) => {
   }
 });
 
+// Return the authenticated user's stored profile for dashboard, onboarding, and profile screens.
 router.get("/me", requireAuth, async (req, res) => {
   try {
     const auth0UserId = req.auth.payload.sub;
@@ -167,6 +169,7 @@ router.get("/me", requireAuth, async (req, res) => {
   }
 });
 
+// Apply a full user update for callers that already have a complete profile payload.
 router.put("/me", requireAuth, async (req, res) => {
   try {
     const existingUser = await getAuthenticatedUser(req, res);
@@ -183,6 +186,7 @@ router.put("/me", requireAuth, async (req, res) => {
   }
 });
 
+// Update editable profile fields while rejecting unknown fields before they reach MongoDB.
 router.patch("/me/profile", requireAuth, async (req, res) => {
   try {
     const existingUser = await getAuthenticatedUser(req, res);
@@ -190,6 +194,7 @@ router.patch("/me/profile", requireAuth, async (req, res) => {
       return;
     }
 
+    // Validate the payload shape before normalizing nested profile fields.
     const unsupportedFields = Object.keys(req.body).filter(
       (field) => !PROFILE_FIELDS.includes(field),
     );
@@ -211,6 +216,7 @@ router.patch("/me/profile", requireAuth, async (req, res) => {
   }
 });
 
+// Patch body measurements without overwriting existing optional values that were not submitted.
 router.patch("/me/body-profile", requireAuth, async (req, res) => {
   try {
     const existingUser = await getAuthenticatedUser(req, res);
@@ -218,6 +224,7 @@ router.patch("/me/body-profile", requireAuth, async (req, res) => {
       return;
     }
 
+    // Merge existing subdocument values with the normalized partial update.
     const bodyProfile = {
       ...existingUser.bodyProfile?.toObject?.(),
       ...buildBodyProfileUpdate(req.body),
@@ -232,6 +239,7 @@ router.patch("/me/body-profile", requireAuth, async (req, res) => {
   }
 });
 
+// Replace the style preference list, including the valid empty list used when onboarding is skipped.
 router.patch("/me/style-preferences", requireAuth, async (req, res) => {
   try {
     const existingUser = await getAuthenticatedUser(req, res);
@@ -255,6 +263,7 @@ router.patch("/me/style-preferences", requireAuth, async (req, res) => {
   }
 });
 
+// Store a profile photo URL that has already been uploaded or selected by the client.
 router.put("/me/photo", requireAuth, async (req, res) => {
   try {
     const existingUser = await getAuthenticatedUser(req, res);
@@ -279,6 +288,7 @@ router.put("/me/photo", requireAuth, async (req, res) => {
   }
 });
 
+// Accept a multipart model/profile image upload and store the Cloudinary URL on the user.
 router.post(
   "/me/photo/upload",
   requireAuth,
@@ -312,6 +322,7 @@ router.post(
   },
 );
 
+// Remove the authenticated user's app profile.
 router.delete("/me", requireAuth, async (req, res) => {
   try {
     const existingUser = await getAuthenticatedUser(req, res);
