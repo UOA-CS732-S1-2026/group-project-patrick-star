@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, ReactNode } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
@@ -33,6 +33,14 @@ interface BodyProfileErrors {
   age?: string;
   gender?: string;
 }
+
+type BodyProfileAutoSaveState =
+  | "idle"
+  | "pending"
+  | "saving"
+  | "saved"
+  | "incomplete"
+  | "error";
 
 const initialBodyProfile: BodyProfileState = {
   age: "",
@@ -74,6 +82,14 @@ function toInputValue(value: number | null | undefined) {
 
 function toNullableNumber(value: string) {
   return value.trim() === "" ? null : Number(value);
+}
+
+function serializeBodyProfile(bodyProfile: BodyProfileState) {
+  return JSON.stringify(bodyProfile);
+}
+
+function serializePreferredStyles(preferredStyles: StyleOption[]) {
+  return JSON.stringify(preferredStyles);
 }
 
 function validateBodyProfile(
@@ -142,14 +158,22 @@ export default function ProfilePage() {
   const [photoName, setPhotoName] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [accountSaving, setAccountSaving] = useState(false);
-  const [bodySaving, setBodySaving] = useState(false);
-  const [stylesSaving, setStylesSaving] = useState(false);
   const [photoSaving, setPhotoSaving] = useState(false);
   const [bodyProfileErrors, setBodyProfileErrors] =
     useState<BodyProfileErrors>({});
+  const [bodyAutoSaveState, setBodyAutoSaveState] =
+    useState<BodyProfileAutoSaveState>("idle");
+  const [stylesAutoSaveState, setStylesAutoSaveState] =
+    useState<BodyProfileAutoSaveState>("idle");
   const [showGuidelines, setShowGuidelines] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const hasInitialisedBodyProfile = useRef(false);
+  const lastSavedBodyProfile = useRef(serializeBodyProfile(initialBodyProfile));
+  const latestBodySaveRequest = useRef(0);
+  const hasInitialisedPreferredStyles = useRef(false);
+  const lastSavedPreferredStyles = useRef(serializePreferredStyles([]));
+  const latestStylesSaveRequest = useRef(0);
 
   const styleSummary = useMemo(() => {
     if (preferredStyles.length === 0) {
@@ -300,15 +324,14 @@ export default function ProfilePage() {
     }
   }
 
-  async function handleSaveBodyProfile() {
-    setBodySaving(true);
-    setStatusMessage(null);
+  async function saveBodyProfile(nextBodyProfile: BodyProfileState, requestId: number) {
     setErrorMessage(null);
-    const validationErrors = validateBodyProfile(bodyProfile);
+    setBodyAutoSaveState("saving");
+    const validationErrors = validateBodyProfile(nextBodyProfile);
 
     if (Object.keys(validationErrors).length > 0) {
       setBodyProfileErrors(validationErrors);
-      setBodySaving(false);
+      setBodyAutoSaveState("incomplete");
       return;
     }
 
@@ -319,11 +342,11 @@ export default function ProfilePage() {
         method: "PATCH",
         headers: await getAuthHeaders(true),
         body: JSON.stringify({
-          age: Number(bodyProfile.age),
-          height: toNullableNumber(bodyProfile.height),
-          weight: toNullableNumber(bodyProfile.weight),
-          bodyShape: bodyProfile.bodyShape,
-          gender: bodyProfile.gender,
+          age: Number(nextBodyProfile.age),
+          height: toNullableNumber(nextBodyProfile.height),
+          weight: toNullableNumber(nextBodyProfile.weight),
+          bodyShape: nextBodyProfile.bodyShape,
+          gender: nextBodyProfile.gender,
         }),
       });
 
@@ -333,26 +356,82 @@ export default function ProfilePage() {
         );
       }
 
-      setStatusMessage("Body profile saved.");
+      if (requestId !== latestBodySaveRequest.current) {
+        return;
+      }
+
+      lastSavedBodyProfile.current = serializeBodyProfile(nextBodyProfile);
+      setBodyAutoSaveState("saved");
     } catch (error) {
+      if (requestId !== latestBodySaveRequest.current) {
+        return;
+      }
+
+      setBodyAutoSaveState("error");
       setErrorMessage(
         error instanceof Error ? error.message : "Failed to save body profile",
       );
-    } finally {
-      setBodySaving(false);
     }
   }
 
-  async function handleSaveStyles() {
-    setStylesSaving(true);
-    setStatusMessage(null);
+  useEffect(() => {
+    if (loading) {
+      return;
+    }
+
+    const snapshot = serializeBodyProfile(bodyProfile);
+
+    if (!hasInitialisedBodyProfile.current) {
+      hasInitialisedBodyProfile.current = true;
+      lastSavedBodyProfile.current = snapshot;
+      setBodyAutoSaveState(
+        Object.keys(validateBodyProfile(bodyProfile)).length > 0
+          ? "incomplete"
+          : "saved",
+      );
+      return;
+    }
+
+    if (snapshot === lastSavedBodyProfile.current) {
+      setBodyAutoSaveState(
+        Object.keys(validateBodyProfile(bodyProfile)).length > 0
+          ? "incomplete"
+          : "saved",
+      );
+      return;
+    }
+
+    const validationErrors = validateBodyProfile(bodyProfile);
+    if (Object.keys(validationErrors).length > 0) {
+      setBodyProfileErrors(validationErrors);
+      setBodyAutoSaveState("incomplete");
+      return;
+    }
+
+    setBodyProfileErrors({});
+    setBodyAutoSaveState("pending");
+    const requestId = latestBodySaveRequest.current + 1;
+    latestBodySaveRequest.current = requestId;
+
+    const timeoutId = window.setTimeout(() => {
+      void saveBodyProfile(bodyProfile, requestId);
+    }, 700);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [bodyProfile, loading]);
+
+  async function savePreferredStyles(
+    nextPreferredStyles: StyleOption[],
+    requestId: number,
+  ) {
     setErrorMessage(null);
+    setStylesAutoSaveState("saving");
 
     try {
       const response = await fetch(`${apiUrl}/api/users/me/style-preferences`, {
         method: "PATCH",
         headers: await getAuthHeaders(true),
-        body: JSON.stringify({ stylePreferences: preferredStyles }),
+        body: JSON.stringify({ stylePreferences: nextPreferredStyles }),
       });
 
       if (!response.ok) {
@@ -361,22 +440,61 @@ export default function ProfilePage() {
         );
       }
 
-      setStatusMessage("Style preferences saved.");
+      if (requestId !== latestStylesSaveRequest.current) {
+        return;
+      }
+
+      lastSavedPreferredStyles.current =
+        serializePreferredStyles(nextPreferredStyles);
+      setStylesAutoSaveState("saved");
       window.dispatchEvent(
         new CustomEvent("user-profile-updated", {
-          detail: { stylePreferences: preferredStyles },
+          detail: { stylePreferences: nextPreferredStyles },
         }),
       );
     } catch (error) {
+      if (requestId !== latestStylesSaveRequest.current) {
+        return;
+      }
+
+      setStylesAutoSaveState("error");
       setErrorMessage(
         error instanceof Error
           ? error.message
           : "Failed to save style preferences",
       );
-    } finally {
-      setStylesSaving(false);
     }
   }
+
+  useEffect(() => {
+    if (loading) {
+      return;
+    }
+
+    const snapshot = serializePreferredStyles(preferredStyles);
+
+    if (!hasInitialisedPreferredStyles.current) {
+      hasInitialisedPreferredStyles.current = true;
+      lastSavedPreferredStyles.current = snapshot;
+      setStylesAutoSaveState("saved");
+      return;
+    }
+
+    if (snapshot === lastSavedPreferredStyles.current) {
+      setStylesAutoSaveState("saved");
+      return;
+    }
+
+    setStylesAutoSaveState("pending");
+    const requestId = latestStylesSaveRequest.current + 1;
+    latestStylesSaveRequest.current = requestId;
+
+    const timeoutId = window.setTimeout(() => {
+      void savePreferredStyles(preferredStyles, requestId);
+    }, 700);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [preferredStyles, loading]);
 
   async function handlePhotoChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -441,7 +559,7 @@ export default function ProfilePage() {
           </div>
         )}
 
-        <section className="grid gap-6 lg:grid-cols-[minmax(260px,340px)_minmax(0,1fr)]">
+        <section className="grid gap-6 xl:grid-cols-[minmax(260px,340px)_minmax(0,760px)] xl:items-start">
           <Card className="p-6">
             <div className="flex flex-col items-center text-center">
               <div className="group relative mx-auto h-24 w-24">
@@ -559,140 +677,134 @@ export default function ProfilePage() {
             </div>
           </Card>
 
-          <Card className="p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-semibold">Body profile</h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  These details help personalise fit and outfit suggestions.
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                disabled={bodySaving || loading}
-                onClick={handleSaveBodyProfile}
-              >
-                {bodySaving ? "Saving" : "Save"}
-              </Button>
-            </div>
-
-            <div className="mt-6 grid gap-5 md:grid-cols-3">
-              <ProfileField label="Age *">
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  value={bodyProfile.age}
-                  aria-invalid={Boolean(bodyProfileErrors.age)}
-                  onChange={(event) =>
-                    updateBodyProfile("age", event.target.value)
-                  }
-                  className="h-11 w-full rounded-xl border border-border bg-white px-4 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
-                />
-                {bodyProfileErrors.age ? (
-                  <p className="mt-2 text-xs font-medium text-red-600">
-                    {bodyProfileErrors.age}
+          <div className="flex min-w-0 flex-col gap-6">
+            <Card className="p-5 md:p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-semibold">Body profile</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    These details help personalise fit and outfit suggestions.
                   </p>
-                ) : null}
-              </ProfileField>
-              <ProfileField label="Height (cm) (optional)">
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  value={bodyProfile.height}
-                  onChange={(event) =>
-                    updateBodyProfile("height", event.target.value)
-                  }
-                  className="h-11 w-full rounded-xl border border-border bg-white px-4 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
-                />
-              </ProfileField>
-              <ProfileField label="Weight (kg) (optional)">
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  value={bodyProfile.weight}
-                  onChange={(event) =>
-                    updateBodyProfile("weight", event.target.value)
-                  }
-                  className="h-11 w-full rounded-xl border border-border bg-white px-4 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
-                />
-              </ProfileField>
-            </div>
-
-            <div className="mt-6 grid gap-6 md:grid-cols-2">
-              <ProfileField label="Body shape (optional)">
-                <div className="flex flex-wrap gap-3">
-                  {BODY_SHAPES.map((shape) => (
-                    <Chip
-                      key={shape}
-                      type="button"
-                      selected={bodyProfile.bodyShape === shape}
-                      onClick={() => updateBodyProfile("bodyShape", shape)}
-                    >
-                      {shape}
-                    </Chip>
-                  ))}
                 </div>
-              </ProfileField>
-
-              <ProfileField label="Gender *">
-                <div className="flex flex-wrap gap-3">
-                  {GENDERS.map((gender) => (
-                    <Chip
-                      key={gender}
-                      type="button"
-                      selected={bodyProfile.gender === gender}
-                      onClick={() => updateBodyProfile("gender", gender)}
-                    >
-                      {gender}
-                    </Chip>
-                  ))}
-                </div>
-                {bodyProfileErrors.gender ? (
-                  <p className="mt-2 text-xs font-medium text-red-600">
-                    {bodyProfileErrors.gender}
-                  </p>
-                ) : null}
-              </ProfileField>
-            </div>
-          </Card>
-        </section>
-
-        <section className="grid gap-6 lg:grid-cols-2">
-          <Card className="p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-semibold">Preferred style</h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Choose the style directions you want outfits to lean toward.
-                </p>
+                <AutoSaveIndicator
+                  state={bodyAutoSaveState}
+                  loading={loading}
+                  incompleteLabel="Add age and gender"
+                />
               </div>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                disabled={stylesSaving || loading}
-                onClick={handleSaveStyles}
-              >
-                {stylesSaving ? "Saving" : "Save"}
-              </Button>
-            </div>
 
-            <div className="mt-6 flex flex-col gap-3">
-              {STYLE_OPTIONS.map((style) => (
-                <Chip
-                  key={style}
-                  type="button"
-                  selected={preferredStyles.includes(style)}
-                  onClick={() => toggleStyle(style)}
-                  className="h-auto w-full justify-start px-5 py-4 text-left"
-                >
-                  {style}
-                </Chip>
-              ))}
-            </div>
-          </Card>
+              <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
+                <div className="flex flex-col gap-5">
+                  <ProfileField label="Age *">
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      value={bodyProfile.age}
+                      aria-invalid={Boolean(bodyProfileErrors.age)}
+                      onChange={(event) =>
+                        updateBodyProfile("age", event.target.value)
+                      }
+                      className="h-11 w-full rounded-xl border border-border bg-white px-4 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
+                    />
+                    {bodyProfileErrors.age ? (
+                      <p className="mt-2 text-xs font-medium text-red-600">
+                        {bodyProfileErrors.age}
+                      </p>
+                    ) : null}
+                  </ProfileField>
+                  <ProfileField label="Height (cm) (optional)">
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      value={bodyProfile.height}
+                      onChange={(event) =>
+                        updateBodyProfile("height", event.target.value)
+                      }
+                      className="h-11 w-full rounded-xl border border-border bg-white px-4 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
+                    />
+                  </ProfileField>
+                  <ProfileField label="Weight (kg) (optional)">
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      value={bodyProfile.weight}
+                      onChange={(event) =>
+                        updateBodyProfile("weight", event.target.value)
+                      }
+                      className="h-11 w-full rounded-xl border border-border bg-white px-4 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
+                    />
+                  </ProfileField>
+                </div>
+
+                <div className="flex flex-col gap-6">
+                  <ProfileField label="Body shape (optional)">
+                    <div className="flex flex-wrap gap-3">
+                      {BODY_SHAPES.map((shape) => (
+                        <Chip
+                          key={shape}
+                          type="button"
+                          selected={bodyProfile.bodyShape === shape}
+                          onClick={() => updateBodyProfile("bodyShape", shape)}
+                        >
+                          {shape}
+                        </Chip>
+                      ))}
+                    </div>
+                  </ProfileField>
+
+                  <ProfileField label="Gender *">
+                    <div className="flex flex-wrap gap-3">
+                      {GENDERS.map((gender) => (
+                        <Chip
+                          key={gender}
+                          type="button"
+                          selected={bodyProfile.gender === gender}
+                          onClick={() => updateBodyProfile("gender", gender)}
+                        >
+                          {gender}
+                        </Chip>
+                      ))}
+                    </div>
+                    {bodyProfileErrors.gender ? (
+                      <p className="mt-2 text-xs font-medium text-red-600">
+                        {bodyProfileErrors.gender}
+                      </p>
+                    ) : null}
+                  </ProfileField>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-semibold">Preferred style</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Choose the style directions you want outfits to lean toward.
+                  </p>
+                </div>
+                <AutoSaveIndicator
+                  state={stylesAutoSaveState}
+                  loading={loading}
+                  incompleteLabel="Auto-save on"
+                />
+              </div>
+
+              <div className="mt-6 flex flex-col gap-3">
+                {STYLE_OPTIONS.map((style) => (
+                  <Chip
+                    key={style}
+                    type="button"
+                    selected={preferredStyles.includes(style)}
+                    onClick={() => toggleStyle(style)}
+                    className="h-auto w-full justify-start px-5 py-4 text-left"
+                  >
+                    {style}
+                  </Chip>
+                ))}
+              </div>
+            </Card>
+          </div>
         </section>
       </div>
 
@@ -719,6 +831,54 @@ function ProfileField({
         {label}
       </span>
       {children}
+    </div>
+  );
+}
+
+function AutoSaveIndicator({
+  state,
+  loading,
+  incompleteLabel,
+}: {
+  state: BodyProfileAutoSaveState;
+  loading: boolean;
+  incompleteLabel: string;
+}) {
+  let label = "Auto-save on";
+  let toneClasses = "border-border bg-neutral-50 text-muted-foreground";
+  let dotClasses = "bg-neutral-400";
+
+  if (loading) {
+    label = "Loading";
+  } else if (state === "pending") {
+    label = "Changes pending";
+    toneClasses = "border-amber-200 bg-amber-50 text-amber-700";
+    dotClasses = "bg-amber-500";
+  } else if (state === "saving") {
+    label = "Saving...";
+    toneClasses = "border-sky-200 bg-sky-50 text-sky-700";
+    dotClasses = "bg-sky-500";
+  } else if (state === "saved") {
+    label = "Saved";
+    toneClasses = "border-emerald-200 bg-emerald-50 text-emerald-700";
+    dotClasses = "bg-emerald-500";
+  } else if (state === "incomplete") {
+    label = incompleteLabel;
+    toneClasses = "border-border bg-neutral-50 text-muted-foreground";
+    dotClasses = "bg-neutral-400";
+  } else if (state === "error") {
+    label = "Couldn't save";
+    toneClasses = "border-red-200 bg-red-50 text-red-700";
+    dotClasses = "bg-red-500";
+  }
+
+  return (
+    <div
+      aria-live="polite"
+      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold ${toneClasses}`}
+    >
+      <span aria-hidden className={`h-2 w-2 rounded-full ${dotClasses}`} />
+      {label}
     </div>
   );
 }
