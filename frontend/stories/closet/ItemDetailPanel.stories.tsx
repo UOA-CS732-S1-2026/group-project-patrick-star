@@ -18,5 +18,6 @@ export const Default: Story = {
     item: defaultItem,
     onClose: () => {},
     onEdit: () => {},
+    onToggleFavourite: () => {},
   },
 };

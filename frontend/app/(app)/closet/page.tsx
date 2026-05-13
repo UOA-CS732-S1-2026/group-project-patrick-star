@@ -29,6 +29,7 @@ interface ApiClothingItem {
   category: string;
   size: string;
   fit: string;
+  favourite?: boolean;
   imageUrls?: {
     front?: string;
   };
@@ -125,6 +126,7 @@ export default function ClosetPage() {
       category: toDisplayCategory(item.category),
       size: item.size,
       fit: toDisplayFit(item.fit),
+      favourite: item.favourite ?? false,
       emoji: "👕",
       imageUrl: item.imageUrls?.front,
     };
@@ -287,6 +289,42 @@ export default function ClosetPage() {
     setEditing(false);
   }
 
+  async function handleToggleFavourite(id: string) {
+    const current = items.find((item) => item.id === id);
+    if (!current) return;
+
+    const newFavourite = !current.favourite;
+
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, favourite: newFavourite } : item,
+      ),
+    );
+    setSelectedItem((prev) =>
+      prev?.id === id ? { ...prev, favourite: newFavourite } : prev,
+    );
+
+    try {
+      const response = await fetch(`${apiUrl}/api/clothingItems/me/${id}`, {
+        method: "PUT",
+        headers: await getAuthHeaders(true),
+        body: JSON.stringify({ favourite: newFavourite }),
+      });
+
+      if (!response.ok) throw new Error("Failed to update favourite");
+    } catch (error) {
+      console.error(error);
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === id ? { ...item, favourite: current.favourite } : item,
+        ),
+      );
+      setSelectedItem((prev) =>
+        prev?.id === id ? { ...prev, favourite: current.favourite } : prev,
+      );
+    }
+  }
+
   function handleSelectItem(item: ClothingItem) {
     setSelectedItem(item);
     setEditing(false);
@@ -340,6 +378,7 @@ export default function ClosetPage() {
                 key={item.id}
                 item={item}
                 onClick={() => handleSelectItem(item)}
+                onToggleFavourite={() => handleToggleFavourite(item.id)}
               />
             ))}
           </div>
@@ -351,6 +390,7 @@ export default function ClosetPage() {
             item={selectedItem}
             onClose={() => setSelectedItem(null)}
             onEdit={() => setEditing(true)}
+            onToggleFavourite={() => handleToggleFavourite(selectedItem.id)}
           />
         )}
         {selectedItem && editing && (

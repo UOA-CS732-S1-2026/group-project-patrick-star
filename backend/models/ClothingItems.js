@@ -7,6 +7,7 @@ const ClothingItemSchema = new mongoose.Schema({
   category: { type: String, required: true, enum: ['upper_body', 'lower_body', 'dresses', 'outerwear', 'shoes', 'accessories'] },
   size: { type: String, required: true, enum: ['XS', 'S', 'M', 'L', 'XL', 'XXL'] },
   fit: { type: String, required: true, enum: ['tight', 'regular', 'loose'] },
+  favourite: { type: Boolean, default: false },
   imageUrls: {
     front: String,
     back: String,
