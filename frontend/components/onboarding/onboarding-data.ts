@@ -23,11 +23,34 @@ export const STYLE_OPTIONS = [
 ] as const;
 
 export const MODEL_OPTIONS = [
-  // change image sources later on
-  { id: "model-1", label: "Model 1", imageSrc: "/models/Female-Model-1.jpg" },
-  { id: "model-2", label: "Model 2", imageSrc: "/models/Male-Model-1.jpg" },
-  { id: "model-3", label: "Model 3", imageSrc: "/models/Female-Model-2.jpg" },
-  { id: "model-4", label: "Model 4", imageSrc: "/models/Male-Model-2.jpg" },
+  {
+    id: "model-1",
+    label: "Female Model 1",
+    imageSrc: "/models/Female-Model-1.jpg",
+    savedImageSrc:
+      "https://res.cloudinary.com/dihvixojc/image/upload/v1778662872/profiles/fj2ebufqcmkjoe7emlxp.jpg",
+  },
+  {
+    id: "model-2",
+    label: "Female Model 2",
+    imageSrc: "/models/Female-Model-2.jpg",
+    savedImageSrc:
+      "https://res.cloudinary.com/dihvixojc/image/upload/v1778663039/profiles/pjo8nnkxfhv7gacbdai6.jpg",
+  },
+  {
+    id: "model-3",
+    label: "Male Model 1",
+    imageSrc: "/models/Male-Model-1.jpg",
+    savedImageSrc:
+      "https://res.cloudinary.com/dihvixojc/image/upload/v1778663188/profiles/rk8a7wymn4sccsu8tt7u.jpg",
+  },
+  {
+    id: "model-4",
+    label: "Male Model 2",
+    imageSrc: "/models/Male-Model-2.jpg",
+    savedImageSrc:
+      "https://res.cloudinary.com/dihvixojc/image/upload/v1778663215/profiles/niv8zga6fr63qpo4ezn0.jpg",
+  },
 ] as const;
 
 export type BodyShape = (typeof BODY_SHAPES)[number];

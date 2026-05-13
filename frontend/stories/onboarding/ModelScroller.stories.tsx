@@ -2,15 +2,8 @@ import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import {
   ModelScroller,
-  type ModelScrollerItem,
 } from "@/components/onboarding/ModelScroller";
-
-const storyModels: ModelScrollerItem[] = [
-  { id: "model-1", label: "Model 1", imageSrc: "/models/Female-Model-1.jpg" },
-  { id: "model-2", label: "Model 2", imageSrc: "/models/Male-Model-1.jpg" },
-  { id: "model-3", label: "Model 3", imageSrc: "/models/Female-Model-2.jpg" },
-  { id: "model-4", label: "Model 4", imageSrc: "/models/Male-Model-2.jpg" },
-];
+import { MODEL_OPTIONS } from "@/components/onboarding/onboarding-data";
 
 const meta: Meta<typeof ModelScroller> = {
   title: "Onboarding/ModelScroller",
@@ -39,7 +32,7 @@ export const Default: Story = {
         <div className="min-h-screen bg-background px-6 py-10 md:px-12">
           <div className="mx-auto max-w-6xl">
             <ModelScroller
-              items={storyModels}
+              items={MODEL_OPTIONS}
               selectedId={selectedId}
               onSelect={setSelectedId}
             />

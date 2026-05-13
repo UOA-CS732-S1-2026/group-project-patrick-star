@@ -28,13 +28,11 @@ interface ApiUserProfile {
   name?: string;
 }
 
-const apiUrl = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5001")
-  .replace(/\/+$/, "");
+const apiUrl = (
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5001"
+).replace(/\/+$/, "");
 
-export function Sidebar({
-  nav = defaultNav,
-  user,
-}: SidebarProps) {
+export function Sidebar({ nav = defaultNav, user }: SidebarProps) {
   const pathname = usePathname();
   const [sidebarUser, setSidebarUser] = useState(
     user ?? { name: "Profile", itemCount: undefined, avatarEmoji: "👤" },
@@ -121,7 +119,7 @@ export function Sidebar({
                     "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
                     active
                       ? "bg-neutral-100 text-foreground"
-                      : "text-neutral-600 hover:bg-neutral-50"
+                      : "text-neutral-600 hover:bg-neutral-50",
                   )}
                 >
                   <span
@@ -163,9 +161,6 @@ export function Sidebar({
               </div>
             )}
           </div>
-          <span aria-hidden className="text-sm text-muted-foreground">
-            →
-          </span>
         </Link>
         <button
           type="button"
