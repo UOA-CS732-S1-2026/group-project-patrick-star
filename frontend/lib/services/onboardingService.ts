@@ -27,6 +27,7 @@ export class OnboardingService {
   private readonly apiUrl =
     process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5001";
 
+  // Persist onboarding in two phases: profile fields first, then optional image upload.
   async save(
     values: OnboardingFormValues,
     session?: AuthSession,
@@ -54,6 +55,7 @@ export class OnboardingService {
     }
   }
 
+  // Auth0 owns identity; the backend sync creates the app-specific MongoDB profile.
   private async ensureUserSynced(
     session: AuthSession | undefined,
     name: string,
@@ -82,6 +84,7 @@ export class OnboardingService {
     return `${values.firstName.trim()} ${values.lastName.trim()}`.trim();
   }
 
+  // Match backend User fields while preserving optional measurements as null.
   private buildProfilePayload(
     values: OnboardingFormValues,
     name: string,
@@ -100,6 +103,7 @@ export class OnboardingService {
       },
       stylePreferences: values.stylePreference,
       modelImage:
+        // Default models already have persistent Cloudinary URLs; uploads are handled separately.
         values.modelMode === "select"
           ? (selectedModel?.savedImageSrc ?? null)
           : null,
@@ -107,6 +111,7 @@ export class OnboardingService {
     };
   }
 
+  // Multipart uploads should not include a JSON content type header.
   private async uploadModelImage(image: File): Promise<void> {
     const formData = new FormData();
     formData.append("image", image);

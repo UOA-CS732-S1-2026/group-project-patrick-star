@@ -52,6 +52,7 @@ const STEP_FIELDS = {
   readonly FieldPath<OnboardingFormValues>[]
 >;
 
+// Coordinates step routing, form validation, and final persistence for onboarding.
 export function OnboardingFlow({
   initialStepIndex = 0,
   session,
@@ -78,10 +79,12 @@ export function OnboardingFlow({
 
   const currentStep = getStepKey(stepIndex);
 
+  // Keep the current step in the URL so refreshes and links can reopen the same step.
   useEffect(() => {
     router.replace(`${pathname}?step=${currentStep}`, { scroll: false });
   }, [currentStep, pathname, router]);
 
+  // Validate only the fields for the visible step instead of blocking on future steps.
   const handleNext = async () => {
     const isValid = await methods.trigger(STEP_FIELDS[currentStep], {
       shouldFocus: true,
@@ -99,6 +102,7 @@ export function OnboardingFlow({
 
   const onSubmit = methods.handleSubmit(
     async (values) => {
+      // Final submission persists all steps and then enters the authenticated app.
       await onboardingService.save(values, session);
       router.push("/");
     },

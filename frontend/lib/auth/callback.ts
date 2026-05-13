@@ -11,6 +11,7 @@ export function buildCallbackRedirectUrl(
   ctx: CallbackContextLike,
   appBaseUrl: string,
 ) {
+  // Auth failures stay on the login screen; successful logins continue to the intended target.
   if (error) {
     const loginUrl = new URL("/login", appBaseUrl);
     loginUrl.searchParams.set("auth_error", error.code);
