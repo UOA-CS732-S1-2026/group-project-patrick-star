@@ -13,9 +13,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   return (
     <AuthSplitLayout
-      leftPanel={<div className="h-full" />}
       rightPanel={
-        <div className="mx-auto flex w-full max-w-[400px] flex-col justify-start px-2 pt-20">
+        <div className="mx-auto flex w-full max-w-[400px] flex-col px-2">
           <h1 className="text-center text-[30px] font-bold leading-tight text-[#222]">
             Sign In
           </h1>

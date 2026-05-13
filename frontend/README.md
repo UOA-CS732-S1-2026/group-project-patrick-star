@@ -31,9 +31,9 @@ Open http://localhost:3000.
 | `/outfits/builder` | Create or edit outfits from closet items                                       |
 | `/profile`         | Profile details, body profile, style preferences, and photo upload             |
 | `/components`      | Component showcase                                                             |
-| `/onboarding`      | Onboarding flow after Auth0 sign-in                                            |
+| `/onboarding`      | Centered onboarding flow after Auth0 sign-in                                   |
 | `/login`           | Auth0 sign-in entry point                                                      |
-| `/signup`          | Auth0 sign-up entry point                                                      |
+| `/signup`          | Centered Auth0 sign-up entry point                                             |
 
 ## Project structure
 
@@ -125,6 +125,13 @@ frontend/
 
 To add a new logged-in page, drop a `page.tsx` into `app/(app)/<route>/` and it will automatically inherit the sidebar.
 
+## Onboarding and auth screens
+
+- `/signup` renders a centered create-account block without a left-side image/media panel. `AuthSplitLayout` supports both split-screen auth pages and centered single-column pages when no `leftPanel` is provided.
+- `/onboarding?step=body-profile` is centered with no model preview panel. First name, last name, age, and gender are required. Measurements and body shape are optional.
+- `/onboarding?step=about-yourself` is centered with no model preview panel. Style selection is optional; users can choose styles and continue, or use `Skip` to proceed with no style preferences.
+- `/onboarding?step=select-model` is centered with no separate `Your model` preview panel. Uploaded photos preview inside the drag-and-drop upload box, and users can still switch to the default model selector.
+
 ## Styling
 
 - Tailwind v4 via `@tailwindcss/postcss`. No `tailwind.config.js` file. Tokens are declared in [app/globals.css](app/globals.css) inside `@theme inline`, which exposes them as utility classes like `bg-brand`, `text-muted-foreground`, and `border-border`.
@@ -185,6 +192,7 @@ Current backend-backed flows:
 - Home fetches `/api/clothingItems/me` and `/api/outfits/me` to power quick stats, favourite outfits, and random outfit generation.
 - My Closet fetches and mutates `/api/clothingItems/me`; `?addItem=1` opens the add item modal from quick actions.
 - Outfit builder creates and updates `/api/outfits/me`, and can be prefilled from the home generator using query parameters.
+- Onboarding syncs `/api/users/me`, saves required body-profile basics, allows empty style preferences, and uploads/selects a model image before completing setup.
 - Profile fetches `/api/users/me`, updates profile/body/style fields with PATCH routes, and uploads images through `/api/users/me/photo/upload`.
 - Auth0 login routes users through onboarding; sign out clears browser tokens and returns to the sign-in page.
 
