@@ -10,6 +10,7 @@ const { requireAuth } = require("../middleware/auth");
 const upload = require("../middleware/upload");
 const router = express.Router();
 
+// Only these profile fields can be patched from the frontend profile/onboarding flows.
 const PROFILE_FIELDS = [
   "name",
   "bodyProfile",
@@ -18,6 +19,7 @@ const PROFILE_FIELDS = [
   "modelImage",
 ];
 
+// Normalize Mongoose validation errors into a consistent array response.
 function getValidationMessages(error) {
   if (!error.errors) {
     return [error.message];
@@ -26,6 +28,7 @@ function getValidationMessages(error) {
   return Object.values(error.errors).map((fieldError) => fieldError.message);
 }
 
+// Optional measurements may be omitted or cleared, but supplied values must stay non-negative.
 function toOptionalNumber(value, fieldName) {
   if (value === undefined) {
     return undefined;
@@ -46,6 +49,7 @@ function toOptionalNumber(value, fieldName) {
   return number;
 }
 
+// Required onboarding fields can be omitted during partial updates, but cannot be cleared.
 function toRequiredNumberWhenPresent(value, fieldName) {
   if (value === undefined) {
     return undefined;
@@ -60,6 +64,7 @@ function toRequiredNumberWhenPresent(value, fieldName) {
   return toOptionalNumber(value, fieldName);
 }
 
+// Accept both current bodyType and older bodyShape payloads from frontend forms.
 function buildBodyProfileUpdate(bodyProfile = {}) {
   const update = {};
 
@@ -90,6 +95,7 @@ function buildBodyProfileUpdate(bodyProfile = {}) {
   return update;
 }
 
+// Build a whitelist-based update object so unsupported fields cannot be saved accidentally.
 function buildProfileUpdate(body) {
   const update = {};
 
@@ -114,6 +120,7 @@ function buildProfileUpdate(body) {
   return update;
 }
 
+// Resolve the MongoDB user document for the authenticated Auth0 subject.
 async function getAuthenticatedUser(req, res) {
   const auth0UserId = req.auth.payload.sub;
   const user = await getUserByAuth0UserId(auth0UserId);
@@ -131,6 +138,7 @@ router.post("/me/sync", requireAuth, async (req, res) => {
     const auth0UserId = req.auth.payload.sub;
     const existingUser = await getUserByAuth0UserId(auth0UserId);
 
+    // Login sync is idempotent: repeat calls return the already-created profile.
     if (existingUser) {
       return res.json(existingUser);
     }
@@ -286,6 +294,7 @@ router.post(
         return res.status(400).json({ error: "No file uploaded" });
       }
 
+      // Uploaded model photos are stored as modelImage because the frontend uses them for try-on previews.
       const url = await uploadToCloudinary(req.file.buffer, "profiles");
       const user = await updateUser(existingUser._id, { modelImage: url });
 

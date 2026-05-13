@@ -11,6 +11,7 @@ const { getUserByAuth0UserId } = require("../db/userService");
 
 const router = express.Router();
 
+// Resolve the current user once per route and return a 404 when onboarding sync has not created them.
 async function getAuthenticatedUser(req, res) {
   const auth0UserId = req.auth.payload.sub;
   const user = await getUserByAuth0UserId(auth0UserId);
@@ -23,6 +24,7 @@ async function getAuthenticatedUser(req, res) {
   return user;
 }
 
+// Ensure every outfit item exists and belongs to the authenticated user before saving references.
 async function validateOwnedItems(userId, itemIds = []) {
   const uniqueItemIds = [...new Set(itemIds.map(String))];
   const items = await ClothingItem.find({
@@ -86,6 +88,7 @@ router.put("/me/:id", requireAuth, async (req, res) => {
     const user = await getAuthenticatedUser(req, res);
     if (!user) return;
 
+    // Only include fields that were explicitly supplied so partial updates preserve existing data.
     const update = {};
 
     if (Object.hasOwn(req.body, "name")) update.name = req.body.name;

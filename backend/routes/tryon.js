@@ -12,6 +12,7 @@ const replicate = new Replicate({
 
 router.post("/", requireAuth, async (req, res) => {
   try {
+    // Fail early with a configuration error before doing any database or provider work.
     if (!process.env.REPLICATE_API_TOKEN) {
       return res.status(500).json({ error: "REPLICATE_API_TOKEN is not configured" });
     }
@@ -31,11 +32,13 @@ router.post("/", requireAuth, async (req, res) => {
       return res.status(403).json({ error: "Forbidden" });
     }
 
+    // Replicate receives the user model first, followed by each available front-facing garment image.
     const garmentImageUrls = outfit.items.map(item => item.imageUrls?.front).filter(Boolean);
     if (garmentImageUrls.length === 0) {
       return res.status(400).json({ error: "No garment images found in this outfit" });
     }
 
+    // Include item names and categories in the prompt so the generated preview reflects the full outfit.
     const clothingDescription = outfit.items
       .map((item) => `${item.name} (${item.category})`)
       .join(", ");
@@ -50,6 +53,7 @@ router.post("/", requireAuth, async (req, res) => {
       },
     });
 
+    // Replicate may return a string URL or an object with url(); normalize both shapes before storing.
     const rawUrl = Array.isArray(output) ? output[0] : output;
     const imageUrl = String(
       typeof rawUrl?.url === "function" ? rawUrl.url() : rawUrl,

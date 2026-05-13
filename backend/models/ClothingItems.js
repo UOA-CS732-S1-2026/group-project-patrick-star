@@ -1,5 +1,6 @@
 const mongoose = require('mongoose')
 
+// Clothing items are owner-scoped closet records with optional multi-angle image URLs.
 const ClothingItemSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' },
 

@@ -2,6 +2,7 @@ const Outfit = require("../models/Outfit");
 
 const addOutfit = (data) => Outfit.create(data);
 
+// Populate outfit items for API responses so the frontend can render item names and images directly.
 async function getOutfits({ userId, outfitId }) {
   const filter = {};
 
@@ -11,6 +12,7 @@ async function getOutfits({ userId, outfitId }) {
   return Outfit.find(filter).populate("items");
 }
 
+// Mutations include userId in the query so ownership is enforced at the database boundary.
 const updateOutfitForUser = (id, userId, data) =>
   Outfit.findOneAndUpdate({ _id: id, userId }, data, {
     returnDocument: "after",

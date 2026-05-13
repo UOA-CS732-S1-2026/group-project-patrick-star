@@ -11,6 +11,7 @@ const { getUserByAuth0UserId } = require("../db/userService");
 const { uploadToCloudinary } = require("../lib/cloudinary");
 const upload = require("../middleware/upload");
 
+// Shoe records do not require clothing sizes, so remove stale size values before validation.
 function withoutShoeSize(data) {
   const itemData = { ...data };
 
@@ -68,6 +69,7 @@ router.put("/me/:id", requireAuth, async (req, res) => {
     }
 
     const update = withoutShoeSize(req.body);
+    // Switching an existing item to shoes must unset any previously saved size in MongoDB.
     const updateData =
       req.body.category === "shoes"
         ? { $set: update, $unset: { size: "" } }
@@ -119,6 +121,7 @@ router.post("/me/:id/image", requireAuth, upload.single("image"), async (req, re
       return res.status(400).json({ error: "No file uploaded" });
     }
 
+    // Keep image slots explicit so clients cannot write arbitrary nested fields.
     const slot = req.body.slot || "front";
     const allowedSlots = ["front", "back", "side"];
 

@@ -1,5 +1,6 @@
 const mongoose = require('mongoose')
 
+// Outfits belong to a user and contain references to clothing items already in that user's closet.
 const OutfitSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' },
   name: { type: String, required: true, minlength: 1, maxlength: 50 },
@@ -9,7 +10,7 @@ const OutfitSchema = new mongoose.Schema({
   lastTryOnPreviewUrl: { type: String, default: null },
 })
 
-// Custom validation to ensure items are from different categories
+// Keep outfit combinations realistic by allowing only one item per clothing category.
 OutfitSchema.pre('save', async function () {
   if (this.items.length === 0) return
 
