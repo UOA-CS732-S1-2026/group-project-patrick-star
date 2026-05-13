@@ -27,7 +27,7 @@ interface ApiClothingItem {
   _id: string;
   name: string;
   category: string;
-  size: string;
+  size?: string;
   fit: string;
   favourite?: boolean;
   imageUrls?: {

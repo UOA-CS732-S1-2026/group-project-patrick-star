@@ -21,6 +21,10 @@ export function ItemDetailPanel({
   onEdit,
   onToggleFavourite,
 }: ItemDetailPanelProps) {
+  const detailFields =
+    item.category === "Shoes"
+      ? DETAIL_FIELDS.filter(({ key }) => key !== "size")
+      : DETAIL_FIELDS;
   const tags = [
     item.category,
     item.fit ? `${item.fit} fit` : null,
@@ -89,7 +93,7 @@ export function ItemDetailPanel({
         </div>
 
         <div className="flex flex-col rounded-xl border border-border overflow-hidden">
-          {DETAIL_FIELDS.map(({ key, label }) => (
+          {detailFields.map(({ key, label }) => (
             <div
               key={key}
               className="flex items-center gap-4 border-b border-border last:border-0 px-4 py-3"

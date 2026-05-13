@@ -11,6 +11,16 @@ const { getUserByAuth0UserId } = require("../db/userService");
 const { uploadToCloudinary } = require("../lib/cloudinary");
 const upload = require("../middleware/upload");
 
+function withoutShoeSize(data) {
+  const itemData = { ...data };
+
+  if (itemData.category === "shoes") {
+    delete itemData.size;
+  }
+
+  return itemData;
+}
+
 router.post("/me", requireAuth, async (req, res) => {
   try {
     const auth0UserId = req.auth.payload.sub;
@@ -21,7 +31,7 @@ router.post("/me", requireAuth, async (req, res) => {
     }
 
     const item = await addItem({
-      ...req.body,
+      ...withoutShoeSize(req.body),
       userId: user._id,
     });
     res.status(201).json(item);
@@ -57,7 +67,13 @@ router.put("/me/:id", requireAuth, async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const item = await updateItemForUser(req.params.id, user._id, req.body);
+    const update = withoutShoeSize(req.body);
+    const updateData =
+      req.body.category === "shoes"
+        ? { $set: update, $unset: { size: "" } }
+        : update;
+
+    const item = await updateItemForUser(req.params.id, user._id, updateData);
 
     if (!item) {
       return res.status(404).json({ error: "Item not found" });

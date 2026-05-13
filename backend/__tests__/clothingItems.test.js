@@ -110,6 +110,38 @@ describe("POST /api/clothingItems/me", () => {
     expect(res.body.favourite).toBe(true);
   });
 
+  it("should create shoes without a size", async () => {
+    await createTestUser();
+
+    const res = await request(app)
+      .post("/api/clothingItems/me")
+      .set(authHeader)
+      .send({
+        name: "White sneakers",
+        category: "shoes",
+        fit: "regular",
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.category).toBe("shoes");
+    expect(res.body.size).toBeUndefined();
+  });
+
+  it("should still require size for non-shoe clothing items", async () => {
+    await createTestUser();
+
+    const res = await request(app)
+      .post("/api/clothingItems/me")
+      .set(authHeader)
+      .send({
+        name: "Linen shirt",
+        category: "upper_body",
+        fit: "regular",
+      });
+
+    expect(res.status).toBe(400);
+  });
+
   it("should return 404 when user profile not found", async () => {
     const res = await request(app)
       .post("/api/clothingItems/me")
@@ -203,6 +235,23 @@ describe("PUT /api/clothingItems/me/:id", () => {
     expect(res.status).toBe(200);
     expect(res.body.name).toBe("Tshirt");
     expect(res.body.favourite).toBe(true);
+  });
+
+  it("should remove size when an item is changed to shoes", async () => {
+    const user = await createTestUser();
+    const item = await createTestItem(user._id, {
+      category: "upper_body",
+      size: "M",
+    });
+
+    const res = await request(app)
+      .put(`/api/clothingItems/me/${item._id}`)
+      .set(authHeader)
+      .send({ category: "shoes" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.category).toBe("shoes");
+    expect(res.body.size).toBeUndefined();
   });
 
   it("should return 404 when updating another user's item", async () => {

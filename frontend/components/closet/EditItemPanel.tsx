@@ -30,7 +30,7 @@ export function EditItemPanel({ item, onCancel, onSave, onRemove }: EditItemPane
   const [category, setCategory] = useState(
     CATEGORY_VALUES.has(item.category) ? item.category : "",
   );
-  const [size, setSize] = useState(item.size ?? "");
+  const [size, setSize] = useState(item.category === "Shoes" ? "" : item.size ?? "");
   const [fit, setFit] = useState(item.fit ?? "");
 
   // Image state — start from the existing imageUrl if present
@@ -58,12 +58,27 @@ export function EditItemPanel({ item, onCancel, onSave, onRemove }: EditItemPane
     if (file) handleFile(file);
   }
 
+  function handleCategoryChange(nextCategory: string) {
+    setCategory(nextCategory);
+    if (nextCategory === "Shoes") setSize("");
+  }
+
   function handleSave() {
     const newImageUrl = imageFile
       ? URL.createObjectURL(imageFile)
       : item.imageUrl;
 
-    onSave({ ...item, name, category, size, fit, imageUrl: newImageUrl }, imageFile ?? undefined);
+    onSave(
+      {
+        ...item,
+        name,
+        category,
+        size: category === "Shoes" ? undefined : size,
+        fit,
+        imageUrl: newImageUrl,
+      },
+      imageFile ?? undefined,
+    );
   }
 
   function handleRemove() {
@@ -73,7 +88,8 @@ export function EditItemPanel({ item, onCancel, onSave, onRemove }: EditItemPane
 
   const inputClass =
     "w-full rounded-xl border-2 border-border bg-neutral-50 px-4 py-2.5 text-sm font-medium text-foreground outline-none transition focus:border-accent focus:bg-white placeholder:text-muted-foreground";
-  const canSave = Boolean(category && size && fit);
+  const isShoes = category === "Shoes";
+  const canSave = Boolean(category && fit && (isShoes || size));
 
   return (
     <div className="flex h-full w-[340px] shrink-0 flex-col border-l border-border bg-white">
@@ -149,7 +165,7 @@ export function EditItemPanel({ item, onCancel, onSave, onRemove }: EditItemPane
           </label>
           <select
             value={category}
-            onChange={(e) => setCategory(e.target.value)}
+            onChange={(e) => handleCategoryChange(e.target.value)}
             className={inputClass}
           >
             <option value="" disabled>
@@ -163,28 +179,29 @@ export function EditItemPanel({ item, onCancel, onSave, onRemove }: EditItemPane
           </select>
         </div>
 
-        {/* Size toggle */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Size
-          </label>
-          <div className="flex gap-1.5">
-            {SIZES.map((s) => (
-              <button
-                key={s}
-                onClick={() => setSize(s)}
-                className={cn(
-                  "flex-1 rounded-xl border-2 py-2 text-xs font-semibold transition-colors",
-                  size === s
-                    ? "border-accent bg-accent-soft text-accent"
-                    : "border-border bg-white text-foreground hover:bg-neutral-50"
-                )}
-              >
-                {s}
-              </button>
-            ))}
+        {!isShoes && (
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Size
+            </label>
+            <div className="flex gap-1.5">
+              {SIZES.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setSize(s)}
+                  className={cn(
+                    "flex-1 rounded-xl border-2 py-2 text-xs font-semibold transition-colors",
+                    size === s
+                      ? "border-accent bg-accent-soft text-accent"
+                      : "border-border bg-white text-foreground hover:bg-neutral-50"
+                  )}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Fit toggle */}
         <div className="flex flex-col gap-1.5">

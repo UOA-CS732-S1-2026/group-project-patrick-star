@@ -8,7 +8,7 @@ import { cn } from "@/components/ui/cn";
 export interface NewClothingItem {
   name: string;
   category: string;
-  size: string;
+  size?: string;
   fit: string;
   imageFile?: File;
 }
@@ -57,9 +57,20 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
     if (file) handleFile(file);
   }
 
+  function handleCategoryChange(nextCategory: string) {
+    setCategory(nextCategory);
+    if (nextCategory === "Shoes") setSize("");
+  }
+
   function handleSubmit() {
     const resolvedName = name.trim() || category;
-    onSubmit({ name: resolvedName, category, size, fit, imageFile: imageFile ?? undefined });
+    onSubmit({
+      name: resolvedName,
+      category,
+      size: category === "Shoes" ? undefined : size,
+      fit,
+      imageFile: imageFile ?? undefined,
+    });
     handleClose();
   }
 
@@ -73,7 +84,8 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
     onClose();
   }
 
-  const canSubmit = category && size && fit;
+  const isShoes = category === "Shoes";
+  const canSubmit = Boolean(category && fit && (isShoes || size));
 
   const inputClass =
     "w-full rounded-xl border-2 border-border bg-neutral-50 px-4 py-3 text-sm font-medium text-foreground outline-none transition focus:border-accent focus:bg-white placeholder:text-muted-foreground";
@@ -153,7 +165,7 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
             </label>
             <select
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              onChange={(e) => handleCategoryChange(e.target.value)}
               className={inputClass}
             >
               <option value="" disabled>
@@ -167,27 +179,29 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
             </select>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Size
-            </label>
-            <div className="flex gap-2">
-              {SIZES.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setSize(s)}
-                  className={cn(
-                    "flex-1 rounded-xl border-2 py-2.5 text-sm font-semibold transition-colors",
-                    size === s
-                      ? "border-accent bg-accent-soft text-accent"
-                      : "border-border bg-white text-foreground hover:bg-neutral-50",
-                  )}
-                >
-                  {s}
-                </button>
-              ))}
+          {!isShoes && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Size
+              </label>
+              <div className="flex gap-2">
+                {SIZES.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setSize(s)}
+                    className={cn(
+                      "flex-1 rounded-xl border-2 py-2.5 text-sm font-semibold transition-colors",
+                      size === s
+                        ? "border-accent bg-accent-soft text-accent"
+                        : "border-border bg-white text-foreground hover:bg-neutral-50",
+                    )}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
