@@ -3,6 +3,7 @@
 import { useState, useRef, type DragEvent, type ChangeEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { type ClothingItem } from "@/components/ui/ItemCard";
+import { UploadGuidelinesModal } from "@/components/ui/UploadGuidelinesModal";
 import { cn } from "@/components/ui/cn";
 
 interface EditItemPanelProps {
@@ -37,6 +38,7 @@ export function EditItemPanel({ item, onCancel, onSave, onRemove }: EditItemPane
   const [imagePreview, setImagePreview] = useState<string | null>(item.imageUrl ?? null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [showGuidelines, setShowGuidelines] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [confirmRemove, setConfirmRemove] = useState(false);
@@ -109,35 +111,63 @@ export function EditItemPanel({ item, onCancel, onSave, onRemove }: EditItemPane
       {/* Body */}
       <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-6 py-5">
         {/* Image upload zone */}
-        <div
-          onClick={() => fileInputRef.current?.click()}
-          onDrop={handleDrop}
-          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-          onDragLeave={() => setIsDragging(false)}
-          className={cn(
-            "flex flex-col items-center justify-center rounded-2xl border-2 border-dashed cursor-pointer transition-colors",
-            imagePreview ? "min-h-40" : "min-h-36",
-            isDragging
-              ? "border-brand bg-brand/5"
-              : "border-border bg-neutral-50 hover:bg-neutral-100"
-          )}
-        >
-          {imagePreview ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={imagePreview}
-              alt={name}
-              className="h-full w-full max-h-40 rounded-2xl object-contain"
-            />
-          ) : (
-            <>
-              <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-neutral-200 text-neutral-500 text-lg">
-                ↑
-              </div>
-              <p className="text-sm font-medium text-foreground">Click to upload or drag &amp; drop</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">JPG, PNG or HEIC</p>
-            </>
-          )}
+        <div>
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            onDrop={handleDrop}
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+            onDragLeave={() => setIsDragging(false)}
+            className={cn(
+              "flex flex-col items-center justify-center rounded-2xl border-2 border-dashed cursor-pointer transition-colors",
+              imagePreview ? "min-h-40" : "min-h-36",
+              isDragging
+                ? "border-brand bg-brand/5"
+                : "border-border bg-neutral-50 hover:bg-neutral-100"
+            )}
+          >
+            {imagePreview ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={imagePreview}
+                alt={name}
+                className="h-full w-full max-h-40 rounded-2xl object-contain"
+              />
+            ) : (
+              <>
+                <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-neutral-200 text-neutral-500 text-lg">
+                  ↑
+                </div>
+                <p className="text-sm font-medium text-foreground">Click to upload or drag &amp; drop</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">JPG, PNG or HEIC</p>
+              </>
+            )}
+          </div>
+          <div className="mt-3 flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => setShowGuidelines(true)}
+              className="inline-flex w-fit items-center gap-1.5 text-xs font-bold text-[#58CC02] transition-colors hover:text-[#46A302]"
+            >
+              <svg
+                aria-hidden
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 16v-4" />
+                <path d="M12 8h.01" />
+              </svg>
+              Guidelines
+            </button>
+            <p className="text-xs leading-5 text-muted-foreground">
+              Lay item flat on a plain background · No logos or offensive graphics
+            </p>
+          </div>
         </div>
         <input
           ref={fileInputRef}
@@ -251,6 +281,13 @@ export function EditItemPanel({ item, onCancel, onSave, onRemove }: EditItemPane
           {confirmRemove ? "Tap again to confirm removal" : "Remove"}
         </button>
       </div>
+
+      {showGuidelines ? (
+        <UploadGuidelinesModal
+          type="garment"
+          onClose={() => setShowGuidelines(false)}
+        />
+      ) : null}
     </div>
   );
 }
