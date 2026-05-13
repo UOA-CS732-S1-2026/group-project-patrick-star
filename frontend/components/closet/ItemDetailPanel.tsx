@@ -6,6 +6,7 @@ interface ItemDetailPanelProps {
   item: ClothingItem;
   onClose: () => void;
   onEdit: () => void;
+  onToggleFavourite: () => void;
 }
 
 const DETAIL_FIELDS: { key: keyof ClothingItem; label: string }[] = [
@@ -14,7 +15,16 @@ const DETAIL_FIELDS: { key: keyof ClothingItem; label: string }[] = [
   { key: "fit", label: "FIT" },
 ];
 
-export function ItemDetailPanel({ item, onClose, onEdit }: ItemDetailPanelProps) {
+export function ItemDetailPanel({
+  item,
+  onClose,
+  onEdit,
+  onToggleFavourite,
+}: ItemDetailPanelProps) {
+  const detailFields =
+    item.category === "Shoes"
+      ? DETAIL_FIELDS.filter(({ key }) => key !== "size")
+      : DETAIL_FIELDS;
   const tags = [
     item.category,
     item.fit ? `${item.fit} fit` : null,
@@ -32,13 +42,12 @@ export function ItemDetailPanel({ item, onClose, onEdit }: ItemDetailPanelProps)
         </button>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => {
-              // TODO: toggle favourite via PATCH /api/clothing/:id { favourite: !item.favourite }
-            }}
+            onClick={onToggleFavourite}
             className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${item.favourite
                 ? "bg-yellow-400 text-white hover:bg-yellow-500"
                 : "bg-neutral-100 text-neutral-400 hover:bg-yellow-100 hover:text-yellow-500"
               }`}
+            aria-label={item.favourite ? "Remove from favourites" : "Add to favourites"}
           >
             ★
           </button>
@@ -84,7 +93,7 @@ export function ItemDetailPanel({ item, onClose, onEdit }: ItemDetailPanelProps)
         </div>
 
         <div className="flex flex-col rounded-xl border border-border overflow-hidden">
-          {DETAIL_FIELDS.map(({ key, label }) => (
+          {detailFields.map(({ key, label }) => (
             <div
               key={key}
               className="flex items-center gap-4 border-b border-border last:border-0 px-4 py-3"

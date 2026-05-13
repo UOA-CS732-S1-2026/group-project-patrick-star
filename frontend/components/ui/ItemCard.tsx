@@ -19,9 +19,16 @@ interface ItemCardProps {
   className?: string;
   footer?: ReactNode;
   onClick?: () => void;
+  onToggleFavourite?: () => void;
 }
 
-export function ItemCard({ item, className, footer, onClick }: ItemCardProps) {
+export function ItemCard({
+  item,
+  className,
+  footer,
+  onClick,
+  onToggleFavourite,
+}: ItemCardProps) {
   return (
     <div
       onClick={onClick}
@@ -44,10 +51,36 @@ export function ItemCard({ item, className, footer, onClick }: ItemCardProps) {
         )}
       </div>
       <div className="border-t border-border px-4 py-3">
-        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          {item.category}
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              {item.category}
+            </div>
+            <div className="truncate text-sm font-semibold text-foreground">
+              {item.name}
+            </div>
+          </div>
+
+          {onToggleFavourite ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleFavourite();
+              }}
+              className={cn(
+                "mt-0.5 shrink-0 text-lg transition-colors",
+                item.favourite
+                  ? "text-yellow-400"
+                  : "text-neutral-300 hover:text-yellow-300",
+              )}
+              aria-label={
+                item.favourite ? "Remove from favourites" : "Add to favourites"
+              }
+            >
+              ★
+            </button>
+          ) : null}
         </div>
-        <div className="text-sm font-semibold text-foreground">{item.name}</div>
         {footer}
       </div>
     </div>
