@@ -10,7 +10,16 @@ import { OutfitCard, type Outfit } from "@/components/outfits/OutfitCard";
 import { OutfitDetailPanel } from "@/components/outfits/OutfitDetailPanel";
 import { type ClothingItem } from "@/components/ui/ItemCard";
 
-const STYLE_FILTERS = ["All", "Smart", "Street", "Casual", "Fun", "Minimal", "Dresses"] as const;
+const STYLE_FILTERS = [
+  "All",
+  "Favourited",
+  "Smart",
+  "Street",
+  "Casual",
+  "Fun",
+  "Minimal",
+  "Dresses",
+] as const;
 type StyleFilter = (typeof STYLE_FILTERS)[number];
 
 interface ApiClothingItem {
@@ -79,7 +88,12 @@ export default function OutfitsPage() {
 
   const filtered = useMemo(() => {
     return outfits.filter((outfit) => {
-      const matchStyle = styleFilter === "All" || outfit.style === styleFilter;
+      const matchStyle =
+        styleFilter === "All"
+          ? true
+          : styleFilter === "Favourited"
+            ? Boolean(outfit.favourite)
+            : outfit.style === styleFilter;
       const matchQuery = !query || outfit.name.toLowerCase().includes(query.toLowerCase());
       return matchStyle && matchQuery;
     });

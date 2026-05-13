@@ -16,6 +16,7 @@ import { EditItemPanel } from "@/components/closet/EditItemPanel";
 
 const CATEGORIES = [
   "All",
+  "Favourited",
   "Tops",
   "Bottoms",
   "Outerwear",
@@ -66,7 +67,12 @@ export default function ClosetPage() {
 
   const filtered = useMemo(() => {
     return items.filter((item) => {
-      const matchCategory = category === "All" || item.category === category;
+      const matchCategory =
+        category === "All"
+          ? true
+          : category === "Favourited"
+            ? Boolean(item.favourite)
+            : item.category === category;
       const matchQuery =
         !query || item.name.toLowerCase().includes(query.toLowerCase());
       return matchCategory && matchQuery;
