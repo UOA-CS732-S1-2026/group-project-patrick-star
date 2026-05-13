@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getAuthHeaders } from "@/lib/api/auth";
-import { getStyleAvatarEmoji } from "@/lib/profile/avatar";
 import { cn } from "../ui/cn";
 
 export interface NavItem {
@@ -27,16 +26,13 @@ interface SidebarProps {
 
 interface ApiUserProfile {
   name?: string;
-  stylePreferences?: string[];
 }
 
-const apiUrl = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5001")
-  .replace(/\/+$/, "");
+const apiUrl = (
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5001"
+).replace(/\/+$/, "");
 
-export function Sidebar({
-  nav = defaultNav,
-  user,
-}: SidebarProps) {
+export function Sidebar({ nav = defaultNav, user }: SidebarProps) {
   const pathname = usePathname();
   const [sidebarUser, setSidebarUser] = useState(
     user ?? { name: "Profile", itemCount: undefined, avatarEmoji: "👤" },
@@ -66,7 +62,7 @@ export function Sidebar({
           setSidebarUser({
             name: profile.name ?? "Profile",
             itemCount: clothingItems.length,
-            avatarEmoji: getStyleAvatarEmoji(profile.stylePreferences),
+            avatarEmoji: "👤",
           });
         }
       } catch {
@@ -78,19 +74,11 @@ export function Sidebar({
       const detail = (
         event as CustomEvent<{
           name?: string;
-          stylePreferences?: string[];
         }>
       ).detail;
 
       if (detail?.name) {
         setSidebarUser((current) => ({ ...current, name: detail.name }));
-      }
-
-      if (detail?.stylePreferences) {
-        setSidebarUser((current) => ({
-          ...current,
-          avatarEmoji: getStyleAvatarEmoji(detail.stylePreferences),
-        }));
       }
     }
 
@@ -131,14 +119,14 @@ export function Sidebar({
                     "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
                     active
                       ? "bg-neutral-100 text-foreground"
-                      : "text-neutral-600 hover:bg-neutral-50"
+                      : "text-neutral-600 hover:bg-neutral-50",
                   )}
                 >
                   <span
                     aria-hidden
                     className={cn(
                       "h-1.5 w-1.5 rounded-full",
-                      active ? "bg-brand" : "bg-transparent"
+                      active ? "bg-brand" : "bg-transparent",
                     )}
                   />
                   <span aria-hidden className="text-lg leading-none">
@@ -152,14 +140,18 @@ export function Sidebar({
         </ul>
       </nav>
       <div className="p-3">
-        <div className="flex items-center gap-3 rounded-2xl border border-border bg-white px-3 py-2.5 shadow-sm">
+        <Link
+          href="/profile"
+          className="flex items-center gap-3 rounded-2xl border border-border bg-white px-3 py-2.5 shadow-sm transition-colors hover:border-brand/30 hover:bg-brand/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+          aria-label={`Open profile for ${sidebarUser.name}`}
+        >
           <div
             aria-hidden
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-lg"
           >
             {sidebarUser.avatarEmoji}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-semibold text-foreground">
               {sidebarUser.name}
             </div>
@@ -169,13 +161,12 @@ export function Sidebar({
               </div>
             )}
           </div>
-        </div>
+        </Link>
         <button
           type="button"
           onClick={handleSignOut}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs font-bold uppercase tracking-wide text-red-700 transition-colors hover:border-red-300 hover:bg-red-100"
+          className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border border-black bg-black px-4 text-xs font-semibold uppercase tracking-wide text-white shadow-sm transition-colors hover:bg-neutral-900 hover:border-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
         >
-          <span aria-hidden>↪</span>
           Sign out
         </button>
       </div>

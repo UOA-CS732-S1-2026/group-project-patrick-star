@@ -6,6 +6,7 @@ import Image from "next/image";
 import {
   FormProvider,
   useForm,
+  useController,
   useWatch,
   type FieldPath,
 } from "react-hook-form";
@@ -161,6 +162,14 @@ export function OnboardingFlow({
     shouldUnregister: false,
     mode: "onSubmit",
     reValidateMode: "onChange",
+  });
+  useController({
+    name: "modelMode",
+    control: methods.control,
+  });
+  useController({
+    name: "selectedModelId",
+    control: methods.control,
   });
 
   // if you wonder the difference between the useWatch and watch
