@@ -1,5 +1,4 @@
 const request = require("supertest");
-const mongoose = require("mongoose");
 const User = require("../models/User");
 const ClothingItem = require("../models/ClothingItems");
 
@@ -46,10 +45,6 @@ const createTestItem = (userId, overrides = {}) =>
     ...overrides,
   });
 
-beforeAll(async () => {
-  await mongoose.connect(process.env.MONGO_URI);
-});
-
 beforeEach(async () => {
   await ClothingItem.deleteMany({});
   await User.deleteMany({
@@ -69,10 +64,6 @@ beforeEach(async () => {
     size: "L",
     fit: "tight",
   });
-});
-
-afterAll(async () => {
-  await mongoose.disconnect();
 });
 
 describe("GET /api/clothingItems/me (filters)", () => {

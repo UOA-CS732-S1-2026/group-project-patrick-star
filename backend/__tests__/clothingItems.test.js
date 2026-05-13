@@ -46,19 +46,11 @@ const createTestItem = (userId, overrides = {}) =>
     ...overrides,
   });
 
-beforeAll(async () => {
-  await mongoose.connect(process.env.MONGO_URI);
-});
-
 beforeEach(async () => {
   await ClothingItem.deleteMany({});
   await User.deleteMany({
     $or: [{ auth0UserId: "auth0|test-user" }, { email: "jane@example.com" }],
   });
-});
-
-afterAll(async () => {
-  await mongoose.disconnect();
 });
 
 // POST

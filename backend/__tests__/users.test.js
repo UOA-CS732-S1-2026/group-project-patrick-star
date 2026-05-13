@@ -1,5 +1,4 @@
 const request = require("supertest");
-const mongoose = require("mongoose");
 const User = require("../models/User");
 
 jest.mock("../middleware/auth.js", () => ({
@@ -30,19 +29,10 @@ const createTestUser = () =>
     email: "jane@example.com",
   });
 
-beforeAll(async () => {
-  await mongoose.connect(process.env.MONGO_URI);
-});
-
 beforeEach(async () => {
   await User.deleteMany({
     $or: [{ auth0UserId: "auth0|test-user" }, { email: "jane@example.com" }],
   });
-});
-
-afterAll(async () => {
-  // await mongoose.connection.dropCollection("users");
-  await mongoose.disconnect();
 });
 
 // Create user
