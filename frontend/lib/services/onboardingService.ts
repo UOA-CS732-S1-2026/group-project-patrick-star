@@ -101,7 +101,7 @@ export class OnboardingService {
       stylePreferences: values.stylePreference,
       modelImage:
         values.modelMode === "select"
-          ? (selectedModel?.imageSrc ?? null)
+          ? (selectedModel?.savedImageSrc ?? null)
           : null,
       isCompleteOnboarding: true,
     };

@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   FormProvider,
   useForm,
+  useController,
   type FieldPath,
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -65,6 +66,14 @@ export function OnboardingFlow({
     shouldUnregister: false,
     mode: "onSubmit",
     reValidateMode: "onChange",
+  });
+  useController({
+    name: "modelMode",
+    control: methods.control,
+  });
+  useController({
+    name: "selectedModelId",
+    control: methods.control,
   });
 
   const currentStep = getStepKey(stepIndex);

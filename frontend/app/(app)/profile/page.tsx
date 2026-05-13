@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
+import { UploadGuidelinesModal } from "@/components/ui/UploadGuidelinesModal";
 import { getAuthHeaders } from "@/lib/api/auth";
 import { getStyleAvatarEmoji } from "@/lib/profile/avatar";
 import {
@@ -96,6 +97,24 @@ function validateBodyProfile(
   return errors;
 }
 
+function CameraIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3Z" />
+      <circle cx="12" cy="13" r="3" />
+    </svg>
+  );
+}
+
 async function parseError(response: Response, fallback: string) {
   const text = await response.text().catch(() => "");
 
@@ -128,6 +147,7 @@ export default function ProfilePage() {
   const [photoSaving, setPhotoSaving] = useState(false);
   const [bodyProfileErrors, setBodyProfileErrors] =
     useState<BodyProfileErrors>({});
+  const [showGuidelines, setShowGuidelines] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -424,20 +444,68 @@ export default function ProfilePage() {
         <section className="grid gap-6 lg:grid-cols-[minmax(260px,340px)_minmax(0,1fr)]">
           <Card className="p-6">
             <div className="flex flex-col items-center text-center">
-              {photoPreview ? (
-                // eslint-disable-next-line @next/next/no-img-element
+              <div className="group relative mx-auto h-24 w-24">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={photoPreview}
-                  alt=""
-                  className="h-32 w-32 rounded-full border border-border object-cover"
+                  src={photoPreview || "/default-avatar.png"}
+                  alt="Profile photo"
+                  onError={(event) => {
+                    if (!photoPreview) {
+                      event.currentTarget.style.opacity = "0";
+                    }
+                  }}
+                  style={{ opacity: photoPreview ? 1 : undefined }}
+                  className="h-24 w-24 rounded-full border border-border bg-neutral-100 object-cover"
                 />
-              ) : (
-                <div
-                  aria-hidden
-                  className="flex h-32 w-32 items-center justify-center rounded-full border border-border bg-neutral-100 text-5xl"
+                {!photoPreview ? (
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full text-4xl"
+                  >
+                    {avatarEmoji}
+                  </span>
+                ) : null}
+                <label
+                  htmlFor="profile-photo"
+                  className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center rounded-full bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
                 >
-                  {avatarEmoji}
-                </div>
+                  <CameraIcon className="h-6 w-6 text-white" />
+                  <span className="mt-1 text-xs text-white">Change</span>
+                  <input
+                    id="profile-photo"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handlePhotoChange}
+                  />
+                </label>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowGuidelines(true)}
+                className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-[#58CC02] transition-colors hover:text-[#46A302]"
+              >
+                <svg
+                  aria-hidden
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 16v-4" />
+                  <path d="M12 8h.01" />
+                </svg>
+                Guidelines
+              </button>
+              {(photoSaving || photoName) && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {photoSaving ? "Uploading..." : photoName}
+                </p>
               )}
 
               <h2 className="mt-4 text-xl font-bold text-foreground">
@@ -625,39 +693,15 @@ export default function ProfilePage() {
               ))}
             </div>
           </Card>
-
-          <Card className="p-6">
-            <div>
-              <h2 className="text-lg font-semibold">Profile photo</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Update the uploaded photo used for your personal model.
-              </p>
-            </div>
-
-            <label
-              htmlFor="profile-photo"
-              className="mt-6 flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-neutral-50 px-6 py-12 text-center transition-colors hover:bg-neutral-100"
-            >
-              <input
-                id="profile-photo"
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handlePhotoChange}
-              />
-              <span className="text-3xl" aria-hidden>
-                ↑
-              </span>
-              <span className="mt-3 text-sm font-semibold text-foreground">
-                Choose a new photo
-              </span>
-              <span className="mt-1 text-xs text-muted-foreground">
-                {photoSaving ? "Uploading..." : photoName || "PNG, JPG, or WEBP"}
-              </span>
-            </label>
-          </Card>
         </section>
       </div>
+
+      {showGuidelines ? (
+        <UploadGuidelinesModal
+          type="profile"
+          onClose={() => setShowGuidelines(false)}
+        />
+      ) : null}
     </>
   );
 }

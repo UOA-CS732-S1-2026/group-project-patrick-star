@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ChangeEvent, DragEvent } from "react";
 import Image from "next/image";
 import { useFormContext } from "react-hook-form";
 import { BackButton } from "@/components/ui/BackButton";
 import { Button } from "@/components/ui/Button";
+import { UploadGuidelinesModal } from "@/components/ui/UploadGuidelinesModal";
 import { ModelScroller } from "../ModelScroller";
 import { MODEL_OPTIONS } from "../onboarding-data";
 import { type OnboardingFormValues } from "../onboarding-schema";
@@ -15,6 +16,7 @@ interface SelectModelStepProps {
 }
 
 export function SelectModelStep({ onBack }: SelectModelStepProps) {
+  const [showGuidelines, setShowGuidelines] = useState(false);
   const {
     register,
     watch,
@@ -31,6 +33,11 @@ export function SelectModelStep({ onBack }: SelectModelStepProps) {
     () => (selectedFiles?.[0] ? URL.createObjectURL(selectedFiles[0]) : null),
     [selectedFiles],
   );
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setShowGuidelines(true);
+  }, []);
 
   useEffect(() => {
     if (modelMode === "select" && !selectedModelId && MODEL_OPTIONS[0]) {
@@ -81,6 +88,30 @@ export function SelectModelStep({ onBack }: SelectModelStepProps) {
           </p>
 
           <div className="mx-auto w-full max-w-md">
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowGuidelines(true)}
+                className="inline-flex items-center gap-2 text-sm font-bold text-[#58CC02] transition-colors hover:text-[#46A302]"
+              >
+                <svg
+                  aria-hidden
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-5 w-5"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 16v-4" />
+                  <path d="M12 8h.01" />
+                </svg>
+                Photo Guidelines
+              </button>
+            </div>
+
             <div
               onClick={() =>
                 document.getElementById("onboarding-photo")?.click()
@@ -210,6 +241,13 @@ export function SelectModelStep({ onBack }: SelectModelStepProps) {
           </div>
         </>
       )}
+
+      {showGuidelines ? (
+        <UploadGuidelinesModal
+          type="profile"
+          onClose={() => setShowGuidelines(false)}
+        />
+      ) : null}
     </>
   );
 }
