@@ -57,8 +57,6 @@ function toDisplayCategory(category: string) {
       return "Outerwear";
     case "shoes":
       return "Shoes";
-    case "accessories":
-      return "Accessories";
     case "dresses":
       return "Dresses";
     default:
@@ -106,50 +104,81 @@ function ClosetPanel({
   isGenerating: boolean;
   generateError: string | null;
 }) {
+  const categoryGroups = [
+    { title: "Tops", categories: ["Tops", "Dresses"] },
+    { title: "Outerwear", categories: ["Outerwear"] },
+    { title: "Bottoms", categories: ["Bottoms"] },
+    { title: "Shoes", categories: ["Shoes"] },
+  ];
+
+  const sections = categoryGroups.map((group) => ({
+    ...group,
+    items: closetItems.filter((item) => group.categories.includes(item.category)),
+  }));
+
   return (
-    <div className="flex w-[240px] shrink-0 flex-col border-r border-border bg-white">
+    <div className="flex w-[260px] shrink-0 flex-col border-r border-border bg-white">
       <div className="border-b border-border px-5 py-4">
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Your Closet
         </p>
       </div>
 
-      <div className="grid flex-1 grid-cols-2 gap-0 overflow-y-auto">
-        {closetItems.map((item) => {
-          const selected = selectedIds.has(item.id);
-          return (
-            <button
-              key={item.id}
-              onClick={() => onToggle(item)}
-              className={cn(
-                "relative flex aspect-square items-center justify-center border-b border-r border-border bg-neutral-50 text-4xl transition-colors hover:bg-neutral-100",
-                selected && "bg-white ring-2 ring-inset ring-brand",
-              )}
-            >
-              {item.imageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={item.imageUrl}
-                  alt={item.name}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <span aria-hidden>{item.emoji ?? "👕"}</span>
-              )}
+      <div className="grid flex-1 grid-cols-2 grid-rows-2 gap-2 overflow-y-auto p-2">
+        {sections.map((section) => (
+          <div
+            key={section.title}
+            className="flex min-h-[120px] flex-col rounded-3xl border border-border bg-neutral-50 p-2"
+          >
+            <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              {section.title}
+            </div>
 
-              <span
-                className={cn(
-                  "absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full border-2 text-[10px] font-bold transition-colors",
-                  selected
-                    ? "border-brand bg-brand text-white"
-                    : "border-neutral-300 bg-white text-transparent",
-                )}
-              >
-                ✕
-              </span>
-            </button>
-          );
-        })}
+            <div className="grid flex-1 grid-cols-2 gap-1">
+              {section.items.length > 0 ? (
+                section.items.map((item) => {
+                  const selected = selectedIds.has(item.id);
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => onToggle(item)}
+                      className={cn(
+                        "relative flex aspect-square items-center justify-center overflow-hidden rounded-2xl border border-border bg-white text-3xl transition-colors hover:bg-neutral-100",
+                        selected && "bg-white ring-2 ring-inset ring-brand",
+                      )}
+                    >
+                      {item.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={item.imageUrl}
+                          alt={item.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span aria-hidden>{item.emoji ?? "👕"}</span>
+                      )}
+
+                      <span
+                        className={cn(
+                          "absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full border-2 text-[10px] font-bold transition-colors",
+                          selected
+                            ? "border-brand bg-brand text-white"
+                            : "border-neutral-300 bg-white text-transparent",
+                        )}
+                      >
+                        ✕
+                      </span>
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="col-span-2 flex h-full items-center justify-center rounded-2xl border border-dashed border-border bg-white/40 px-2 text-center text-[10px] text-muted-foreground">
+                  No items
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className="flex flex-col border-t border-border">
@@ -328,7 +357,7 @@ function OutfitDetailsPanel({
   const previewItems = getOutfitPreviewItems(selectedItems);
 
   return (
-    <div className="flex w-[300px] shrink-0 flex-col border-l border-border bg-white">
+    <div className="flex w-[280px] shrink-0 flex-col border-l border-border bg-white">
       <div className="border-b border-border px-6 py-4">
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Outfit Details
