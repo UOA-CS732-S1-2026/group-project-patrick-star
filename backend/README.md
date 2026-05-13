@@ -119,6 +119,8 @@ backend/
 - Outfit item IDs must belong to the authenticated user.
 - Outfit items must have distinct categories; duplicate item categories are rejected.
 - Profile PATCH routes reject unsupported fields and run Mongoose validators before saving.
+- User `stylePreferences` must be an array, but it may be empty when a user skips style selection during onboarding.
+- Body profile measurements and body type are optional. Numeric body profile fields must be non-negative when provided.
 - The try-on route expects `humanImageUrl`, `garmentImageUrl`, and `category`.
 - MongoDB connects when `app.js` is loaded, so tests and local runs need a valid `MONGO_URI`.
 - `/api/users/me*`, `/api/clothingItems/me*`, and `/api/outfits/me*` routes require `Authorization: Bearer <access_token>`.
@@ -145,4 +147,4 @@ For authenticated routes, the frontend should:
 3. Call `POST /api/users/me/sync` once after login with the user's `name` and `email`.
 4. Send that token in the `Authorization` header when calling `/api/users/me*`, `/api/clothingItems/me*`, and `/api/outfits/me*`.
 
-Current frontend pages use these routes for the home dashboard, closet management, outfit builder, favourite outfits, profile editing, onboarding sync, and sign-out flow.
+Current frontend pages use these routes for the home dashboard, closet management, outfit builder, favourite outfits, profile editing, onboarding sync, optional onboarding style selection, model image upload, and sign-out flow.

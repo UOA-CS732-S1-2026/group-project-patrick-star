@@ -6,6 +6,7 @@ interface OnboardingShellProps {
   totalSteps: number;
   stepLabel: string;
   left?: ReactNode;
+  contentClassName?: string;
   children: ReactNode;
 }
 
@@ -18,9 +19,26 @@ export function OnboardingShell({
   totalSteps,
   stepLabel,
   left,
+  contentClassName = "max-w-md",
   children,
 }: OnboardingShellProps) {
   const progress = (step / totalSteps) * 100;
+
+  if (!left) {
+    return (
+      <div className="flex min-h-screen flex-col bg-background px-6 py-10 md:px-16 md:py-14">
+        <div className="mx-auto w-full max-w-md">
+          <div className="mb-2 text-xs font-semibold tracking-[0.2em] text-muted-foreground">
+            STEP {step} OF {totalSteps} / {stepLabel.toUpperCase()}
+          </div>
+          <ProgressBar value={progress} />
+        </div>
+        <section className="flex flex-1 justify-center pt-10 md:pt-16">
+          <div className={`w-full ${contentClassName}`}>{children}</div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background md:grid md:grid-cols-2">

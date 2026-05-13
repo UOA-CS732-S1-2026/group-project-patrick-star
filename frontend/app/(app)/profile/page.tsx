@@ -29,6 +29,11 @@ interface BodyProfileState {
   gender: Gender | null;
 }
 
+interface BodyProfileErrors {
+  age?: string;
+  gender?: string;
+}
+
 const initialBodyProfile: BodyProfileState = {
   age: "",
   height: "",
@@ -69,6 +74,27 @@ function toInputValue(value: number | null | undefined) {
 
 function toNullableNumber(value: string) {
   return value.trim() === "" ? null : Number(value);
+}
+
+function validateBodyProfile(
+  bodyProfile: BodyProfileState,
+): BodyProfileErrors {
+  const errors: BodyProfileErrors = {};
+  const trimmedAge = bodyProfile.age.trim();
+
+  if (!trimmedAge) {
+    errors.age = "Age is required.";
+  } else if (!Number.isFinite(Number(trimmedAge))) {
+    errors.age = "Age must be a number.";
+  } else if (Number(trimmedAge) < 0) {
+    errors.age = "Age must be a non-negative number.";
+  }
+
+  if (!bodyProfile.gender) {
+    errors.gender = "Gender is required.";
+  }
+
+  return errors;
 }
 
 function CameraIcon({ className }: { className?: string }) {
@@ -119,6 +145,8 @@ export default function ProfilePage() {
   const [bodySaving, setBodySaving] = useState(false);
   const [stylesSaving, setStylesSaving] = useState(false);
   const [photoSaving, setPhotoSaving] = useState(false);
+  const [bodyProfileErrors, setBodyProfileErrors] =
+    useState<BodyProfileErrors>({});
   const [showGuidelines, setShowGuidelines] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -214,6 +242,19 @@ export default function ProfilePage() {
     value: BodyProfileState[Field]
   ) {
     setBodyProfile((current) => ({ ...current, [field]: value }));
+    setBodyProfileErrors((current) => {
+      if (field !== "age" && field !== "gender") {
+        return current;
+      }
+
+      const next = { ...current };
+      if (field === "age") {
+        delete next.age;
+      } else {
+        delete next.gender;
+      }
+      return next;
+    });
   }
 
   function toggleStyle(style: StyleOption) {
@@ -263,13 +304,22 @@ export default function ProfilePage() {
     setBodySaving(true);
     setStatusMessage(null);
     setErrorMessage(null);
+    const validationErrors = validateBodyProfile(bodyProfile);
+
+    if (Object.keys(validationErrors).length > 0) {
+      setBodyProfileErrors(validationErrors);
+      setBodySaving(false);
+      return;
+    }
+
+    setBodyProfileErrors({});
 
     try {
       const response = await fetch(`${apiUrl}/api/users/me/body-profile`, {
         method: "PATCH",
         headers: await getAuthHeaders(true),
         body: JSON.stringify({
-          age: toNullableNumber(bodyProfile.age),
+          age: Number(bodyProfile.age),
           height: toNullableNumber(bodyProfile.height),
           weight: toNullableNumber(bodyProfile.weight),
           bodyShape: bodyProfile.bodyShape,
@@ -529,18 +579,24 @@ export default function ProfilePage() {
             </div>
 
             <div className="mt-6 grid gap-5 md:grid-cols-3">
-              <ProfileField label="Age">
+              <ProfileField label="Age *">
                 <input
                   type="number"
                   inputMode="numeric"
                   value={bodyProfile.age}
+                  aria-invalid={Boolean(bodyProfileErrors.age)}
                   onChange={(event) =>
                     updateBodyProfile("age", event.target.value)
                   }
                   className="h-11 w-full rounded-xl border border-border bg-white px-4 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
                 />
+                {bodyProfileErrors.age ? (
+                  <p className="mt-2 text-xs font-medium text-red-600">
+                    {bodyProfileErrors.age}
+                  </p>
+                ) : null}
               </ProfileField>
-              <ProfileField label="Height (cm)">
+              <ProfileField label="Height (cm) (optional)">
                 <input
                   type="number"
                   inputMode="numeric"
@@ -551,7 +607,7 @@ export default function ProfilePage() {
                   className="h-11 w-full rounded-xl border border-border bg-white px-4 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
                 />
               </ProfileField>
-              <ProfileField label="Weight (kg)">
+              <ProfileField label="Weight (kg) (optional)">
                 <input
                   type="number"
                   inputMode="numeric"
@@ -565,7 +621,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="mt-6 grid gap-6 md:grid-cols-2">
-              <ProfileField label="Body shape">
+              <ProfileField label="Body shape (optional)">
                 <div className="flex flex-wrap gap-3">
                   {BODY_SHAPES.map((shape) => (
                     <Chip
@@ -580,7 +636,7 @@ export default function ProfilePage() {
                 </div>
               </ProfileField>
 
-              <ProfileField label="Gender">
+              <ProfileField label="Gender *">
                 <div className="flex flex-wrap gap-3">
                   {GENDERS.map((gender) => (
                     <Chip
@@ -593,6 +649,11 @@ export default function ProfilePage() {
                     </Chip>
                   ))}
                 </div>
+                {bodyProfileErrors.gender ? (
+                  <p className="mt-2 text-xs font-medium text-red-600">
+                    {bodyProfileErrors.gender}
+                  </p>
+                ) : null}
               </ProfileField>
             </div>
           </Card>

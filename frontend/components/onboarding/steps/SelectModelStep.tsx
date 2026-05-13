@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ChangeEvent, DragEvent } from "react";
 import Image from "next/image";
 import { useFormContext } from "react-hook-form";
@@ -29,6 +29,10 @@ export function SelectModelStep({ onBack }: SelectModelStepProps) {
   const fileRegistration = register("modelPhoto");
   const hasPhoto = Boolean(selectedFiles?.[0]);
   const hasModelSelection = Boolean(selectedModelId);
+  const uploadedPhotoPreviewUrl = useMemo(
+    () => (selectedFiles?.[0] ? URL.createObjectURL(selectedFiles[0]) : null),
+    [selectedFiles],
+  );
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -40,6 +44,14 @@ export function SelectModelStep({ onBack }: SelectModelStepProps) {
       setValue("selectedModelId", MODEL_OPTIONS[0].id, { shouldDirty: true });
     }
   }, [modelMode, selectedModelId, setValue]);
+
+  useEffect(() => {
+    return () => {
+      if (uploadedPhotoPreviewUrl) {
+        URL.revokeObjectURL(uploadedPhotoPreviewUrl);
+      }
+    };
+  }, [uploadedPhotoPreviewUrl]);
 
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -106,7 +118,7 @@ export function SelectModelStep({ onBack }: SelectModelStepProps) {
               }
               onDragOver={(event) => event.preventDefault()}
               onDrop={handleDrop}
-              className="my-8 flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-neutral-200 bg-transparent py-16 transition-colors hover:bg-neutral-50"
+              className="relative my-8 flex aspect-[3/4] w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-neutral-200 bg-transparent p-6 transition-colors hover:bg-neutral-50"
             >
               <input
                 {...fileRegistration}
@@ -116,25 +128,42 @@ export function SelectModelStep({ onBack }: SelectModelStepProps) {
                 accept="image/*"
                 onChange={handleFileChange}
               />
-              <Image
-                src="/upload.svg"
-                alt="Upload icon"
-                width={64}
-                height={64}
-                className="mb-4 h-auto w-auto"
-              />
+              {uploadedPhotoPreviewUrl ? (
+                <>
+                  <Image
+                    src={uploadedPhotoPreviewUrl}
+                    alt="Uploaded photo preview"
+                    fill
+                    unoptimized
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent px-4 pb-4 pt-10">
+                    <p className="truncate text-sm font-semibold text-white">
+                      {selectedFiles?.[0]?.name}
+                    </p>
+                    <p className="mt-1 text-xs font-medium text-white/80">
+                      Click or drop to replace
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Image
+                    src="/upload.svg"
+                    alt="Upload icon"
+                    width={64}
+                    height={64}
+                    className="mb-4 h-auto w-auto"
+                  />
 
-              <p className="text-sm font-medium text-neutral-900">
-                Drag and Drop file here or{" "}
-                <span className="font-bold underline">Choose file</span>
-              </p>
-              {selectedFiles?.[0] ? (
-                <p className="mt-3 text-xs text-neutral-500">
-                  Selected: {selectedFiles[0].name}
-                </p>
-              ) : null}
+                  <p className="text-sm font-medium text-neutral-900">
+                    Drag and Drop file here or{" "}
+                    <span className="font-bold underline">Choose file</span>
+                  </p>
+                </>
+              )}
               {errors.modelPhoto ? (
-                <p className="mt-3 text-xs text-red-600">
+                <p className="absolute inset-x-4 bottom-4 rounded-md bg-white/95 px-3 py-2 text-xs text-red-600 shadow-sm">
                   {errors.modelPhoto.message}
                 </p>
               ) : null}

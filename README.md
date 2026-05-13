@@ -27,6 +27,13 @@ PORT=5000
 npm run dev
 ```
 
+## App highlights
+
+- Auth0-powered login and signup screens. The signup page uses a centered create-account block with no media/photo panel.
+- Onboarding collects required name, age, and gender details first, with optional measurements and body shape.
+- Style selection during onboarding is optional; users can skip it and continue with an empty style preferences list.
+- Model setup is centered in the onboarding flow. Users can upload their own image, preview it inside the upload box, or select a default model.
+
 # CS732 project - Team Patrick Star
 
 Welcome to the CS732 project. We look forward to seeing the amazing things you create this semester! This is your team's repository.

@@ -21,9 +21,12 @@ export const onboardingStep1Schema = z.object({
   age: z
     .string()
     .trim()
-    .optional()
-    .refine((value) => !value || Number.isFinite(Number(value)), {
+    .min(1, "Age is required.")
+    .refine((value) => Number.isFinite(Number(value)), {
       message: "Age must be a number.",
+    })
+    .refine((value) => Number(value) >= 0, {
+      message: "Age must be a non-negative number.",
     }),
   height: z
     .string()
@@ -40,7 +43,10 @@ export const onboardingStep1Schema = z.object({
       message: "Weight must be a number.",
     }),
   bodyShape: z.enum(BODY_SHAPES).nullable(),
-  gender: z.enum(GENDERS).nullable(),
+  gender: z
+    .enum(GENDERS)
+    .nullable()
+    .refine((value) => value !== null, "Gender is required."),
 });
 
 export const onboardingStep2Schema = z.object({
@@ -52,9 +58,7 @@ export const onboardingStep2Schema = z.object({
     .string()
     .trim()
     .min(1, "Last name is required."),
-  stylePreference: z
-    .array(z.enum(STYLE_OPTIONS))
-    .min(1, "Select at least one style."),
+  stylePreference: z.array(z.enum(STYLE_OPTIONS)),
 });
 
 export const onboardingStep3Schema = z
