@@ -3,23 +3,8 @@ import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
 export default function SignUpPage() {
   return (
     <AuthSplitLayout
-      leftPanel={
-        <div className="relative flex h-full items-center justify-center">
-          <div className="max-w-[270px] text-center text-[14px] font-semibold leading-7 text-[#232323]">
-            <p>Here is just a place holder for images</p>
-            <p className="mt-4">my idea is to have different photos or video</p>
-            <p className="mt-4">and those photoes will auto-play</p>
-          </div>
-
-          <div className="absolute bottom-12 left-1/2 flex -translate-x-1/2 gap-3 rounded-full bg-[#d8d8d8] px-5 py-3 shadow-[0_1px_2px_rgba(0,0,0,0.06)]">
-            <span className="h-3 w-3 rounded-full border border-white/90 bg-transparent" />
-            <span className="h-3 w-3 rounded-full border border-white/90 bg-transparent" />
-            <span className="h-3 w-3 rounded-full border border-white/90 bg-transparent" />
-          </div>
-        </div>
-      }
       rightPanel={
-        <div className="mx-auto flex w-full max-w-[400px] flex-col justify-start px-2 pt-16">
+        <div className="mx-auto flex w-full max-w-[400px] flex-col px-2">
           <h1 className="text-center text-[30px] font-bold leading-tight text-[#222]">
             Create Account
           </h1>

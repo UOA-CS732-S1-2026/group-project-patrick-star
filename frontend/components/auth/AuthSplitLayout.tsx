@@ -16,6 +16,21 @@ export function AuthSplitLayout({
   leftPanelClassName,
   rightPanelClassName,
 }: AuthSplitLayoutProps) {
+  if (!leftPanel) {
+    return (
+      <main className="min-h-screen bg-white">
+        <section
+          className={cn(
+            "flex min-h-screen items-center justify-center bg-white px-6 py-10 sm:px-10",
+            rightPanelClassName
+          )}
+        >
+          {rightPanel}
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-white">
       <div className="grid min-h-screen grid-cols-1 md:grid-cols-2">

@@ -60,6 +60,17 @@ export function AboutYourselfStep({ onNext, onBack }: AboutYourselfStepProps) {
               >
                 Continue
               </Button>
+              {field.value.length === 0 ? (
+                <Button
+                  onClick={onNext}
+                  size="lg"
+                  variant="secondary"
+                  className="w-full"
+                  type="button"
+                >
+                  Skip
+                </Button>
+              ) : null}
             </>
           )}
         />
