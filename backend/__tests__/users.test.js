@@ -201,6 +201,26 @@ describe("PATCH /api/users/me/body-profile", () => {
     expect(res.status).toBe(400);
     expect(res.body.errors).toContain("age must be a non-negative number");
   });
+
+  it("should reject clearing required body profile fields", async () => {
+    await createTestUser();
+
+    const ageRes = await request(app)
+      .patch("/api/users/me/body-profile")
+      .set(authHeader)
+      .send({ age: null });
+
+    expect(ageRes.status).toBe(400);
+    expect(ageRes.body.errors).toContain("age is required");
+
+    const genderRes = await request(app)
+      .patch("/api/users/me/body-profile")
+      .set(authHeader)
+      .send({ gender: null });
+
+    expect(genderRes.status).toBe(400);
+    expect(genderRes.body.errors).toContain("gender is required");
+  });
 });
 
 describe("PATCH /api/users/me/style-preferences", () => {

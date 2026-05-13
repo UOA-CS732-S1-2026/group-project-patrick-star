@@ -46,10 +46,24 @@ function toOptionalNumber(value, fieldName) {
   return number;
 }
 
+function toRequiredNumberWhenPresent(value, fieldName) {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (value === null || value === "") {
+    const error = new Error(`${fieldName} is required`);
+    error.status = 400;
+    throw error;
+  }
+
+  return toOptionalNumber(value, fieldName);
+}
+
 function buildBodyProfileUpdate(bodyProfile = {}) {
   const update = {};
 
-  const age = toOptionalNumber(bodyProfile.age, "age");
+  const age = toRequiredNumberWhenPresent(bodyProfile.age, "age");
   const height = toOptionalNumber(bodyProfile.height, "height");
   const weight = toOptionalNumber(bodyProfile.weight, "weight");
 
@@ -64,6 +78,12 @@ function buildBodyProfileUpdate(bodyProfile = {}) {
   }
 
   if (bodyProfile.gender !== undefined) {
+    if (bodyProfile.gender === null || bodyProfile.gender === "") {
+      const error = new Error("gender is required");
+      error.status = 400;
+      throw error;
+    }
+
     update.gender = bodyProfile.gender;
   }
 
