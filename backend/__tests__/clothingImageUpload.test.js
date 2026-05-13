@@ -92,10 +92,6 @@ describe("POST /api/clothingItems/me/:id/image", () => {
     expect(res.body.error).toBe("Item not found");
   });
 
-  it.todo(
-    "returns 403 when the item belongs to a different user once the route distinguishes ownership from missing items"
-  );
-
   it("returns 404 when the item belongs to a different user with the current route behavior", async () => {
     await createTestUser();
     const otherUserId = new mongoose.Types.ObjectId();
