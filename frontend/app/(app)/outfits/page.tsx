@@ -189,8 +189,8 @@ export default function OutfitsPage() {
         }
       />
 
-      <div className="flex flex-1 overflow-hidden">
-        <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-10 py-8">
+      <div className="relative flex flex-1 overflow-hidden">
+        <div className="flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto px-10 py-8">
           <div className="flex flex-wrap gap-2">
             {STYLE_FILTERS.map((s) => (
               <Chip
@@ -231,12 +231,14 @@ export default function OutfitsPage() {
         </div>
 
         {selectedOutfit && (
-          <OutfitDetailPanel
-            outfit={selectedOutfit}
-            onClose={() => setSelectedOutfit(null)}
-            onToggleFavourite={() => handleToggleFavourite(selectedOutfit.id)}
-            onDelete={() => handleDeleteOutfit(selectedOutfit.id)}
-          />
+          <div className="absolute inset-y-0 right-0 z-20 flex">
+            <OutfitDetailPanel
+              outfit={selectedOutfit}
+              onClose={() => setSelectedOutfit(null)}
+              onToggleFavourite={() => handleToggleFavourite(selectedOutfit.id)}
+              onDelete={() => handleDeleteOutfit(selectedOutfit.id)}
+            />
+          </div>
         )}
       </div>
     </>

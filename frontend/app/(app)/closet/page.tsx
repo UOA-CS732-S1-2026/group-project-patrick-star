@@ -362,9 +362,9 @@ export default function ClosetPage() {
         }
       />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="relative flex flex-1 overflow-hidden">
         {/* Closet grid */}
-        <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-10 py-8">
+        <div className="flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto px-10 py-8">
           <div className="flex flex-wrap gap-2">
             {CATEGORIES.map((c) => (
               <Chip
@@ -391,21 +391,24 @@ export default function ClosetPage() {
         </div>
 
         {/* Side panels */}
-        {selectedItem && !editing && (
-          <ItemDetailPanel
-            item={selectedItem}
-            onClose={() => setSelectedItem(null)}
-            onEdit={() => setEditing(true)}
-            onToggleFavourite={() => handleToggleFavourite(selectedItem.id)}
-          />
-        )}
-        {selectedItem && editing && (
-          <EditItemPanel
-            item={selectedItem}
-            onCancel={() => setEditing(false)}
-            onSave={handleSaveItem}
-            onRemove={handleRemoveItem}
-          />
+        {selectedItem && (
+          <div className="absolute inset-y-0 right-0 z-20 flex">
+            {editing ? (
+              <EditItemPanel
+                item={selectedItem}
+                onCancel={() => setEditing(false)}
+                onSave={handleSaveItem}
+                onRemove={handleRemoveItem}
+              />
+            ) : (
+              <ItemDetailPanel
+                item={selectedItem}
+                onClose={() => setSelectedItem(null)}
+                onEdit={() => setEditing(true)}
+                onToggleFavourite={() => handleToggleFavourite(selectedItem.id)}
+              />
+            )}
+          </div>
         )}
       </div>
 

@@ -24,7 +24,7 @@ export function OutfitDetailPanel({
   const preview = getOutfitPreviewItems(outfit.items);
 
   return (
-    <div className="flex h-full w-[340px] shrink-0 flex-col border-l border-border bg-white">
+    <div className="flex h-full w-[340px] shrink-0 flex-col overflow-y-auto border-l border-border bg-white">
       {/* Top bar */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-border">
         <button
@@ -56,7 +56,7 @@ export function OutfitDetailPanel({
       </div>
 
       {/* Body */}
-      <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-6 py-5">
+      <div className="flex flex-col gap-5 px-6 py-5">
         <h2 className="text-2xl font-bold text-foreground">{outfit.name}</h2>
 
         {tags.length > 0 && (
@@ -91,7 +91,7 @@ export function OutfitDetailPanel({
                     <img
                       src={item.imageUrl}
                       alt={item.name}
-                      className="h-full w-full object-cover"
+                      className="h-full w-full bg-white object-contain p-2"
                     />
                   ) : (
                     <span aria-hidden>{item.emoji ?? "👕"}</span>
@@ -111,10 +111,10 @@ export function OutfitDetailPanel({
             <img
               src={outfit.lastTryOnPreviewUrl}
               alt={`${outfit.name} try-on preview`}
-              className="aspect-square w-full object-cover"
+              className="h-auto w-full bg-neutral-50 object-contain"
             />
           ) : (
-            <div className="flex aspect-square items-center justify-center bg-neutral-50 px-6 text-center text-sm text-muted-foreground">
+            <div className="flex min-h-[320px] items-center justify-center bg-neutral-50 px-6 text-center text-sm text-muted-foreground">
               No try-on preview yet.
             </div>
           )}
