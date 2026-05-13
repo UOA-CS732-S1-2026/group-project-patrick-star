@@ -29,6 +29,7 @@ const CATEGORIES = [
   { label: "Outerwear", value: "Outerwear" },
 ] as const;
 
+// Modal collects display-friendly item details; the page translates them for the backend.
 export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProps) {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -42,6 +43,7 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Keep a local object URL for immediate preview while the parent performs the actual upload.
   function handleFile(file: File) {
     setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
@@ -59,11 +61,13 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
     if (file) handleFile(file);
   }
 
+  // Shoes skip clothing size because the backend schema treats footwear differently.
   function handleCategoryChange(nextCategory: string) {
     setCategory(nextCategory);
     if (nextCategory === "Shoes") setSize("");
   }
 
+  // Submit minimal item data and let the closet page decide the create/upload request order.
   function handleSubmit() {
     const resolvedName = name.trim() || category;
     onSubmit({
@@ -76,6 +80,7 @@ export function UploadItemModal({ open, onClose, onSubmit }: UploadItemModalProp
     handleClose();
   }
 
+  // Reset state on close so the next upload starts with a clean form.
   function handleClose() {
     setImageFile(null);
     setImagePreview(null);

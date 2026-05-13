@@ -26,6 +26,7 @@ const CATEGORY_VALUES = new Set<string>(
   CATEGORIES.map((category) => category.value),
 );
 
+// Side panel edits local display fields; the closet page persists them to the backend.
 export function EditItemPanel({ item, onCancel, onSave, onRemove }: EditItemPanelProps) {
   const [name, setName] = useState(item.name);
   const [category, setCategory] = useState(
@@ -34,7 +35,7 @@ export function EditItemPanel({ item, onCancel, onSave, onRemove }: EditItemPane
   const [size, setSize] = useState(item.category === "Shoes" ? "" : item.size ?? "");
   const [fit, setFit] = useState(item.fit ?? "");
 
-  // Image state — start from the existing imageUrl if present
+  // Start from the existing image URL, then swap to a local preview when a file is chosen.
   const [imagePreview, setImagePreview] = useState<string | null>(item.imageUrl ?? null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -43,6 +44,7 @@ export function EditItemPanel({ item, onCancel, onSave, onRemove }: EditItemPane
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [confirmRemove, setConfirmRemove] = useState(false);
 
+  // Store the file separately from the preview URL so the parent can upload the original file.
   function handleFile(file: File) {
     setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
@@ -60,11 +62,13 @@ export function EditItemPanel({ item, onCancel, onSave, onRemove }: EditItemPane
     if (file) handleFile(file);
   }
 
+  // Clearing size when switching to shoes mirrors the backend shoe-size exception.
   function handleCategoryChange(nextCategory: string) {
     setCategory(nextCategory);
     if (nextCategory === "Shoes") setSize("");
   }
 
+  // Return a preview-ready item immediately while passing the file for persistence.
   function handleSave() {
     const newImageUrl = imageFile
       ? URL.createObjectURL(imageFile)
@@ -83,6 +87,7 @@ export function EditItemPanel({ item, onCancel, onSave, onRemove }: EditItemPane
     );
   }
 
+  // Use a two-click delete guard because this panel has no separate confirmation modal.
   function handleRemove() {
     if (!confirmRemove) { setConfirmRemove(true); return; }
     onRemove(item);

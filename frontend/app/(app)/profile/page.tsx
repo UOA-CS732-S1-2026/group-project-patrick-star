@@ -76,10 +76,12 @@ function isStyleOption(value: string): value is StyleOption {
   return STYLE_OPTIONS.includes(value as StyleOption);
 }
 
+// Convert optional backend numbers into controlled text inputs.
 function toInputValue(value: number | null | undefined) {
   return value === null || value === undefined ? "" : String(value);
 }
 
+// Empty optional measurement fields should clear the backend value instead of becoming zero.
 function toNullableNumber(value: string) {
   return value.trim() === "" ? null : Number(value);
 }
@@ -189,6 +191,7 @@ export default function ProfilePage() {
     [preferredStyles],
   );
 
+  // Load profile details and counts together so the summary cards reflect the same account state.
   useEffect(() => {
     let cancelled = false;
 
@@ -212,6 +215,8 @@ export default function ProfilePage() {
         }
 
         const profile = (await profileResponse.json()) as ApiUserProfile;
+
+        // Counts are nice-to-have; profile data is the only request that blocks the page.
         const clothingItems = clothingResponse.ok
           ? ((await clothingResponse.json()) as unknown[])
           : [];
@@ -266,6 +271,8 @@ export default function ProfilePage() {
     value: BodyProfileState[Field]
   ) {
     setBodyProfile((current) => ({ ...current, [field]: value }));
+
+    // Clear field-level errors as soon as the user edits the field that caused them.
     setBodyProfileErrors((current) => {
       if (field !== "age" && field !== "gender") {
         return current;
@@ -281,6 +288,7 @@ export default function ProfilePage() {
     });
   }
 
+  // Style chips are stored as a replace-all array, matching the backend PATCH endpoint.
   function toggleStyle(style: StyleOption) {
     setPreferredStyles((current) =>
       current.includes(style)
@@ -289,6 +297,7 @@ export default function ProfilePage() {
     );
   }
 
+  // Saving the account name also notifies the sidebar so it can update without a full reload.
   async function handleSaveAccount() {
     setAccountSaving(true);
     setStatusMessage(null);

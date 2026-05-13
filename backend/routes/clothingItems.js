@@ -11,6 +11,7 @@ const { getUserByAuth0UserId } = require("../db/userService");
 const { uploadToCloudinary } = require("../lib/cloudinary");
 const upload = require("../middleware/upload");
 
+// Shoe records do not require clothing sizes, so remove stale size values before validation.
 function withoutShoeSize(data) {
   const itemData = { ...data };
 
@@ -21,6 +22,7 @@ function withoutShoeSize(data) {
   return itemData;
 }
 
+// Create a closet item owned by the authenticated user's MongoDB profile.
 router.post("/me", requireAuth, async (req, res) => {
   try {
     const auth0UserId = req.auth.payload.sub;
@@ -30,6 +32,7 @@ router.post("/me", requireAuth, async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
+    // Attach ownership server-side instead of trusting userId from the request body.
     const item = await addItem({
       ...withoutShoeSize(req.body),
       userId: user._id,
@@ -41,6 +44,7 @@ router.post("/me", requireAuth, async (req, res) => {
   }
 });
 
+// List the authenticated user's closet, optionally filtered by category, size, and fit.
 router.get("/me", requireAuth, async (req, res) => {
   try {
     const auth0UserId = req.auth.payload.sub;
@@ -58,6 +62,7 @@ router.get("/me", requireAuth, async (req, res) => {
   }
 });
 
+// Update a single owned closet item while preserving the owner boundary in the database query.
 router.put("/me/:id", requireAuth, async (req, res) => {
   try {
     const auth0UserId = req.auth.payload.sub;
@@ -68,6 +73,7 @@ router.put("/me/:id", requireAuth, async (req, res) => {
     }
 
     const update = withoutShoeSize(req.body);
+    // Switching an existing item to shoes must unset any previously saved size in MongoDB.
     const updateData =
       req.body.category === "shoes"
         ? { $set: update, $unset: { size: "" } }
@@ -85,6 +91,7 @@ router.put("/me/:id", requireAuth, async (req, res) => {
   }
 });
 
+// Delete a single owned closet item.
 router.delete("/me/:id", requireAuth, async (req, res) => {
   try {
     const auth0UserId = req.auth.payload.sub;
@@ -106,6 +113,7 @@ router.delete("/me/:id", requireAuth, async (req, res) => {
   }
 });
 
+// Upload one image angle for an owned closet item and save the Cloudinary URL into imageUrls.
 router.post("/me/:id/image", requireAuth, upload.single("image"), async (req, res) => {
   try {
     const auth0UserId = req.auth.payload.sub;
@@ -119,6 +127,7 @@ router.post("/me/:id/image", requireAuth, upload.single("image"), async (req, re
       return res.status(400).json({ error: "No file uploaded" });
     }
 
+    // Keep image slots explicit so clients cannot write arbitrary nested fields.
     const slot = req.body.slot || "front";
     const allowedSlots = ["front", "back", "side"];
 
@@ -126,6 +135,7 @@ router.post("/me/:id/image", requireAuth, upload.single("image"), async (req, re
       return res.status(400).json({ error: "Invalid image slot" });
     }
 
+    // Save only the requested angle so existing front/back/side URLs are preserved.
     const url = await uploadToCloudinary(req.file.buffer, "clothing");
     const item = await updateItemForUser(req.params.id, user._id, {
       [`imageUrls.${slot}`]: url,

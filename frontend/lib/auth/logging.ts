@@ -19,6 +19,7 @@ type AuthSessionLike = {
 };
 
 export function maskToken(token: string) {
+  // Keep enough token shape for debugging without logging the full secret.
   if (token.length <= 16) {
     return token;
   }

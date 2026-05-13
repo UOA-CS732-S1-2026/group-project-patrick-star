@@ -43,9 +43,12 @@ interface StyleProfile {
 
 const apiUrl = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5001")
   .replace(/\/+$/, "");
+
+// Keep enough state in localStorage to recover an in-flight try-on after navigation or refresh.
 const pendingTryOnStorageKey = "wardrobe.home.pendingTryOn";
 const pendingTryOnMaxAgeMs = 12 * 60 * 1000;
 
+// Lightweight styling profiles let the random generator bias choices without needing backend AI.
 const styleProfiles: readonly StyleProfile[] = [
   {
     label: "Minimal",
@@ -74,6 +77,7 @@ const styleProfiles: readonly StyleProfile[] = [
   },
 ];
 
+// Neutral colors are used as simple compatibility hints when pairing separate closet items.
 const neutralColourWords = [
   "black",
   "white",
@@ -160,6 +164,7 @@ async function parseApiError(response: Response, fallback: string) {
   }
 }
 
+// Ignore stale pending try-ons so the home page does not wait forever on an old request.
 function readPendingTryOn() {
   if (typeof window === "undefined") return null;
 
@@ -202,6 +207,7 @@ function matchingWords(text: string, words: readonly string[]) {
   return words.filter((word) => text.includes(word));
 }
 
+// Score items using style keywords, shared neutral colors, shoe preferences, and image availability.
 function itemScore(
   item: ClothingItem,
   profile: StyleProfile,
@@ -244,6 +250,7 @@ function pickStyledItem(
     .sort((a, b) => b.score - a.score);
   const shortlist = ranked.slice(0, Math.min(3, ranked.length));
 
+  // Choose from the top few items so repeated generations feel varied but still intentional.
   return pickRandom(shortlist).item;
 }
 
@@ -298,6 +305,7 @@ function getGeneratorReadiness(closetItems: ClothingItem[]) {
   };
 }
 
+// Build a complete outfit base from either dress-only or top-and-bottom combinations.
 function generateRandomOutfit(closetItems: ClothingItem[]): Outfit | null {
   const groups = getClosetGroups(closetItems);
   const canUseSeparates = groups.tops.length > 0 && groups.bottoms.length > 0;
@@ -348,6 +356,7 @@ function OutfitPreviewStage({
   aiPreviewUrl: string | null;
   isGeneratingAi: boolean;
 }) {
+  // Always render four slots so generated and saved outfits share the same visual frame.
   const previewItems = outfit
     ? getOutfitPreviewItems(outfit.items)
     : [null, null, null, null];
@@ -520,6 +529,7 @@ export default function HomePage() {
     [closetItems.length, favouriteOutfits.length, outfitIdeaCount],
   );
 
+  // Load all dashboard data together so stats, cards, and preview state stay in sync.
   const loadDashboard = useCallback(async () => {
     setLoading(true);
     setIsLoadingProfileImage(true);
@@ -546,6 +556,8 @@ export default function HomePage() {
       const nextClosetItems = apiClosetItems.map(toClothingItem);
       const nextOutfits = apiOutfits.map(toOutfit);
       const pendingTryOn = readPendingTryOn();
+
+      // Match local pending state against the latest outfit list returned by the backend.
       const pendingOutfit = pendingTryOn
         ? nextOutfits.find((outfit) => outfit.id === pendingTryOn.outfitId)
         : null;
@@ -562,6 +574,8 @@ export default function HomePage() {
 
       setClosetItems(nextClosetItems);
       setOutfits(nextOutfits);
+
+      // Prefer showing a completed or still-pending try-on before generating a fresh idea.
       if (pendingOutfit?.lastTryOnPreviewUrl) {
         clearPendingTryOn();
         setPendingTryOnId(null);
@@ -599,6 +613,7 @@ export default function HomePage() {
     loadDashboard();
   }, [loadDashboard]);
 
+  // Poll saved outfits while a try-on is pending because the backend stores the preview on the outfit.
   const refreshPendingTryOn = useCallback(async () => {
     const pending = readPendingTryOn();
 
@@ -663,6 +678,7 @@ export default function HomePage() {
     setAiStatusMessage(null);
   }
 
+  // Generated home outfits must be saved before the builder or try-on API can reference them.
   async function persistGeneratedOutfit(outfit: Outfit, statusMessage: string) {
     if (!outfit.id.startsWith("generated-")) {
       return outfit.id;
@@ -694,6 +710,7 @@ export default function HomePage() {
     return savedOutfit.id;
   }
 
+  // Request a virtual try-on after checking both the model photo and garment image requirements.
   async function handleGenerateAiPreview() {
     if (!generatedOutfit || isGeneratingAi) return;
 
@@ -728,6 +745,7 @@ export default function HomePage() {
         startedAt: Date.now(),
       };
 
+      // Store pending state before the provider call so a refresh can resume status tracking.
       writePendingTryOn(pendingTryOn);
       setPendingTryOnId(outfitId);
       setAiStatusMessage("Creating your AI preview. You can come back shortly.");
@@ -772,6 +790,7 @@ export default function HomePage() {
     }
   }
 
+  // Saving first gives the builder a stable outfit id instead of passing large state through the URL.
   async function handleOpenBuilder() {
     if (isOpeningBuilder || isTryOnLocked) return;
 
@@ -798,6 +817,7 @@ export default function HomePage() {
     }
   }
 
+  // Collapse several backend/profile states into one helper message for the AI preview controls.
   const aiHelperMessage = useMemo(() => {
     if (aiErrorMessage) return aiErrorMessage;
     if (aiStatusMessage) return aiStatusMessage;

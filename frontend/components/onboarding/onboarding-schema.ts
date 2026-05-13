@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { BODY_SHAPES, GENDERS, STYLE_OPTIONS } from "./onboarding-data";
 
+// FileList only exists in the browser, so the schema must tolerate server-side evaluation.
 const fileListSchema = z.custom<FileList | null>((value) => {
   if (value == null) {
     return true;
@@ -68,6 +69,7 @@ export const onboardingStep3Schema = z
     selectedModelId: z.string().nullable(),
   })
   .superRefine((value, ctx) => {
+    // Users can either upload their own model photo or choose one of the defaults.
     const hasFile = Boolean(value.modelPhoto?.[0]);
     const hasModel = Boolean(value.selectedModelId);
 
@@ -121,6 +123,7 @@ export type OnboardingStep1Values = z.infer<typeof onboardingStep1Schema>;
 export type OnboardingStep2Values = z.infer<typeof onboardingStep2Schema>;
 export type OnboardingStep3Values = z.infer<typeof onboardingStep3Schema>;
 
+// Defaults keep react-hook-form controlled while allowing optional onboarding answers.
 export const DEFAULT_ONBOARDING_VALUES: OnboardingFormValues = {
   firstName: "",
   lastName: "",

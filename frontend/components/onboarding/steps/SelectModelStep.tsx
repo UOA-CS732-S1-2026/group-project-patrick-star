@@ -34,17 +34,20 @@ export function SelectModelStep({ onBack }: SelectModelStepProps) {
     [selectedFiles],
   );
 
+  // Show the guidance first because photo quality strongly affects try-on results.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setShowGuidelines(true);
   }, []);
 
+  // Selecting default models needs a concrete id for validation and final persistence.
   useEffect(() => {
     if (modelMode === "select" && !selectedModelId && MODEL_OPTIONS[0]) {
       setValue("selectedModelId", MODEL_OPTIONS[0].id, { shouldDirty: true });
     }
   }, [modelMode, selectedModelId, setValue]);
 
+  // Revoke object URLs to avoid leaking browser memory when replacing uploads.
   useEffect(() => {
     return () => {
       if (uploadedPhotoPreviewUrl) {
@@ -53,6 +56,7 @@ export function SelectModelStep({ onBack }: SelectModelStepProps) {
     };
   }, [uploadedPhotoPreviewUrl]);
 
+  // Dropping a file switches the step back into upload mode.
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
 
@@ -65,6 +69,7 @@ export function SelectModelStep({ onBack }: SelectModelStepProps) {
     setValue("modelPhoto", files, { shouldDirty: true });
   };
 
+  // Let react-hook-form capture the FileList, then mark upload as the selected mode.
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     fileRegistration.onChange(event);
     setValue("modelMode", "upload", { shouldDirty: true });

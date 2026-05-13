@@ -14,12 +14,14 @@ export default async function AppSectionLayout({
 }) {
   const session = await auth0.getSession();
 
+  // Protected route group: unauthenticated users must start at Auth0 login.
   if (!session) {
     redirect("/login");
   }
 
   const { token } = await auth0.getAccessToken();
 
+  // Without an API access token, client pages cannot call the backend safely.
   if (!token) {
     redirect("/login");
   }
@@ -35,6 +37,7 @@ export default async function AppSectionLayout({
     isCompleteOnboarding?: boolean;
   };
 
+  // Completed onboarding gates the main app so profile/body/model data exists first.
   if (!user.isCompleteOnboarding) {
     redirect("/onboarding");
   }

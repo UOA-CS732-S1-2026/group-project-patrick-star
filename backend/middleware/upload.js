@@ -1,5 +1,6 @@
 const multer = require("multer");
 
+// Store uploads in memory because images are streamed directly to Cloudinary instead of disk.
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },

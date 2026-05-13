@@ -7,6 +7,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Convert an uploaded buffer into a readable stream for Cloudinary's upload_stream API.
 function uploadToCloudinary(buffer, folder) {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
@@ -20,6 +21,7 @@ function uploadToCloudinary(buffer, folder) {
   });
 }
 
+// Persist externally generated images so try-on previews remain available after Replicate URLs expire.
 function uploadImageUrlToCloudinary(imageUrl, folder) {
   return cloudinary.uploader
     .upload(imageUrl, { folder, resource_type: "image" })
