@@ -81,6 +81,7 @@ function toOutfit(api: ApiOutfit): Outfit {
 
 export default function OutfitsPage() {
   const [outfits, setOutfits] = useState<Outfit[]>([]);
+  const [loading, setLoading] = useState(true);
   const [styleFilter, setStyleFilter] = useState<StyleFilter>("All");
   const [query, setQuery] = useState("");
   const [selectedOutfit, setSelectedOutfit] = useState<Outfit | null>(null);
@@ -100,6 +101,8 @@ export default function OutfitsPage() {
   }, [outfits, styleFilter, query]);
 
   const loadOutfits = useCallback(async () => {
+    setLoading(true);
+
     try {
       const response = await fetch(`${apiUrl}/api/outfits/me`, {
         headers: await getAuthHeaders(),
@@ -110,6 +113,8 @@ export default function OutfitsPage() {
     } catch (error) {
       console.error(error);
       setOutfits([]);
+    } finally {
+      setLoading(false);
     }
   }, [apiUrl]);
 
@@ -180,7 +185,7 @@ export default function OutfitsPage() {
               />
             </div>
             <div className="text-sm text-muted-foreground whitespace-nowrap">
-              {outfits.length} outfits
+              {loading ? "" : `${outfits.length} outfits`}
             </div>
             <Link href="/outfits/builder">
               <Button leftIcon={<span aria-hidden>+</span>}>Create Outfit</Button>
@@ -204,7 +209,13 @@ export default function OutfitsPage() {
             ))}
           </div>
 
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="flex flex-1 items-center justify-center py-24 text-center">
+              <p className="text-base font-medium text-muted-foreground">
+                Loading outfits...
+              </p>
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-4 py-24 text-center">
               <span className="text-5xl">✨</span>
               <p className="text-lg font-semibold text-foreground">No outfits yet</p>

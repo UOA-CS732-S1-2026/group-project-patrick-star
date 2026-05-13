@@ -58,6 +58,7 @@ async function getAuthHeaders(
 export default function ClosetPage() {
   const searchParams = useSearchParams();
   const [items, setItems] = useState<ClothingItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState<Category>("All");
   const [query, setQuery] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -142,6 +143,10 @@ export default function ClosetPage() {
     let cancelled = false;
 
     async function loadItems() {
+      if (!cancelled) {
+        setLoading(true);
+      }
+
       try {
         const response = await fetch(`${apiUrl}/api/clothingItems/me`, {
           headers: await getAuthHeaders(),
@@ -161,6 +166,10 @@ export default function ClosetPage() {
 
         if (!cancelled) {
           setItems([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
         }
       }
     }
@@ -350,7 +359,7 @@ export default function ClosetPage() {
               />
             </div>
             <div className="text-sm text-muted-foreground whitespace-nowrap">
-              {items.length} items
+              {loading ? "" : `${items.length} items`}
             </div>
             <Button
               leftIcon={<span aria-hidden>+</span>}
@@ -378,16 +387,24 @@ export default function ClosetPage() {
             ))}
           </div>
 
-          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8">
-            {filtered.map((item) => (
-              <ItemCard
-                key={item.id}
-                item={item}
-                onClick={() => handleSelectItem(item)}
-                onToggleFavourite={() => handleToggleFavourite(item.id)}
-              />
-            ))}
-          </div>
+          {loading ? (
+            <div className="flex flex-1 items-center justify-center py-24 text-center">
+              <p className="text-base font-medium text-muted-foreground">
+                Loading items...
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8">
+              {filtered.map((item) => (
+                <ItemCard
+                  key={item.id}
+                  item={item}
+                  onClick={() => handleSelectItem(item)}
+                  onToggleFavourite={() => handleToggleFavourite(item.id)}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Side panels */}
