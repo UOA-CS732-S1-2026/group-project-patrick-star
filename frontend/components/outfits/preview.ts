@@ -1,5 +1,6 @@
 import { type ClothingItem } from "@/components/ui/ItemCard";
 
+// Keep previews visually stable by assigning common outfit categories to fixed grid slots.
 const PREVIEW_CATEGORY_ORDER = ["Tops", "Outerwear", "Shoes", "Bottoms"] as const;
 
 export function getOutfitPreviewItems(items: ClothingItem[]): (ClothingItem | null)[] {
@@ -15,6 +16,7 @@ export function getOutfitPreviewItems(items: ClothingItem[]): (ClothingItem | nu
     return null;
   });
 
+  // Fill any empty preview slots with remaining items so accessories or dresses still appear.
   for (const item of items) {
     if (usedIds.has(item.id)) continue;
 

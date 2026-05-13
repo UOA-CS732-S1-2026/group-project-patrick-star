@@ -59,6 +59,7 @@ function toClothingItem(item: ApiClothingItem): ClothingItem {
   };
 }
 
+// Normalize populated backend outfits into the shared Outfit card shape.
 function toOutfit(api: ApiOutfit): Outfit {
   return {
     id: api._id,
@@ -77,6 +78,7 @@ export default function OutfitsPage() {
   const [selectedOutfit, setSelectedOutfit] = useState<Outfit | null>(null);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5001";
 
+  // Filter locally so favourite toggles and deletes feel instant.
   const filtered = useMemo(() => {
     return outfits.filter((outfit) => {
       const matchStyle = styleFilter === "All" || outfit.style === styleFilter;
@@ -85,6 +87,7 @@ export default function OutfitsPage() {
     });
   }, [outfits, styleFilter, query]);
 
+  // Fetch saved outfits once and keep them in frontend card-friendly format.
   const loadOutfits = useCallback(async () => {
     try {
       const response = await fetch(`${apiUrl}/api/outfits/me`, {
@@ -107,6 +110,7 @@ export default function OutfitsPage() {
     setSelectedOutfit((prev) => (prev?.id === outfit.id ? null : outfit));
   }
 
+  // Optimistic favourite updates keep the grid responsive, with rollback on API failure.
   async function handleToggleFavourite(id: string) {
     const current = outfits.find((o) => o.id === id);
     if (!current) return;
@@ -138,6 +142,7 @@ export default function OutfitsPage() {
     }
   }
 
+  // Deleting the selected outfit also closes the detail panel.
   async function handleDeleteOutfit(id: string) {
     try {
       const response = await fetch(`${apiUrl}/api/outfits/me/${id}`, {

@@ -53,6 +53,7 @@ export const MODEL_OPTIONS = [
   },
 ] as const;
 
+// Step order is the single source of truth for URL params, titles, and progress count.
 export type BodyShape = (typeof BODY_SHAPES)[number];
 export type Gender = (typeof GENDERS)[number];
 export type StyleOption = (typeof STYLE_OPTIONS)[number];
@@ -64,6 +65,7 @@ export const ONBOARDING_STEP_ORDER: OnboardingStepKey[] = [
 ];
 
 export function getStepIndex(step: string | string[] | undefined): number {
+  // Unknown or missing URL step values fall back to the first onboarding step.
   const value = Array.isArray(step) ? step[0] : step;
   const resolved = ONBOARDING_STEP_ORDER.indexOf(value as OnboardingStepKey);
 

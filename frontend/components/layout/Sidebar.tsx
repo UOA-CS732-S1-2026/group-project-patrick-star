@@ -38,6 +38,7 @@ export function Sidebar({ nav = defaultNav, user }: SidebarProps) {
     user ?? { name: "Profile", itemCount: undefined, avatarEmoji: "👤" },
   );
 
+  // Refresh profile name and closet count client-side after the authenticated shell renders.
   useEffect(() => {
     let cancelled = false;
 
@@ -70,6 +71,7 @@ export function Sidebar({ nav = defaultNav, user }: SidebarProps) {
       }
     }
 
+    // Profile page dispatches this event after saves so the sidebar can update immediately.
     function handleProfileUpdated(event: Event) {
       const detail = (
         event as CustomEvent<{
@@ -91,6 +93,7 @@ export function Sidebar({ nav = defaultNav, user }: SidebarProps) {
     };
   }, []);
 
+  // Clear local token caches before handing off to Auth0 logout.
   function handleSignOut() {
     localStorage.removeItem("access_token");
     sessionStorage.removeItem("access_token");

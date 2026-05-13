@@ -7,6 +7,7 @@ export async function getAuthHeaders(
     headers["Content-Type"] = "application/json";
   }
 
+  // Client components call this route so Auth0 tokens stay server-managed.
   const res = await fetch("/api/auth/token");
 
   if (res.ok) {
