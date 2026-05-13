@@ -31,7 +31,7 @@ export function ItemDetailPanel({
   ].filter(Boolean) as string[];
 
   return (
-    <div className="flex h-full w-[340px] shrink-0 flex-col border-l border-border bg-white">
+    <div className="flex h-full w-[340px] shrink-0 flex-col border-l border-border bg-white shadow-2xl">
       {/* Top bar */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-border">
         <button

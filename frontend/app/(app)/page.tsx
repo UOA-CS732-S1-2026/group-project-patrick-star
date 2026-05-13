@@ -1046,9 +1046,14 @@ export default function HomePage() {
           </div>
 
           {favouriteOutfits.length > 0 ? (
-            <div className="grid gap-5 md:grid-cols-3">
+            <div className="flex flex-wrap gap-4">
               {favouriteOutfits.map((outfit) => (
-                <OutfitCard key={outfit.id} outfit={outfit} />
+                <OutfitCard
+                  key={outfit.id}
+                  outfit={outfit}
+                  compact
+                  className="w-full max-w-[220px]"
+                />
               ))}
             </div>
           ) : (

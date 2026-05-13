@@ -10,7 +10,16 @@ import { OutfitCard, type Outfit } from "@/components/outfits/OutfitCard";
 import { OutfitDetailPanel } from "@/components/outfits/OutfitDetailPanel";
 import { type ClothingItem } from "@/components/ui/ItemCard";
 
-const STYLE_FILTERS = ["All", "Smart", "Street", "Casual", "Fun", "Minimal", "Dresses"] as const;
+const STYLE_FILTERS = [
+  "All",
+  "Favourited",
+  "Smart",
+  "Street",
+  "Casual",
+  "Fun",
+  "Minimal",
+  "Dresses",
+] as const;
 type StyleFilter = (typeof STYLE_FILTERS)[number];
 
 interface ApiClothingItem {
@@ -73,6 +82,7 @@ function toOutfit(api: ApiOutfit): Outfit {
 
 export default function OutfitsPage() {
   const [outfits, setOutfits] = useState<Outfit[]>([]);
+  const [loading, setLoading] = useState(true);
   const [styleFilter, setStyleFilter] = useState<StyleFilter>("All");
   const [query, setQuery] = useState("");
   const [selectedOutfit, setSelectedOutfit] = useState<Outfit | null>(null);
@@ -81,7 +91,12 @@ export default function OutfitsPage() {
   // Filter locally so favourite toggles and deletes feel instant.
   const filtered = useMemo(() => {
     return outfits.filter((outfit) => {
-      const matchStyle = styleFilter === "All" || outfit.style === styleFilter;
+      const matchStyle =
+        styleFilter === "All"
+          ? true
+          : styleFilter === "Favourited"
+            ? Boolean(outfit.favourite)
+            : outfit.style === styleFilter;
       const matchQuery = !query || outfit.name.toLowerCase().includes(query.toLowerCase());
       return matchStyle && matchQuery;
     });
@@ -89,6 +104,8 @@ export default function OutfitsPage() {
 
   // Fetch saved outfits once and keep them in frontend card-friendly format.
   const loadOutfits = useCallback(async () => {
+    setLoading(true);
+
     try {
       const response = await fetch(`${apiUrl}/api/outfits/me`, {
         headers: await getAuthHeaders(),
@@ -99,6 +116,8 @@ export default function OutfitsPage() {
     } catch (error) {
       console.error(error);
       setOutfits([]);
+    } finally {
+      setLoading(false);
     }
   }, [apiUrl]);
 
@@ -171,7 +190,7 @@ export default function OutfitsPage() {
               />
             </div>
             <div className="text-sm text-muted-foreground whitespace-nowrap">
-              {outfits.length} outfits
+              {loading ? "" : `${outfits.length} outfits`}
             </div>
             <Link href="/outfits/builder">
               <Button leftIcon={<span aria-hidden>+</span>}>Create Outfit</Button>
@@ -180,8 +199,8 @@ export default function OutfitsPage() {
         }
       />
 
-      <div className="flex flex-1 overflow-hidden">
-        <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-10 py-8">
+      <div className="relative flex flex-1 overflow-hidden">
+        <div className="flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto px-10 py-8">
           <div className="flex flex-wrap gap-2">
             {STYLE_FILTERS.map((s) => (
               <Chip
@@ -195,7 +214,13 @@ export default function OutfitsPage() {
             ))}
           </div>
 
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="flex flex-1 items-center justify-center py-24 text-center">
+              <p className="text-base font-medium text-muted-foreground">
+                Loading outfits...
+              </p>
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-4 py-24 text-center">
               <span className="text-5xl">✨</span>
               <p className="text-lg font-semibold text-foreground">No outfits yet</p>
@@ -222,12 +247,14 @@ export default function OutfitsPage() {
         </div>
 
         {selectedOutfit && (
-          <OutfitDetailPanel
-            outfit={selectedOutfit}
-            onClose={() => setSelectedOutfit(null)}
-            onToggleFavourite={() => handleToggleFavourite(selectedOutfit.id)}
-            onDelete={() => handleDeleteOutfit(selectedOutfit.id)}
-          />
+          <div className="absolute inset-y-0 right-0 z-20 flex">
+            <OutfitDetailPanel
+              outfit={selectedOutfit}
+              onClose={() => setSelectedOutfit(null)}
+              onToggleFavourite={() => handleToggleFavourite(selectedOutfit.id)}
+              onDelete={() => handleDeleteOutfit(selectedOutfit.id)}
+            />
+          </div>
         )}
       </div>
     </>

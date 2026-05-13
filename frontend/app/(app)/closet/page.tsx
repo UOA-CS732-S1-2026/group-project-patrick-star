@@ -16,6 +16,7 @@ import { EditItemPanel } from "@/components/closet/EditItemPanel";
 
 const CATEGORIES = [
   "All",
+  "Favourited",
   "Tops",
   "Bottoms",
   "Outerwear",
@@ -56,6 +57,7 @@ async function getAuthHeaders(
 export default function ClosetPage() {
   const searchParams = useSearchParams();
   const [items, setItems] = useState<ClothingItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState<Category>("All");
   const [query, setQuery] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -66,7 +68,12 @@ export default function ClosetPage() {
   // Filtering stays client-side because the closet list is already scoped to the user.
   const filtered = useMemo(() => {
     return items.filter((item) => {
-      const matchCategory = category === "All" || item.category === category;
+      const matchCategory =
+        category === "All"
+          ? true
+          : category === "Favourited"
+            ? Boolean(item.favourite)
+            : item.category === category;
       const matchQuery =
         !query || item.name.toLowerCase().includes(query.toLowerCase());
       return matchCategory && matchQuery;
@@ -139,6 +146,10 @@ export default function ClosetPage() {
     let cancelled = false;
 
     async function loadItems() {
+      if (!cancelled) {
+        setLoading(true);
+      }
+
       try {
         const response = await fetch(`${apiUrl}/api/clothingItems/me`, {
           headers: await getAuthHeaders(),
@@ -158,6 +169,10 @@ export default function ClosetPage() {
 
         if (!cancelled) {
           setItems([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
         }
       }
     }
@@ -352,7 +367,7 @@ export default function ClosetPage() {
               />
             </div>
             <div className="text-sm text-muted-foreground whitespace-nowrap">
-              {items.length} items
+              {loading ? "" : `${items.length} items`}
             </div>
             <Button
               leftIcon={<span aria-hidden>+</span>}
@@ -364,9 +379,9 @@ export default function ClosetPage() {
         }
       />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="relative flex flex-1 overflow-hidden">
         {/* Closet grid */}
-        <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-10 py-8">
+        <div className="flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto px-10 py-8">
           <div className="flex flex-wrap gap-2">
             {CATEGORIES.map((c) => (
               <Chip
@@ -380,34 +395,45 @@ export default function ClosetPage() {
             ))}
           </div>
 
-          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8">
-            {filtered.map((item) => (
-              <ItemCard
-                key={item.id}
-                item={item}
-                onClick={() => handleSelectItem(item)}
-                onToggleFavourite={() => handleToggleFavourite(item.id)}
-              />
-            ))}
-          </div>
+          {loading ? (
+            <div className="flex flex-1 items-center justify-center py-24 text-center">
+              <p className="text-base font-medium text-muted-foreground">
+                Loading items...
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8">
+              {filtered.map((item) => (
+                <ItemCard
+                  key={item.id}
+                  item={item}
+                  onClick={() => handleSelectItem(item)}
+                  onToggleFavourite={() => handleToggleFavourite(item.id)}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Side panels */}
-        {selectedItem && !editing && (
-          <ItemDetailPanel
-            item={selectedItem}
-            onClose={() => setSelectedItem(null)}
-            onEdit={() => setEditing(true)}
-            onToggleFavourite={() => handleToggleFavourite(selectedItem.id)}
-          />
-        )}
-        {selectedItem && editing && (
-          <EditItemPanel
-            item={selectedItem}
-            onCancel={() => setEditing(false)}
-            onSave={handleSaveItem}
-            onRemove={handleRemoveItem}
-          />
+        {selectedItem && (
+          <div className="absolute inset-y-0 right-0 z-20 flex">
+            {editing ? (
+              <EditItemPanel
+                item={selectedItem}
+                onCancel={() => setEditing(false)}
+                onSave={handleSaveItem}
+                onRemove={handleRemoveItem}
+              />
+            ) : (
+              <ItemDetailPanel
+                item={selectedItem}
+                onClose={() => setSelectedItem(null)}
+                onEdit={() => setEditing(true)}
+                onToggleFavourite={() => handleToggleFavourite(selectedItem.id)}
+              />
+            )}
+          </div>
         )}
       </div>
 
