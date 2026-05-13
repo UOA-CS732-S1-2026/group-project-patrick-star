@@ -5,6 +5,7 @@ process.env.REPLICATE_API_TOKEN = "test-token";
 
 const mockRun = jest.fn();
 const mockPopulate = jest.fn();
+const mockUploadImageUrlToCloudinary = jest.fn();
 
 jest.mock("replicate", () => {
   return jest.fn().mockImplementation(() => ({
@@ -28,12 +29,17 @@ jest.mock("../db/userService", () => ({
   getUserByAuth0UserId: jest.fn(),
 }));
 
+jest.mock("../lib/cloudinary", () => ({
+  uploadImageUrlToCloudinary: jest.fn(),
+}));
+
 jest.mock("../models/Outfit", () => ({
   findById: jest.fn(),
 }));
 
 const Outfit = require("../models/Outfit");
 const { getUserByAuth0UserId } = require("../db/userService");
+const { uploadImageUrlToCloudinary } = require("../lib/cloudinary");
 const tryonRouter = require("../routes/tryon");
 
 const app = express();
@@ -52,6 +58,8 @@ describe("POST /api/tryon", () => {
     jest.clearAllMocks();
     process.env.REPLICATE_API_TOKEN = "test-token";
     getUserByAuth0UserId.mockResolvedValue(user);
+    uploadImageUrlToCloudinary.mockImplementation(mockUploadImageUrlToCloudinary);
+    mockUploadImageUrlToCloudinary.mockResolvedValue("https://res.cloudinary.com/demo/image/upload/tryon-preview.jpg");
   });
 
   it("returns 400 if humanImageUrl is missing", async () => {
@@ -139,6 +147,7 @@ describe("POST /api/tryon", () => {
     mockRun.mockResolvedValue("https://example.com/result.jpg");
     mockOutfitLookup({
       userId: { toString: () => "user-1" },
+      save: jest.fn().mockResolvedValue(undefined),
       items: [
         {
           name: "Tshirt",
@@ -161,7 +170,7 @@ describe("POST /api/tryon", () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
       success: true,
-      imageUrl: "https://example.com/result.jpg",
+      imageUrl: "https://res.cloudinary.com/demo/image/upload/tryon-preview.jpg",
     });
     expect(mockRun).toHaveBeenCalledWith("openai/gpt-image-2", {
       input: {
@@ -180,6 +189,40 @@ describe("POST /api/tryon", () => {
     });
     expect(mockRun.mock.calls[0][1].input.prompt).toContain(
       "Tshirt (upper_body), Jeans (lower_body)",
+    );
+    expect(uploadImageUrlToCloudinary).toHaveBeenCalledWith(
+      "https://example.com/result.jpg",
+      "tryon-previews",
+    );
+  });
+
+  it("handles Replicate output URLs returned as URL objects", async () => {
+    mockRun.mockResolvedValue([
+      {
+        url: () => new URL("https://example.com/result-from-url-object.jpg"),
+      },
+    ]);
+    mockOutfitLookup({
+      userId: { toString: () => "user-1" },
+      save: jest.fn().mockResolvedValue(undefined),
+      items: [
+        {
+          name: "Tshirt",
+          category: "upper_body",
+          imageUrls: { front: "https://example.com/tshirt-front.jpg" },
+        },
+      ],
+    });
+
+    const res = await request(app).post("/api/tryon").send({
+      humanImageUrl: "https://example.com/person.jpg",
+      outfitId: "outfit-1",
+    });
+
+    expect(res.status).toBe(200);
+    expect(uploadImageUrlToCloudinary).toHaveBeenCalledWith(
+      "https://example.com/result-from-url-object.jpg",
+      "tryon-previews",
     );
   });
 

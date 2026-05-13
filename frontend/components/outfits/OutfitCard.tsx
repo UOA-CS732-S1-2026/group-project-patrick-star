@@ -2,6 +2,7 @@
 
 import { type ClothingItem } from "@/components/ui/ItemCard";
 import { cn } from "@/components/ui/cn";
+import { getOutfitPreviewItems } from "@/components/outfits/preview";
 
 export interface Outfit {
   id: string;
@@ -12,6 +13,7 @@ export interface Outfit {
   notes?: string;
   items: ClothingItem[];
   favourite?: boolean;
+  lastTryOnPreviewUrl?: string | null;
 }
 
 interface OutfitCardProps {
@@ -24,11 +26,7 @@ interface OutfitCardProps {
 }
 
 export function OutfitCard({ outfit, selected, onClick, onToggleFavourite }: OutfitCardProps) {
-  // Take first 4 items for the 2×2 preview grid; pad with nulls
-  const preview: (ClothingItem | null)[] = [
-    ...outfit.items.slice(0, 4),
-    ...Array(Math.max(0, 4 - outfit.items.length)).fill(null),
-  ];
+  const preview: (ClothingItem | null)[] = getOutfitPreviewItems(outfit.items);
 
   return (
     <div

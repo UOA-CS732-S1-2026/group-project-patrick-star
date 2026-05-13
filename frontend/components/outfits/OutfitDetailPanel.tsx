@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { type Outfit } from "@/components/outfits/OutfitCard";
+import { getOutfitPreviewItems } from "@/components/outfits/preview";
 import { cn } from "@/components/ui/cn";
 
 interface OutfitDetailPanelProps {
@@ -20,10 +21,7 @@ export function OutfitDetailPanel({
 }: OutfitDetailPanelProps) {
   const tags = [outfit.style, outfit.occasion, outfit.season].filter(Boolean) as string[];
 
-  const preview = [
-    ...outfit.items.slice(0, 4),
-    ...Array(Math.max(0, 4 - outfit.items.length)).fill(null),
-  ];
+  const preview = getOutfitPreviewItems(outfit.items);
 
   return (
     <div className="flex h-full w-[340px] shrink-0 flex-col border-l border-border bg-white">
@@ -102,6 +100,24 @@ export function OutfitDetailPanel({
               </div>
             ))}
           </div>
+        </div>
+
+        <div className="overflow-hidden rounded-2xl border border-border bg-white">
+          <div className="border-b border-border px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Latest Try-On Preview
+          </div>
+          {outfit.lastTryOnPreviewUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={outfit.lastTryOnPreviewUrl}
+              alt={`${outfit.name} try-on preview`}
+              className="aspect-square w-full object-cover"
+            />
+          ) : (
+            <div className="flex aspect-square items-center justify-center bg-neutral-50 px-6 text-center text-sm text-muted-foreground">
+              No try-on preview yet.
+            </div>
+          )}
         </div>
 
         {/* Items list */}

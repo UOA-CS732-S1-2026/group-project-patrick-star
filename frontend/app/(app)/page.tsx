@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { type ClothingItem } from "@/components/ui/ItemCard";
+import { getOutfitPreviewItems } from "@/components/outfits/preview";
 import { getAuthHeaders } from "@/lib/api/auth";
 
 interface ApiClothingItem {
@@ -120,10 +121,9 @@ function OutfitPreview({
   outfit: Outfit | null;
   aiPreview: boolean;
 }) {
-  const top = outfit?.items.find((item) => item.category === "Tops");
-  const bottom = outfit?.items.find((item) => item.category === "Bottoms");
-  const shoes = outfit?.items.find((item) => item.category === "Shoes");
-  const outerwear = outfit?.items.find((item) => item.category === "Outerwear");
+  const previewItems = outfit
+    ? getOutfitPreviewItems(outfit.items)
+    : [null, null, null, null];
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-border bg-neutral-100">
@@ -136,41 +136,27 @@ function OutfitPreview({
         </Badge>
       </div>
 
-      <div className="grid min-h-[420px] grid-cols-[1fr_180px] gap-6 p-6 pt-16">
+      <div className="grid min-h-[420px] grid-cols-[minmax(0,1fr)_180px] gap-6 p-6 pt-16">
         <div className="flex items-center justify-center">
-          <div className="flex w-52 flex-col overflow-hidden rounded-[28px] border border-border bg-white shadow-lg">
-            <div className="flex h-28 items-center justify-center bg-white text-6xl">
-              {outerwear?.imageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={outerwear.imageUrl} alt={outerwear.name} className="h-full w-full object-cover" />
-              ) : (
-                <span aria-hidden>{outerwear?.emoji ?? top?.emoji ?? "👕"}</span>
-              )}
-            </div>
-            <div className="flex h-36 items-center justify-center bg-neutral-50 text-7xl">
-              {top?.imageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={top.imageUrl} alt={top.name} className="h-full w-full object-cover" />
-              ) : (
-                <span aria-hidden>{top?.emoji ?? "👕"}</span>
-              )}
-            </div>
-            <div className="flex h-36 items-center justify-center bg-[#1f2a44] text-7xl">
-              {bottom?.imageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={bottom.imageUrl} alt={bottom.name} className="h-full w-full object-cover" />
-              ) : (
-                <span aria-hidden>{bottom?.emoji ?? "👖"}</span>
-              )}
-            </div>
-            <div className="flex h-20 items-center justify-center bg-white text-5xl">
-              {shoes?.imageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={shoes.imageUrl} alt={shoes.name} className="h-full w-full object-cover" />
-              ) : (
-                <span aria-hidden>{shoes?.emoji ?? "👟"}</span>
-              )}
-            </div>
+          <div className="grid w-full max-w-[320px] grid-cols-2 overflow-hidden rounded-[28px] border border-border bg-white shadow-lg">
+            {previewItems.map((item, index) => (
+              <div
+                key={item?.id ?? `preview-slot-${index}`}
+                className={[
+                  "flex aspect-square items-center justify-center bg-neutral-50 text-6xl",
+                  index % 2 === 0 ? "border-r border-border" : "",
+                  index < 2 ? "border-b border-border" : "",
+                  item?.category === "Bottoms" ? "bg-[#f5f5f5]" : "",
+                ].join(" ")}
+              >
+                {item?.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" />
+                ) : item ? (
+                  <span aria-hidden>{item.emoji ?? "👕"}</span>
+                ) : null}
+              </div>
+            ))}
           </div>
         </div>
 

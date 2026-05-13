@@ -6,14 +6,14 @@ import {
   useEffect,
   useRef,
   useCallback,
-  type DragEvent,
-  type ChangeEvent,
+  useTransition,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { type ClothingItem } from "@/components/ui/ItemCard";
 import { cn } from "@/components/ui/cn";
+import { getOutfitPreviewItems } from "@/components/outfits/preview";
 
 const STYLES = [
   "Smart",
@@ -30,6 +30,10 @@ interface ApiClothingItem {
   name: string;
   category: string;
   imageUrls?: { front?: string };
+}
+
+interface ApiProfile {
+  modelImage?: string | null;
 }
 
 async function getAuthHeaders(
@@ -87,10 +91,6 @@ async function parseApiError(response: Response, fallback: string) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
-
 function ClosetPanel({
   closetItems,
   selectedIds,
@@ -98,7 +98,6 @@ function ClosetPanel({
   onGenerateTryOn,
   isGenerating,
   generateError,
-  tryOnResultUrl,
 }: {
   closetItems: ClothingItem[];
   selectedIds: Set<string>;
@@ -106,7 +105,6 @@ function ClosetPanel({
   onGenerateTryOn: () => void;
   isGenerating: boolean;
   generateError: string | null;
-  tryOnResultUrl: string | null;
 }) {
   return (
     <div className="flex w-[240px] shrink-0 flex-col border-r border-border bg-white">
@@ -124,8 +122,7 @@ function ClosetPanel({
               key={item.id}
               onClick={() => onToggle(item)}
               className={cn(
-                "relative flex items-center justify-center border-b border-r border-border bg-neutral-50 text-4xl transition-colors",
-                "aspect-square hover:bg-neutral-100",
+                "relative flex aspect-square items-center justify-center border-b border-r border-border bg-neutral-50 text-4xl transition-colors hover:bg-neutral-100",
                 selected && "bg-white ring-2 ring-inset ring-brand",
               )}
             >
@@ -156,7 +153,6 @@ function ClosetPanel({
       </div>
 
       <div className="flex flex-col border-t border-border">
-        {/* Generate button */}
         <div className="p-4">
           <button
             onClick={onGenerateTryOn}
@@ -179,7 +175,7 @@ function ClosetPanel({
                     />
                   ))}
                 </span>
-                Generating…
+                Generating...
               </>
             ) : (
               <>
@@ -189,33 +185,16 @@ function ClosetPanel({
           </button>
         </div>
 
-        {/* Generating status */}
         {isGenerating && (
           <p className="px-4 pb-3 text-center text-xs text-muted-foreground">
-            Generating your outfit…
+            Generating your outfit...
           </p>
         )}
 
-        {/* Error */}
         {generateError && (
           <p className="px-4 pb-3 text-xs font-medium text-red-500">
             {generateError}
           </p>
-        )}
-
-        {/* Result card */}
-        {tryOnResultUrl && !isGenerating && (
-          <div className="px-4 pb-4">
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Your Generated Outfit
-            </p>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={tryOnResultUrl}
-              alt="Generated outfit"
-              className="w-full rounded-xl object-cover shadow-sm"
-            />
-          </div>
         )}
       </div>
     </div>
@@ -223,25 +202,19 @@ function ClosetPanel({
 }
 
 function TryOnPreview({
-  selectedItems,
   isTryOnActive,
+  isGenerating,
+  tryOnResultUrl,
 }: {
-  selectedItems: ClothingItem[];
   isTryOnActive: boolean;
+  isGenerating: boolean;
+  tryOnResultUrl: string | null;
 }) {
-  const top = selectedItems.find(
-    (i) =>
-      i.category === "Tops" ||
-      i.category === "Outerwear" ||
-      i.category === "Dresses",
-  );
-  const bottom = selectedItems.find((i) => i.category === "Bottoms");
-
   return (
     <div className="flex flex-1 flex-col">
       <div className="border-b border-border px-6 py-4">
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Live Try-On Preview
+          Try-On Preview
         </p>
       </div>
 
@@ -260,59 +233,37 @@ function TryOnPreview({
           Your photo
         </span>
 
-        <div className="flex flex-col items-center">
-          <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-[#C4A882] text-2xl shadow">
-            🙂
+        {tryOnResultUrl ? (
+          <div className="w-full max-w-[440px] overflow-hidden rounded-[32px] border border-white/40 bg-white shadow-2xl">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={tryOnResultUrl}
+              alt="Generated try-on preview"
+              className="aspect-square w-full object-cover"
+            />
           </div>
-
-          <div className="w-48 overflow-hidden rounded-2xl shadow-lg">
-            <div
-              className="flex items-center justify-center bg-neutral-100 text-7xl"
-              style={{ height: "180px" }}
-            >
-              {top ? (
-                top.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={top.imageUrl}
-                    alt={top.name}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <span aria-hidden>{top.emoji ?? "👕"}</span>
-                )
-              ) : (
-                <span className="text-4xl text-neutral-300">👕</span>
-              )}
+        ) : (
+          <div className="flex w-full max-w-[440px] flex-col items-center rounded-[32px] border border-dashed border-white/60 bg-white/70 px-8 py-14 text-center shadow-xl backdrop-blur">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#C4A882] text-3xl shadow">
+              {isGenerating ? "…" : "✦"}
             </div>
-
-            <div
-              className="flex items-center justify-center bg-[#1a2a4a] text-7xl"
-              style={{ height: "180px" }}
-            >
-              {bottom ? (
-                bottom.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={bottom.imageUrl}
-                    alt={bottom.name}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <span aria-hidden>{bottom.emoji ?? "👖"}</span>
-                )
-              ) : (
-                <span className="text-4xl text-neutral-400">👖</span>
-              )}
-            </div>
+            <p className="mt-5 text-lg font-semibold text-foreground">
+              {isGenerating ? "Generating your try-on..." : "Your try-on will appear here"}
+            </p>
+            <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+              {isGenerating
+                ? "We are creating a styled preview using your saved profile photo and the selected outfit."
+                : "Pick outfit pieces, then generate a try-on to replace this placeholder with the real image."}
+            </p>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
 }
 
 function OutfitDetailsPanel({
+  selectedItems,
   name,
   onNameChange,
   style,
@@ -320,21 +271,23 @@ function OutfitDetailsPanel({
   onSave,
   onDiscard,
   canSave,
-  isEditing,
   errorMessage,
+  saveStatus,
 }: {
+  selectedItems: ClothingItem[];
   name: string;
-  onNameChange: (v: string) => void;
+  onNameChange: (value: string) => void;
   style: Style | "";
-  onStyleChange: (v: Style) => void;
+  onStyleChange: (value: Style) => void;
   onSave: () => void;
   onDiscard: () => void;
   canSave: boolean;
-  isEditing: boolean;
   errorMessage?: string | null;
+  saveStatus: string;
 }) {
   const inputClass =
     "w-full rounded-xl border-2 border-border bg-neutral-50 px-4 py-3 text-sm font-medium text-foreground outline-none transition focus:border-accent focus:bg-white placeholder:text-muted-foreground";
+  const previewItems = getOutfitPreviewItems(selectedItems);
 
   return (
     <div className="flex w-[300px] shrink-0 flex-col border-l border-border bg-white">
@@ -345,6 +298,41 @@ function OutfitDetailsPanel({
       </div>
 
       <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-6 py-5">
+        <div className="rounded-xl border border-border bg-neutral-50 px-3 py-2 text-sm text-muted-foreground">
+          {saveStatus}
+        </div>
+
+        <div className="overflow-hidden rounded-2xl border border-border">
+          <div className="border-b border-border px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Outfit Preview
+          </div>
+          <div className="grid grid-cols-2 bg-white">
+            {previewItems.map((item, index) => (
+              <div
+                key={item?.id ?? `builder-preview-${index}`}
+                className={cn(
+                  "flex aspect-square items-center justify-center bg-neutral-100 text-4xl",
+                  index % 2 === 0 ? "border-r border-border" : "",
+                  index < 2 ? "border-b border-border" : "",
+                )}
+              >
+                {item ? (
+                  item.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={item.imageUrl}
+                      alt={item.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span aria-hidden>{item.emoji ?? "👕"}</span>
+                  )
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Name
@@ -363,18 +351,18 @@ function OutfitDetailsPanel({
             Style
           </label>
           <div className="flex flex-wrap gap-2">
-            {STYLES.map((s) => (
+            {STYLES.map((entry) => (
               <button
-                key={s}
-                onClick={() => onStyleChange(s)}
+                key={entry}
+                onClick={() => onStyleChange(entry)}
                 className={cn(
                   "rounded-full border-2 px-3 py-1.5 text-xs font-semibold transition-colors",
-                  style === s
+                  style === entry
                     ? "border-accent bg-accent-soft text-accent"
                     : "border-border bg-white text-foreground hover:bg-neutral-50",
                 )}
               >
-                {s}
+                {entry}
               </button>
             ))}
           </div>
@@ -394,11 +382,11 @@ function OutfitDetailsPanel({
           disabled={!canSave}
           onClick={onSave}
         >
-          {isEditing ? "Save Changes" : "+ Save Outfit"}
+          Save & Close
         </Button>
         <button
           onClick={onDiscard}
-          className="text-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          className="text-center text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           Discard Changes
         </button>
@@ -407,122 +395,11 @@ function OutfitDetailsPanel({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Your Photo upload strip
-// ---------------------------------------------------------------------------
-function YourPhotoSection({
-  preview,
-  isReady,
-  isUploading,
-  onFile,
-}: {
-  preview: string | null;
-  isReady: boolean;
-  isUploading: boolean;
-  onFile: (file: File) => void;
-}) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-
-  function handleDrop(e: DragEvent<HTMLDivElement>) {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) onFile(file);
-  }
-
-  function handleFileInput(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) onFile(file);
-  }
-
-  return (
-    <div className="flex shrink-0 items-center gap-5 border-b border-border bg-white px-10 py-4">
-      <p className="whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        Your Photo
-      </p>
-
-      {/* Drop / click zone */}
-      <div
-        onClick={() => fileInputRef.current?.click()}
-        onDrop={handleDrop}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setIsDragging(true);
-        }}
-        onDragLeave={() => setIsDragging(false)}
-        className={cn(
-          "relative flex h-20 w-20 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed transition-colors",
-          isDragging
-            ? "border-brand bg-brand/5"
-            : "border-border bg-neutral-50 hover:bg-neutral-100",
-        )}
-      >
-        {preview ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={preview}
-            alt="Your photo preview"
-            className="h-full w-full object-cover"
-          />
-        ) : isUploading ? (
-          <span className="flex gap-1">
-            {[0, 1, 2].map((i) => (
-              <span
-                key={i}
-                className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent"
-                style={{ animationDelay: `${i * 150}ms` }}
-              />
-            ))}
-          </span>
-        ) : (
-          <span className="text-2xl text-neutral-400" aria-hidden>
-            ↑
-          </span>
-        )}
-      </div>
-
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp,image/heic"
-        className="hidden"
-        onChange={handleFileInput}
-      />
-
-      <div className="flex flex-col gap-0.5">
-        {isUploading ? (
-          <p className="text-sm font-medium text-accent">Uploading…</p>
-        ) : isReady ? (
-          <p className="text-sm font-medium text-foreground">Photo ready</p>
-        ) : preview ? (
-          <p className="text-sm font-medium text-foreground">
-            Photo selected
-          </p>
-        ) : (
-          <p className="text-sm font-medium text-foreground">
-            Click or drag to upload your photo
-          </p>
-        )}
-        <p className="text-xs text-muted-foreground">
-          {preview
-            ? "Click the thumbnail to replace it"
-            : "Used as the human image for virtual try-on"}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Main page
-// ---------------------------------------------------------------------------
-
 export default function OutfitBuilderPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const outfitId = searchParams.get("id");
-  const isEditing = Boolean(outfitId);
+  const initialOutfitId = searchParams.get("id");
+  const isEditing = Boolean(initialOutfitId);
   const starterItems = searchParams.get("items");
   const starterName = searchParams.get("name");
   const starterStyle = searchParams.get("style");
@@ -534,6 +411,21 @@ export default function OutfitBuilderPage() {
   const [isTryOnActive, setIsTryOnActive] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [currentOutfitId, setCurrentOutfitId] = useState<string | null>(
+    initialOutfitId,
+  );
+  const [saveState, setSaveState] = useState<
+    "idle" | "dirty" | "saving" | "saved" | "error"
+  >(initialOutfitId ? "saved" : "idle");
+  const [hasLoadedInitialOutfit, setHasLoadedInitialOutfit] = useState(!initialOutfitId);
+  const [humanImageUrl, setHumanImageUrl] = useState<string | null>(null);
+  const [isLoadingProfileImage, setIsLoadingProfileImage] = useState(true);
+  const [isNavigatingAfterSave, startNavigatingAfterSave] = useTransition();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
+  const [tryOnResultUrl, setTryOnResultUrl] = useState<string | null>(null);
+  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestSaveRequestRef = useRef(0);
 
   const [name, setName] = useState("");
   const [style, setStyle] = useState<Style | "">("");
@@ -556,7 +448,32 @@ export default function OutfitBuilderPage() {
   }, [loadCloset]);
 
   useEffect(() => {
+    async function loadProfileImage() {
+      setIsLoadingProfileImage(true);
+
+      try {
+        const response = await fetch(`${apiUrl}/api/users/me`, {
+          headers: await getAuthHeaders(),
+        });
+        if (!response.ok) throw new Error("Failed to load profile image");
+
+        const profile = (await response.json()) as ApiProfile;
+        setHumanImageUrl(profile.modelImage ?? null);
+      } catch (error) {
+        console.error(error);
+        setHumanImageUrl(null);
+      } finally {
+        setIsLoadingProfileImage(false);
+      }
+    }
+
+    loadProfileImage();
+  }, [apiUrl]);
+
+  useEffect(() => {
     if (isEditing) return;
+
+    let hasStarterState = false;
 
     if (starterItems) {
       const itemIds = starterItems
@@ -564,19 +481,26 @@ export default function OutfitBuilderPage() {
         .map((id) => id.trim())
         .filter(Boolean);
       setSelectedIds(new Set(itemIds));
+      hasStarterState = itemIds.length > 0;
     }
 
     if (starterName) {
       setName(starterName);
+      hasStarterState = true;
     }
 
     if (starterStyle && STYLES.includes(starterStyle as Style)) {
       setStyle(starterStyle as Style);
+      hasStarterState = true;
+    }
+
+    if (hasStarterState) {
+      setSaveState("dirty");
     }
   }, [isEditing, starterItems, starterName, starterStyle]);
 
   useEffect(() => {
-    if (!outfitId) return;
+    if (!initialOutfitId) return;
 
     async function loadExistingOutfit() {
       try {
@@ -584,69 +508,27 @@ export default function OutfitBuilderPage() {
           headers: await getAuthHeaders(),
         });
         if (!response.ok) throw new Error("Failed to load outfits");
+
         const outfits = await response.json();
-        const outfit = outfits.find((o: { _id: string }) => o._id === outfitId);
+        const outfit = outfits.find((entry: { _id: string }) => entry._id === initialOutfitId);
         if (!outfit) return;
 
         setName(outfit.name);
         setStyle(outfit.style ?? "");
-        setSelectedIds(
-          new Set(outfit.items.map((i: { _id: string }) => i._id)),
-        );
-      } catch (err) {
-        console.error(err);
+        setSelectedIds(new Set(outfit.items.map((item: { _id: string }) => item._id)));
+        setSaveState("saved");
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setHasLoadedInitialOutfit(true);
       }
     }
 
     loadExistingOutfit();
-  }, [outfitId, apiUrl]);
-
-  // Human photo state — URL returned by the upload endpoint, used later for try-on
-  const [humanPhotoPreview, setHumanPhotoPreview] = useState<string | null>(
-    null,
-  );
-  const [humanImageUrl, setHumanImageUrl] = useState<string | null>(null);
-  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
-
-  // Try-on generation state
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generateError, setGenerateError] = useState<string | null>(null);
-  const [tryOnResultUrl, setTryOnResultUrl] = useState<string | null>(null);
-
-  async function handleHumanPhotoFile(file: File) {
-    setHumanPhotoPreview(URL.createObjectURL(file));
-    setHumanImageUrl(null);
-    setGenerateError(null);
-    setIsUploadingPhoto(true);
-    try {
-      const formData = new FormData();
-      formData.append("image", file);
-
-      const res = await fetch(`${apiUrl}/api/users/me/photo/upload`, {
-        method: "POST",
-        headers: await getAuthHeaders(),
-        body: formData,
-      });
-      if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
-      const data = (await res.json()) as { modelImage?: string; url?: string };
-      const uploadedUrl = data.modelImage ?? data.url;
-      if (!uploadedUrl) throw new Error("Upload response did not include an image URL");
-
-      setHumanImageUrl(uploadedUrl);
-      setGenerateError(null);
-    } catch (err) {
-      console.error("Failed to upload photo:", err);
-      setHumanImageUrl(null);
-      setGenerateError(
-        err instanceof Error ? err.message : "Failed to upload photo.",
-      );
-    } finally {
-      setIsUploadingPhoto(false);
-    }
-  }
+  }, [initialOutfitId, apiUrl]);
 
   const selectedItems = useMemo(
-    () => closetItems.filter((i) => selectedIds.has(i.id)),
+    () => closetItems.filter((item) => selectedIds.has(item.id)),
     [closetItems, selectedIds],
   );
 
@@ -663,76 +545,59 @@ export default function OutfitBuilderPage() {
     return `Choose items from different categories. You selected multiple ${duplicateCategory}.`;
   }, [selectedItems]);
 
-  function toggleItem(item: ClothingItem) {
-    setSaveError(null);
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(item.id)) {
-        next.delete(item.id);
-      } else {
-        next.add(item.id);
-      }
-      return next;
-    });
-  }
+  const canPersistOutfit = selectedIds.size > 0 && !selectionError;
 
-  async function handleGenerateTryOn() {
-    if (isUploadingPhoto) {
-      setGenerateError("Wait for your photo to finish uploading.");
-      return;
-    }
-    if (!humanImageUrl) {
-      setGenerateError("Upload your photo first.");
-      return;
-    }
-    if (!outfitId) {
-      setGenerateError("Save this outfit before generating a try-on.");
-      return;
+  const saveStatusMessage = useMemo(() => {
+    if (selectionError) {
+      return selectionError;
     }
 
-    setGenerateError(null);
-    setTryOnResultUrl(null);
-    setIsGenerating(true);
-    setIsTryOnActive(true);
-
-    try {
-      const res = await fetch(`${apiUrl}/api/tryon`, {
-        method: "POST",
-        headers: await getAuthHeaders(true),
-        body: JSON.stringify({
-          humanImageUrl,
-          outfitId,
-        }),
-      });
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(
-          (body as { error?: string }).error ??
-            `Request failed (${res.status})`,
-        );
-      }
-
-      const data = (await res.json()) as { success: boolean; imageUrl: string };
-      setTryOnResultUrl(data.imageUrl);
-    } catch (err) {
-      setGenerateError(
-        err instanceof Error ? err.message : "Something went wrong.",
-      );
-    } finally {
-      setIsGenerating(false);
+    if (saveError) {
+      return saveError;
     }
-  }
 
-  async function handleSave() {
-    if (isSaving) return;
+    if (isNavigatingAfterSave) {
+      return "Saving changes and leaving builder...";
+    }
+
+    switch (saveState) {
+      case "dirty":
+        return "Unsaved changes. Saving automatically...";
+      case "saving":
+        return "Saving changes...";
+      case "saved":
+        return "All changes saved.";
+      case "error":
+        return "Autosave failed. We will try again on your next edit or when you generate a try-on.";
+      default:
+        return humanImageUrl
+          ? "Using your saved profile try-on photo."
+          : "Add a try-on photo in your profile to enable try-on generation.";
+    }
+  }, [humanImageUrl, isNavigatingAfterSave, saveError, saveState, selectionError]);
+
+  const persistOutfit = useCallback(async () => {
+    if (!hasLoadedInitialOutfit || !canPersistOutfit) {
+      return currentOutfitId;
+    }
+
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
+    }
+
+    const requestId = latestSaveRequestRef.current + 1;
+    latestSaveRequestRef.current = requestId;
     setIsSaving(true);
     setSaveError(null);
+    setSaveState("saving");
+
     try {
-      const url = isEditing
-        ? `${apiUrl}/api/outfits/me/${outfitId}`
+      const targetOutfitId = currentOutfitId;
+      const url = targetOutfitId
+        ? `${apiUrl}/api/outfits/me/${targetOutfitId}`
         : `${apiUrl}/api/outfits/me`;
-      const method = isEditing ? "PUT" : "POST";
+      const method = targetOutfitId ? "PUT" : "POST";
 
       const response = await fetch(url, {
         method,
@@ -745,46 +610,177 @@ export default function OutfitBuilderPage() {
       });
 
       if (!response.ok) {
-        setSaveError(
-          await parseApiError(response, "Failed to save outfit"),
-        );
-        return;
+        const message = await parseApiError(response, "Failed to save outfit");
+        if (latestSaveRequestRef.current === requestId) {
+          setSaveError(message);
+          setSaveState("error");
+        }
+        return null;
       }
 
-      router.push("/outfits");
-    } catch (err) {
-      setSaveError("Failed to save outfit. Please try again.");
-      console.error(err);
+      const savedOutfit = (await response.json()) as { _id?: string };
+      const savedOutfitId = savedOutfit._id ?? targetOutfitId ?? null;
+
+      if (latestSaveRequestRef.current === requestId) {
+        setCurrentOutfitId(savedOutfitId);
+        setSaveState("saved");
+        setSaveError(null);
+        if (!targetOutfitId && savedOutfitId) {
+          router.replace(`/outfits/builder?id=${savedOutfitId}`);
+        }
+      }
+
+      return savedOutfitId;
+    } catch (error) {
+      if (latestSaveRequestRef.current === requestId) {
+        setSaveError("Failed to save outfit. Please try again.");
+        setSaveState("error");
+      }
+      console.error(error);
+      return null;
     } finally {
-      setIsSaving(false);
+      if (latestSaveRequestRef.current === requestId) {
+        setIsSaving(false);
+      }
     }
+  }, [
+    apiUrl,
+    canPersistOutfit,
+    currentOutfitId,
+    hasLoadedInitialOutfit,
+    name,
+    router,
+    selectedIds,
+    style,
+  ]);
+
+  function toggleItem(item: ClothingItem) {
+    setSaveError(null);
+    setSaveState("dirty");
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(item.id)) {
+        next.delete(item.id);
+      } else {
+        next.add(item.id);
+      }
+      return next;
+    });
+  }
+
+  async function handleGenerateTryOn() {
+    if (isLoadingProfileImage) {
+      setGenerateError("Loading your saved profile photo.");
+      return;
+    }
+
+    if (!humanImageUrl) {
+      setGenerateError("Add a try-on photo in your profile first.");
+      return;
+    }
+
+    if (!canPersistOutfit) {
+      setGenerateError(
+        selectionError ?? "Add at least one outfit item before generating a try-on.",
+      );
+      return;
+    }
+
+    const savedOutfitId = await persistOutfit();
+    if (!savedOutfitId) {
+      setGenerateError("We couldn't save the latest outfit changes for try-on.");
+      return;
+    }
+
+    setGenerateError(null);
+    setTryOnResultUrl(null);
+    setIsGenerating(true);
+    setIsTryOnActive(true);
+
+    try {
+      const response = await fetch(`${apiUrl}/api/tryon`, {
+        method: "POST",
+        headers: await getAuthHeaders(true),
+        body: JSON.stringify({
+          humanImageUrl,
+          outfitId: savedOutfitId,
+        }),
+      });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(
+          (body as { error?: string }).error ?? `Request failed (${response.status})`,
+        );
+      }
+
+      const data = (await response.json()) as { success: boolean; imageUrl: string };
+      setTryOnResultUrl(data.imageUrl);
+    } catch (error) {
+      setGenerateError(
+        error instanceof Error ? error.message : "Something went wrong.",
+      );
+    } finally {
+      setIsGenerating(false);
+    }
+  }
+
+  async function handleSave() {
+    if (isSaving || !canPersistOutfit) return;
+
+    const savedOutfitId = await persistOutfit();
+    if (!savedOutfitId) return;
+
+    startNavigatingAfterSave(() => {
+      router.push("/outfits");
+    });
   }
 
   function handleDiscard() {
     router.push("/outfits");
   }
 
-  const canSave = selectedIds.size > 0 && !isSaving;
+  const canSave = canPersistOutfit && !isSaving && !isNavigatingAfterSave;
+
+  useEffect(() => {
+    if (!hasLoadedInitialOutfit) return;
+    if (!canPersistOutfit) return;
+    if (saveState !== "dirty") return;
+
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+    }
+
+    autosaveTimerRef.current = setTimeout(() => {
+      void persistOutfit();
+    }, 2500);
+
+    return () => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+      }
+    };
+  }, [canPersistOutfit, hasLoadedInitialOutfit, persistOutfit, saveState]);
+
+  useEffect(() => () => {
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+    }
+  }, []);
 
   return (
     <>
       <PageHeader
         title={isEditing ? "Edit outfit" : "Build an outfit"}
-        right={
+        right={(
           <button
             onClick={handleDiscard}
-            className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             ✕ Discard Changes
           </button>
-        }
-      />
-
-      <YourPhotoSection
-        preview={humanPhotoPreview}
-        isReady={Boolean(humanImageUrl)}
-        isUploading={isUploadingPhoto}
-        onFile={handleHumanPhotoFile}
+        )}
       />
 
       <div className="flex flex-1 overflow-hidden">
@@ -795,30 +791,33 @@ export default function OutfitBuilderPage() {
           onGenerateTryOn={handleGenerateTryOn}
           isGenerating={isGenerating}
           generateError={generateError}
-          tryOnResultUrl={tryOnResultUrl}
         />
 
         <TryOnPreview
-          selectedItems={selectedItems}
           isTryOnActive={isTryOnActive}
+          isGenerating={isGenerating}
+          tryOnResultUrl={tryOnResultUrl}
         />
 
         <OutfitDetailsPanel
+          selectedItems={selectedItems}
           name={name}
           onNameChange={(value) => {
             setSaveError(null);
+            setSaveState("dirty");
             setName(value);
           }}
           style={style}
           onStyleChange={(value) => {
             setSaveError(null);
+            setSaveState("dirty");
             setStyle(value);
           }}
           onSave={handleSave}
           onDiscard={handleDiscard}
           canSave={canSave}
-          isEditing={isEditing}
-          errorMessage={saveError ?? selectionError}
+          errorMessage={saveError}
+          saveStatus={saveStatusMessage}
         />
       </div>
     </>
