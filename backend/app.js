@@ -18,11 +18,15 @@ app.use("/api/users", UsersRoutes);
 app.use("/api/tryon", TryOnRoutes);
 app.use("/api/outfits", OutfitsRoutes);
 
-// MongoDB connection is initialized when the app module loads for both local runs and route tests.
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB successfully connected"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+// MongoDB Connection
+const isJest = process.env.NODE_ENV === "test" || process.env.JEST_WORKER_ID;
+
+if (!isJest) {
+  mongoose
+    .connect(process.env.MONGO_URI)
+    .then(() => console.log("MongoDB successfully connected"))
+    .catch((err) => console.error("MongoDB connection error:", err));
+}
 
 app.get("/", (req, res) => {
   res.send("API running");
