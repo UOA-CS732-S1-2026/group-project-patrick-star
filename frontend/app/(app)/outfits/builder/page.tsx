@@ -210,6 +210,23 @@ function TryOnPreview({
   isGenerating: boolean;
   tryOnResultUrl: string | null;
 }) {
+  const [dotStep, setDotStep] = useState(0);
+
+  useEffect(() => {
+    if (!isGenerating) {
+      setDotStep(0);
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      setDotStep((current) => (current + 1) % 3);
+    }, 400);
+
+    return () => window.clearInterval(interval);
+  }, [isGenerating]);
+
+  const dotText = [".", "..", "..."][dotStep];
+
   return (
     <div className="flex flex-1 flex-col">
       <div className="border-b border-border px-6 py-4">
@@ -245,10 +262,10 @@ function TryOnPreview({
         ) : (
           <div className="flex w-full max-w-[440px] flex-col items-center rounded-[32px] border border-dashed border-white/60 bg-white/70 px-8 py-14 text-center shadow-xl backdrop-blur">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#C4A882] text-3xl shadow">
-              {isGenerating ? "…" : "✦"}
+              {isGenerating ? dotText : "✦"}
             </div>
             <p className="mt-5 text-lg font-semibold text-foreground">
-              {isGenerating ? "Generating your try-on..." : "Your try-on will appear here"}
+              {isGenerating ? `Generating your try-on${dotText}` : "Your try-on will appear here"}
             </p>
             <p className="mt-2 max-w-sm text-sm text-muted-foreground">
               {isGenerating
