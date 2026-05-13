@@ -256,16 +256,28 @@ function TryOnPreview({
 
   const dotText = [".", "..", "..."][dotStep];
 
-  function handleDownload() {
-    if (!tryOnResultUrl) return;
+async function handleDownload() {
+  if (!tryOnResultUrl) return;
+
+  try {
+    const response = await fetch(tryOnResultUrl);
+    const blob = await response.blob();
+
+    const blobUrl = window.URL.createObjectURL(blob);
+
     const link = document.createElement("a");
-    link.href = tryOnResultUrl;
+    link.href = blobUrl;
     link.download = "try-on.png";
-    link.target = "_blank";
+
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
+    window.URL.revokeObjectURL(blobUrl);
+  } catch (error) {
+    console.error("Download failed", error);
   }
+}
 
   return (
     <div className="flex flex-1 flex-col">
