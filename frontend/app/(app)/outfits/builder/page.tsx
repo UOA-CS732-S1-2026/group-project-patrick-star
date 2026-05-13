@@ -227,6 +227,17 @@ function TryOnPreview({
 
   const dotText = [".", "..", "..."][dotStep];
 
+  function handleDownload() {
+    if (!tryOnResultUrl) return;
+    const link = document.createElement("a");
+    link.href = tryOnResultUrl;
+    link.download = "try-on.png";
+    link.target = "_blank";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
   return (
     <div className="flex flex-1 flex-col">
       <div className="border-b border-border px-6 py-4">
@@ -258,6 +269,16 @@ function TryOnPreview({
               alt="Generated try-on preview"
               className="aspect-square w-full object-cover"
             />
+            <div className="p-5">
+              <Button
+                variant="primary"
+                size="lg"
+                className="w-full rounded-xl"
+                onClick={handleDownload}
+              >
+                Download image
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="flex w-full max-w-[440px] flex-col items-center rounded-[32px] border border-dashed border-white/60 bg-white/70 px-8 py-14 text-center shadow-xl backdrop-blur">
