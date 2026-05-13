@@ -559,7 +559,7 @@ export default function ProfilePage() {
           </div>
         )}
 
-        <section className="grid gap-6 xl:grid-cols-[minmax(260px,340px)_minmax(0,760px)] xl:items-start">
+        <section className="grid gap-6 xl:grid-cols-[minmax(260px,340px)_minmax(0,840px)] xl:items-start">
           <Card className="p-6">
             <div className="flex flex-col items-center text-center">
               <div className="group relative mx-auto h-24 w-24">
