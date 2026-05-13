@@ -8,6 +8,7 @@ import {
 
 const appBaseUrl = process.env.APP_BASE_URL ?? "http://localhost:3000";
 
+// Central Auth0 client configuration for login, callback handling, and backend profile sync.
 export const auth0 = new Auth0Client({
   authorizationParameters: {
     audience: process.env.AUTH0_AUDIENCE,
@@ -16,6 +17,7 @@ export const auth0 = new Auth0Client({
   beforeSessionSaved: async (session, idToken) => {
     console.log("[auth] login succeeded", buildLoginSuccessLog(session, idToken));
 
+    // Ensure the MongoDB profile exists as soon as Auth0 creates the session.
     await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me/sync`, {
       method: "POST",
       headers: {
@@ -31,6 +33,7 @@ export const auth0 = new Auth0Client({
     return session;
   },
   onCallback: async (error, ctx) => {
+    // Route failed callbacks back to login with an error code the page can translate.
     if (error) {
       console.warn("[auth] callback failed", buildCallbackFailureLog(error, ctx));
       return NextResponse.redirect(buildCallbackRedirectUrl(error, ctx, appBaseUrl));

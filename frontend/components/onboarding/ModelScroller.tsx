@@ -26,6 +26,7 @@ export function ModelScroller({
     return null;
   }
 
+  // Treat the models as a circular carousel with one selected card and two neighbours.
   const activeIndex = Math.max(
     0,
     items.findIndex((item) => item.id === selectedId),

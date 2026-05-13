@@ -49,6 +49,7 @@ async function getAuthHeaders(
   return headers;
 }
 
+// Convert backend enum categories into the labels shared by cards and closet components.
 function toDisplayCategory(category: string) {
   switch (category) {
     case "lower_body":
@@ -89,6 +90,7 @@ async function parseApiError(response: Response, fallback: string) {
   }
 }
 
+// Compact closet picker grouped by outfit role, including dresses as top-level outfit bases.
 function ClosetPanel({
   closetItems,
   selectedIds,
@@ -241,6 +243,7 @@ function TryOnPreview({
 }) {
   const [dotStep, setDotStep] = useState(0);
 
+  // Animate placeholder dots without re-rendering the whole builder state.
   useEffect(() => {
     if (!isGenerating) {
       setDotStep(0);
@@ -256,28 +259,29 @@ function TryOnPreview({
 
   const dotText = [".", "..", "..."][dotStep];
 
-async function handleDownload() {
-  if (!tryOnResultUrl) return;
+  // Download through a blob URL so cross-origin image URLs still save with a friendly filename.
+  async function handleDownload() {
+    if (!tryOnResultUrl) return;
 
-  try {
-    const response = await fetch(tryOnResultUrl);
-    const blob = await response.blob();
+    try {
+      const response = await fetch(tryOnResultUrl);
+      const blob = await response.blob();
 
-    const blobUrl = window.URL.createObjectURL(blob);
+      const blobUrl = window.URL.createObjectURL(blob);
 
-    const link = document.createElement("a");
-    link.href = blobUrl;
-    link.download = "try-on.png";
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = "try-on.png";
 
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
 
-    window.URL.revokeObjectURL(blobUrl);
-  } catch (error) {
-    console.error("Download failed", error);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Download failed", error);
+    }
   }
-}
 
   return (
     <div className="flex flex-1 flex-col">
@@ -341,6 +345,7 @@ async function handleDownload() {
   );
 }
 
+// Right-side form owns outfit metadata while selection state stays in the parent builder.
 function OutfitDetailsPanel({
   selectedItems,
   name,
@@ -366,6 +371,8 @@ function OutfitDetailsPanel({
 }) {
   const inputClass =
     "w-full rounded-xl border-2 border-border bg-neutral-50 px-4 py-3 text-sm font-medium text-foreground outline-none transition focus:border-accent focus:bg-white placeholder:text-muted-foreground";
+
+  // Reuse the same four-slot preview logic as outfit cards for visual consistency.
   const previewItems = getOutfitPreviewItems(selectedItems);
 
   return (
@@ -509,6 +516,7 @@ export default function OutfitBuilderPage() {
   const [name, setName] = useState("");
   const [style, setStyle] = useState<Style | "">("");
 
+  // Load closet items once so URL-prefilled item ids can resolve to full item records.
   const loadCloset = useCallback(async () => {
     try {
       const response = await fetch(`${apiUrl}/api/clothingItems/me`, {
@@ -526,6 +534,7 @@ export default function OutfitBuilderPage() {
     loadCloset();
   }, [loadCloset]);
 
+  // The try-on endpoint requires a saved profile/model image before it can generate.
   useEffect(() => {
     async function loadProfileImage() {
       setIsLoadingProfileImage(true);
@@ -549,6 +558,7 @@ export default function OutfitBuilderPage() {
     loadProfileImage();
   }, [apiUrl]);
 
+  // Home can open the builder with unsaved generated outfit details encoded in the URL.
   useEffect(() => {
     if (isEditing) return;
 
@@ -578,6 +588,7 @@ export default function OutfitBuilderPage() {
     }
   }, [isEditing, starterItems, starterName, starterStyle]);
 
+  // Editing an existing outfit loads the full record because the URL only carries the id.
   useEffect(() => {
     if (!initialOutfitId) return;
 
@@ -611,6 +622,7 @@ export default function OutfitBuilderPage() {
     [closetItems, selectedIds],
   );
 
+  // Match backend validation by preventing duplicate outfit item categories in the UI.
   const selectionError = useMemo(() => {
     const categories = selectedItems.map((item) => item.category);
     const duplicateCategory = categories.find(
@@ -655,6 +667,7 @@ export default function OutfitBuilderPage() {
     }
   }, [humanImageUrl, isNavigatingAfterSave, saveError, saveState, selectionError]);
 
+  // Shared save path for autosave, manual save, and try-on generation.
   const persistOutfit = useCallback(async () => {
     if (!hasLoadedInitialOutfit || !canPersistOutfit) {
       return currentOutfitId;
@@ -700,6 +713,7 @@ export default function OutfitBuilderPage() {
       const savedOutfit = (await response.json()) as { _id?: string };
       const savedOutfitId = savedOutfit._id ?? targetOutfitId ?? null;
 
+      // Ignore slower responses from older save requests so state reflects the newest edit.
       if (latestSaveRequestRef.current === requestId) {
         setCurrentOutfitId(savedOutfitId);
         setSaveState("saved");
@@ -747,6 +761,7 @@ export default function OutfitBuilderPage() {
     });
   }
 
+  // Save the latest outfit state before asking the backend to generate a try-on.
   async function handleGenerateTryOn() {
     if (isLoadingProfileImage) {
       setGenerateError("Loading your saved profile photo.");
@@ -804,6 +819,7 @@ export default function OutfitBuilderPage() {
     }
   }
 
+  // Manual save shares the autosave code path, then returns the user to the outfit library.
   async function handleSave() {
     if (isSaving || !canPersistOutfit) return;
 
@@ -821,6 +837,7 @@ export default function OutfitBuilderPage() {
 
   const canSave = canPersistOutfit && !isSaving && !isNavigatingAfterSave;
 
+  // Debounced autosave keeps the builder resilient without firing a request on every click.
   useEffect(() => {
     if (!hasLoadedInitialOutfit) return;
     if (!canPersistOutfit) return;
@@ -842,6 +859,7 @@ export default function OutfitBuilderPage() {
     };
   }, [canPersistOutfit, hasLoadedInitialOutfit, persistOutfit, saveState]);
 
+  // Clear any pending autosave timer when the builder unmounts.
   useEffect(() => () => {
     if (autosaveTimerRef.current) {
       clearTimeout(autosaveTimerRef.current);

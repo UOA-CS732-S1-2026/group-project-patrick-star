@@ -39,7 +39,6 @@ async function getAuthHeaders(
   includeJson = false,
 ): Promise<Record<string, string>> {
   const headers: Record<string, string> = {};
-  // const token = localStorage.getItem("access_token");
 
   if (includeJson) {
     headers["Content-Type"] = "application/json";
@@ -64,6 +63,7 @@ export default function ClosetPage() {
   const [editing, setEditing] = useState(false);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5001";
 
+  // Filtering stays client-side because the closet list is already scoped to the user.
   const filtered = useMemo(() => {
     return items.filter((item) => {
       const matchCategory = category === "All" || item.category === category;
@@ -73,6 +73,7 @@ export default function ClosetPage() {
     });
   }, [items, category, query]);
 
+  // Translate display labels into backend enum values before creating or updating items.
   function toApiCategory(category: string) {
     switch (category) {
       case "Bottoms":
@@ -90,6 +91,7 @@ export default function ClosetPage() {
     }
   }
 
+  // Convert backend enum values back into labels used by cards, filters, and forms.
   function toDisplayCategory(category: string) {
     switch (category) {
       case "lower_body":
@@ -132,6 +134,7 @@ export default function ClosetPage() {
     };
   }, []);
 
+  // Initial load owns the source of truth for local closet card state.
   useEffect(() => {
     let cancelled = false;
 
@@ -166,12 +169,14 @@ export default function ClosetPage() {
     };
   }, [apiUrl, toClothingItem]);
 
+  // Quick actions can deep-link to the upload modal with /closet?addItem=1.
   useEffect(() => {
     if (searchParams.get("addItem") === "1") {
       setUploadOpen(true);
     }
   }, [searchParams]);
 
+  // Create the metadata record first, then upload the optional image against that item id.
   async function handleAddItem(newItem: NewClothingItem) {
     const createResponse = await fetch(`${apiUrl}/api/clothingItems/me`, {
       method: "POST",
@@ -217,6 +222,7 @@ export default function ClosetPage() {
     setItems((prev) => [...prev, toClothingItem(item)]);
   }
 
+  // Save text/category fields first, then replace the front image only when a new file was chosen.
   async function handleSaveItem(updated: ClothingItem, imageFile?: File) {
     const updateResponse = await fetch(
       `${apiUrl}/api/clothingItems/me/${updated.id}`,
@@ -271,6 +277,7 @@ export default function ClosetPage() {
     setEditing(false);
   }
 
+  // Remove local selection after deletion so the side panel does not point at a missing item.
   async function handleRemoveItem(item: ClothingItem) {
     const deleteResponse = await fetch(
       `${apiUrl}/api/clothingItems/me/${item.id}`,
@@ -289,6 +296,7 @@ export default function ClosetPage() {
     setEditing(false);
   }
 
+  // Optimistically toggle favourites, then roll back if the backend rejects the update.
   async function handleToggleFavourite(id: string) {
     const current = items.find((item) => item.id === id);
     if (!current) return;

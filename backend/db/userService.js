@@ -1,5 +1,6 @@
 const User = require("../models/User");
 
+// Thin data-access helpers keep route handlers focused on HTTP validation and responses.
 const addUser = (data) => User.create(data);
 const updateUser = (id, data) =>
   User.findByIdAndUpdate(id, data, {

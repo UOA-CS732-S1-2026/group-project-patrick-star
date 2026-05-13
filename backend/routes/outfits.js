@@ -11,6 +11,7 @@ const { getUserByAuth0UserId } = require("../db/userService");
 
 const router = express.Router();
 
+// Resolve the current user once per route and return a 404 when onboarding sync has not created them.
 async function getAuthenticatedUser(req, res) {
   const auth0UserId = req.auth.payload.sub;
   const user = await getUserByAuth0UserId(auth0UserId);
@@ -23,6 +24,7 @@ async function getAuthenticatedUser(req, res) {
   return user;
 }
 
+// Ensure every outfit item exists and belongs to the authenticated user before saving references.
 async function validateOwnedItems(userId, itemIds = []) {
   const uniqueItemIds = [...new Set(itemIds.map(String))];
   const items = await ClothingItem.find({
@@ -39,11 +41,13 @@ async function validateOwnedItems(userId, itemIds = []) {
   return uniqueItemIds;
 }
 
+// Create an outfit from owned closet items and return it with populated item details.
 router.post("/me", requireAuth, async (req, res) => {
   try {
     const user = await getAuthenticatedUser(req, res);
     if (!user) return;
 
+    // Validate ownership before creating references to clothing items.
     const items = await validateOwnedItems(user._id, req.body.items || []);
     const outfit = await addOutfit({
       name: req.body.name,
@@ -53,6 +57,7 @@ router.post("/me", requireAuth, async (req, res) => {
       favourite: req.body.favourite ?? false,
     });
 
+    // Re-query through the service so the response shape matches list/update endpoints.
     const [populatedOutfit] = await getOutfits({
       userId: user._id,
       outfitId: outfit._id,
@@ -69,6 +74,7 @@ router.post("/me", requireAuth, async (req, res) => {
   }
 });
 
+// List outfits for the authenticated user with clothing items populated for frontend rendering.
 router.get("/me", requireAuth, async (req, res) => {
   try {
     const user = await getAuthenticatedUser(req, res);
@@ -81,17 +87,20 @@ router.get("/me", requireAuth, async (req, res) => {
   }
 });
 
+// Partially update outfit metadata or replace its item list after ownership validation.
 router.put("/me/:id", requireAuth, async (req, res) => {
   try {
     const user = await getAuthenticatedUser(req, res);
     if (!user) return;
 
+    // Only include fields that were explicitly supplied so partial updates preserve existing data.
     const update = {};
 
     if (Object.hasOwn(req.body, "name")) update.name = req.body.name;
     if (Object.hasOwn(req.body, "style")) update.style = req.body.style;
     if (Object.hasOwn(req.body, "favourite")) update.favourite = req.body.favourite;
     if (req.body.items) {
+      // Revalidate item ownership whenever the outfit composition changes.
       update.items = await validateOwnedItems(user._id, req.body.items);
     }
 
@@ -111,6 +120,7 @@ router.put("/me/:id", requireAuth, async (req, res) => {
   }
 });
 
+// Delete one outfit owned by the authenticated user.
 router.delete("/me/:id", requireAuth, async (req, res) => {
   try {
     const user = await getAuthenticatedUser(req, res);
