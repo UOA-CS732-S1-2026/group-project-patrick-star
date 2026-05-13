@@ -110,19 +110,16 @@ describe("POST /api/tryon", () => {
       items: [
         {
           name: "Jacket",
-          colour: "black",
           category: "outerwear",
           imageUrls: { back: "https://example.com/jacket-back.jpg" },
         },
         {
           name: "Shoes",
-          colour: "white",
           category: "shoes",
           imageUrls: {},
         },
         {
           name: "Hat",
-          colour: "red",
           category: "accessories",
         },
       ],
@@ -145,13 +142,11 @@ describe("POST /api/tryon", () => {
       items: [
         {
           name: "Tshirt",
-          colour: "black",
           category: "upper_body",
           imageUrls: { front: "https://example.com/tshirt-front.jpg" },
         },
         {
           name: "Jeans",
-          colour: "blue",
           category: "lower_body",
           imageUrls: { front: "https://example.com/jeans-front.jpg" },
         },
@@ -184,7 +179,7 @@ describe("POST /api/tryon", () => {
       },
     });
     expect(mockRun.mock.calls[0][1].input.prompt).toContain(
-      "Tshirt (black upper_body), Jeans (blue lower_body)",
+      "Tshirt (upper_body), Jeans (lower_body)",
     );
   });
 
@@ -195,13 +190,11 @@ describe("POST /api/tryon", () => {
       items: [
         {
           name: "Tshirt",
-          colour: "black",
           category: "upper_body",
           imageUrls: { front: "https://example.com/tshirt-front.jpg" },
         },
         {
           name: "Jeans",
-          colour: "blue",
           category: "lower_body",
           imageUrls: { front: "https://example.com/jeans-front.jpg" },
         },

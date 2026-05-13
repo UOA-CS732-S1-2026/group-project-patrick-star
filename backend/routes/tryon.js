@@ -35,7 +35,9 @@ router.post("/", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "No garment images found in this outfit" });
     }
 
-    const clothingDescription = outfit.items.map(item => `${item.name} (${item.colour} ${item.category})`).join(", ");
+    const clothingDescription = outfit.items
+      .map((item) => `${item.name} (${item.category})`)
+      .join(", ");
 
     const output = await replicate.run("openai/gpt-image-2", {
       input: {

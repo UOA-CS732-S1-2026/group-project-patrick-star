@@ -29,7 +29,6 @@ interface ApiClothingItem {
   _id: string;
   name: string;
   category: string;
-  colour: string;
   imageUrls?: { front?: string };
 }
 
@@ -68,7 +67,6 @@ function toClothingItem(item: ApiClothingItem): ClothingItem {
     id: item._id,
     name: item.name,
     category: toDisplayCategory(item.category),
-    colour: item.colour,
     emoji: "👕",
     imageUrl: item.imageUrls?.front,
   };
